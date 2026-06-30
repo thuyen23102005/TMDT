@@ -4,6 +4,9 @@ require("dotenv").config();
 
 const { connectDB } = require("./config/db");
 
+// Import Routes
+const categoryRoutes = require("./routes/categoryRoutes");
+
 const app = express();
 
 // Middleware
@@ -12,6 +15,9 @@ app.use(express.json());
 
 // Kết nối Database
 connectDB();
+
+// Routes
+app.use("/api/categories", categoryRoutes);
 
 // Test API
 app.get("/", (req, res) => {
