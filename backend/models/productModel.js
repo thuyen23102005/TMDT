@@ -10,11 +10,13 @@ const getAllProducts = async () => {
             sp.TenSP, 
             sp.DonGia, 
             sp.MoTa, 
-            sp.HinhAnh, 
+            sp.HinhAnh,
+            sp.SoLuongTon, 
+            sp.DonViTinh, 
+            sp.TrangThai,  
             dm.TenDM 
         FROM SanPham sp
         INNER JOIN DanhMuc dm ON sp.MaDM = dm.MaDM
-        WHERE sp.TrangThai = 1
     `);
     
     return result.recordset;
