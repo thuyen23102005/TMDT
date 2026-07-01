@@ -41,24 +41,33 @@ const Home = () => {
         ) : (
           <div className="product-grid">
             {products.map(product => (
-              <div key={product.id} className="product-card">
-                
-                <div className="product-icon">
-                  {product.name.toLowerCase().includes('cà rốt') ? '🥕' : 
-                   product.name.toLowerCase().includes('xoài') ? '🥭' : '🥬'}
-                </div>
+              <div key={product.MaSP} className="product-card">
 
-                <h4 className="product-name">{product.name}</h4>
-                <p className="product-price">
-                  {product.price.toLocaleString()} đ
-                </p>
+                  <div className="product-icon">
+                      {product.TenSP.toLowerCase().includes("cà rốt")
+                          ? "🥕"
+                          : product.TenSP.toLowerCase().includes("xoài")
+                          ? "🥭"
+                          : "🥬"}
+                  </div>
 
-                <Link to={`/product/${product.id}`} className="btn-details">
-                  🔍 Xem chi tiết
-                </Link>
-                
+                  <h4 className="product-name">
+                      {product.TenSP}
+                  </h4>
+
+                  <p className="product-price">
+                      {Number(product.DonGia).toLocaleString()} đ
+                  </p>
+
+                  <Link
+                      to={`/product/${product.MaSP}`}
+                      className="btn-details"
+                  >
+                      🔍 Xem chi tiết
+                  </Link>
+
               </div>
-            ))}
+          ))}
           </div>
         )}
       </section>
