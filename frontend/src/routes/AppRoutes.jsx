@@ -4,6 +4,8 @@ import AdminLayout from "../layouts/AdminLayout";
 import Dashboard from "../pages/Admin/Dashboard";
 import Category from "../pages/Admin/Category";
 
+import MainLayout from "../layouts/MainLayout";
+
 import Home from "../pages/Home/Home";
 
 import ProductDetail from "../pages/ProductDetail/ProductDetail";
@@ -16,13 +18,12 @@ function AppRoutes() {
     return (
         <BrowserRouter>
             <Routes>
-                <Route path="/" element={<Home />} />
-
-                <Route path="/product/:id" element={<ProductDetail />} />
-
-                <Route path="/cart" element={<Cart />} />
-
-                <Route path="/checkout" element={<Checkout />} />
+                <Route element={<MainLayout />}>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/cart" element={<Cart />} />
+                    <Route path="/checkout" element={<Checkout />} />
+                    <Route path="/product/:id" element={<ProductDetail />} />
+                </Route>
 
                 <Route path="/admin" element={<AdminLayout />}>
                     <Route index element={<Dashboard />} />

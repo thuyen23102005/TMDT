@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import './Cart.css';
 
 const Cart = () => {
   const [cartItems, setCartItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // State mới: Lưu trữ phương thức giao hàng ('standard' hoặc 'store')
+  const [shippingType, setShippingType] = useState('standard'); 
+  const navigate = useNavigate();
 
-  // Gọi API lấy dữ liệu giỏ hàng khi trang vừa load
   useEffect(() => {
     fetch('http://localhost:5000/api/cart/1')
       .then((response) => response.json())
@@ -19,144 +23,141 @@ const Cart = () => {
       });
   }, []);
 
-  // Tính tổng tiền
-  const totalAmount = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
-
-  const navigate = useNavigate();
-  const handleGoToCheckout = () => {
-    if (cartItems.length === 0) {
-      alert("Giỏ hàng trống trơn!");
-      return;
-    }
-    navigate('/checkout'); // Nhảy sang trang Thanh toán
+  const updateQuantity = (id, delta) => {
+    setCartItems(prevItems => 
+      prevItems.map(item => {
+        if (item.id === id) {
+          const newQty = item.quantity + delta;
+          return { ...item, quantity: newQty > 0 ? newQty : 1 }; 
+        }
+        return item;
+      })
+    );
   };
 
-  if (isLoading) {
-    return <h2 style={{ textAlign: 'center', marginTop: '50px', color: '#4caf50' }}>⏳ Đang tải vườn ươm...</h2>;
-  }
+  const removeItem = (id) => {
+    if(window.confirm("Bạn có chắc muốn bỏ sản phẩm này khỏi giỏ?")) {
+      setCartItems(prevItems => prevItems.filter(item => item.id !== id));
+    }
+  };
+
+  // Logic tính tiền mới: Cập nhật phí vận chuyển ngay tại giỏ hàng
+  const subTotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+  const shippingFee = shippingType === 'standard' ? 22000 : 0; 
+  const totalAmount = subTotal + shippingFee;
+
+  const handleGoToCheckout = () => {
+    if (cartItems.length === 0) return alert("Giỏ hàng đang trống!");
+    // TRUYỀN DỮ LIỆU: Đẩy cả giỏ hàng và kiểu giao hàng sang trang Checkout
+    navigate('/checkout', { state: { cartItems, shippingType } });
+  };
+
+  if (isLoading) return <h2 style={{ textAlign: 'center', marginTop: '50px', color: '#4caf50' }}>⏳ Đang tải vườn ươm...</h2>;
 
   return (
-    <div style={{ 
-      padding: '30px', 
-      maxWidth: '900px', 
-      margin: '40px auto', 
-      fontFamily: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif', 
-      backgroundColor: '#f9fdfa', 
-      borderRadius: '20px', 
-      boxShadow: '0 10px 30px rgba(76, 175, 80, 0.1)', 
-      border: '1px solid #e8f5e9' 
-    }}>
-      
-      <h2 style={{ 
-        color: '#2e7d32', 
-        borderBottom: '2px dashed #a5d6a7', 
-        paddingBottom: '15px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '10px'
-      }}>
-        Giỏ hàng Nông Sản 🌱
-      </h2>
+    <div className="cart-page">
+      <h2 className="cart-header">Giỏ hàng của bạn 🌱</h2>
 
       {cartItems.length === 0 ? (
-        <p style={{ textAlign: 'center', fontSize: '18px', color: '#666', padding: '40px 20px' }}>
-          Giỏ hàng của bạn đang trống. Hãy thêm chút màu xanh nhé!
-        </p>
+        <div style={{ textAlign: 'center', padding: '50px', backgroundColor: 'white', borderRadius: '8px' }}>
+          <p style={{ fontSize: '18px', color: '#666' }}>Giỏ hàng chưa có sản phẩm nào.</p>
+          <Link to="/" style={{ color: '#4caf50', fontWeight: 'bold', textDecoration: 'none' }}>&larr; Tiếp tục mua sắm</Link>
+        </div>
       ) : (
-        <table style={{ 
-          width: '100%', 
-          borderCollapse: 'collapse', 
-          marginTop: '25px', 
-          backgroundColor: 'white', 
-          borderRadius: '12px', 
-          overflow: 'hidden',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-        }}>
-          <thead>
-            <tr style={{ backgroundColor: '#4caf50', color: 'white', textAlign: 'left' }}>
-              <th style={{ padding: '18px 15px' }}>Sản phẩm tươi sạch</th>
-              <th style={{ padding: '18px 15px', textAlign: 'center' }}>Đơn giá</th>
-              <th style={{ padding: '18px 15px', textAlign: 'center' }}>Số lượng</th>
-              <th style={{ padding: '18px 15px', textAlign: 'right' }}>Thành tiền</th>
-            </tr>
-          </thead>
-          <tbody>
-            {cartItems.map((item, index) => (
-              <tr key={item.id} style={{ 
-                borderBottom: '1px solid #e8f5e9', 
-                backgroundColor: index % 2 === 0 ? '#ffffff' : '#fcfdfc',
-                transition: 'background-color 0.3s'
-              }}>
-                <td style={{ padding: '18px 15px', color: '#1b5e20', fontWeight: '600', fontSize: '16px' }}>
-                  {item.name}
-                </td>
-                <td style={{ padding: '18px 15px', textAlign: 'center', color: '#666' }}>
-                  {item.price.toLocaleString()} đ
-                </td>
-                <td style={{ padding: '18px 15px', textAlign: 'center' }}>
-                   <span style={{ 
-                     padding: '6px 16px', 
-                     backgroundColor: '#e8f5e9', 
-                     borderRadius: '20px', 
-                     color: '#2e7d32', 
-                     fontWeight: 'bold',
-                     border: '1px solid #c8e6c9'
-                   }}>
-                     {item.quantity}
-                   </span>
-                </td>
-                <td style={{ padding: '18px 15px', textAlign: 'right', fontWeight: 'bold', color: '#e65100', fontSize: '16px' }}>
-                  {(item.price * item.quantity).toLocaleString()} đ
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="cart-layout">
+          
+          <div className="cart-left">
+            <table className="cart-table">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>Sản phẩm</th>
+                  <th>Giá</th>
+                  <th>Số lượng</th>
+                  <th>Tạm tính</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cartItems.map((item) => (
+                  <tr key={item.id} className="cart-row">
+                    <td className="cart-col-action">
+                      <button onClick={() => removeItem(item.id)} className="btn-remove" title="Xóa">🗑️</button>
+                    </td>
+                    <td className="cart-col-product">
+                      <div className="product-icon">
+                        {item.name.toLowerCase().includes('cà rốt') ? '🥕' : item.name.toLowerCase().includes('xoài') ? '🥭' : '🥬'}
+                      </div>
+                      <div>
+                        <h4 className="product-name">{item.name}</h4>
+                        <span style={{ fontSize: '12px', color: '#888' }}>Loại: 1 kg</span>
+                      </div>
+                    </td>
+                    <td className="cart-col-price">{item.price.toLocaleString()} đ</td>
+                    <td className="cart-col-qty">
+                      <div className="qty-control">
+                        <button onClick={() => updateQuantity(item.id, -1)} className="qty-btn">-</button>
+                        <input type="text" readOnly value={item.quantity} className="qty-input" />
+                        <button onClick={() => updateQuantity(item.id, 1)} className="qty-btn">+</button>
+                      </div>
+                    </td>
+                    <td className="cart-col-total">{(item.price * item.quantity).toLocaleString()} đ</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <div className="promo-section">
+              <h3 className="promo-title">Mã ưu đãi</h3>
+              <div className="promo-input-group">
+                <input type="text" placeholder="Nhập mã ưu đãi (nếu có)" className="promo-input" />
+                <button className="btn-apply-promo">Áp dụng</button>
+              </div>
+            </div>
+          </div>
+
+          <div className="cart-right">
+            <div className="summary-box">
+              <h3 className="summary-title">Tổng cộng giỏ hàng</h3>
+              
+              <div className="summary-row">
+                <span>Tạm tính</span>
+                <span style={{ fontWeight: 'bold', color: '#333' }}>{subTotal.toLocaleString()} đ</span>
+              </div>
+
+              <div className="shipping-options">
+                <div style={{ fontWeight: 'bold', marginBottom: '10px', fontSize: '14px' }}>Giao hàng</div>
+                {/* Thay đổi State khi click radio */}
+                <label className="shipping-label">
+                  <input 
+                    type="radio" name="shipping" 
+                    checked={shippingType === 'standard'} 
+                    onChange={() => setShippingType('standard')} 
+                  />
+                  <span>Giao tiêu chuẩn (Áp dụng phí giao hàng 22.000đ)</span>
+                </label>
+                <label className="shipping-label">
+                  <input 
+                    type="radio" name="shipping" 
+                    checked={shippingType === 'store'} 
+                    onChange={() => setShippingType('store')} 
+                  />
+                  <span>Giao tại cửa hàng (Nhận hàng trực tiếp, không tính phí)</span>
+                </label>
+              </div>
+
+              <div className="summary-total">
+                <span>Tổng</span>
+                <span className="summary-total-val">{totalAmount.toLocaleString()} đ</span>
+              </div>
+
+              <button onClick={handleGoToCheckout} className="btn-checkout">
+                Tiến hành thanh toán
+              </button>
+            </div>
+          </div>
+
+        </div>
       )}
-
-      <div style={{ 
-        marginTop: '30px', 
-        textAlign: 'right', 
-        padding: '25px', 
-        backgroundColor: '#e8f5e9', 
-        borderRadius: '15px',
-        border: '1px dashed #81c784'
-      }}>
-        <h3 style={{ margin: '0 0 15px 0', color: '#2e7d32', fontSize: '20px' }}>
-          Tổng thanh toán: <span style={{ color: '#d32f2f', fontSize: '28px', marginLeft: '10px' }}>{totalAmount.toLocaleString()} đ</span>
-        </h3>
-        <button 
-          onClick={handleGoToCheckout}
-          style={{ 
-            padding: '14px 30px', 
-            backgroundColor: '#ff9800', 
-            color: 'white', 
-            border: 'none', 
-            borderRadius: '30px', 
-            cursor: 'pointer', 
-            fontSize: '18px',
-            fontWeight: 'bold',
-            boxShadow: '0 4px 15px rgba(255, 152, 0, 0.4)',
-            transition: 'transform 0.2s'
-          }}>
-          Tiến hành thanh toán &rarr;
-        </button>
-      </div>
-
-      <div style={{ marginTop: '25px', textAlign: 'center' }}>
-        <Link to="/" style={{ 
-          textDecoration: 'none', 
-          color: '#4caf50', 
-          fontWeight: 'bold', 
-          fontSize: '16px',
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '5px'
-        }}>
-          &larr; Trở về Vườn ươm (Tiếp tục mua sắm)
-        </Link>
-      </div>
-      
     </div>
   );
 };
