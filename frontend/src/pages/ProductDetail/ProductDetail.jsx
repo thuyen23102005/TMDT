@@ -19,7 +19,7 @@ const ProductDetail = () => {
     ])
     .then(([productData, allProductsData]) => {
       setProduct(productData);
-      const filtered = allProductsData.filter(item => item.id !== parseInt(id)).slice(0, 4);
+      const filtered = allProductsData.filter(item => item.MaSP !== parseInt(id)).slice(0, 4);
       setRelatedProducts(filtered);
       setIsLoading(false);
       setQuantity(1); 
@@ -44,20 +44,20 @@ const ProductDetail = () => {
       <nav className="pd-breadcrumb">
         <Link to="/" style={{ textDecoration: 'none', color: '#2e7d32', fontSize: '20px', fontWeight: 'bold' }}>🌱 Nông Sản Shop</Link>
         <span style={{ margin: '0 10px', color: '#888' }}>/</span>
-        <span style={{ color: '#555' }}>{product.name}</span>
+        <span style={{ color: '#555' }}>{product.TenSP}</span>
       </nav>
 
       <div className="pd-container">
         <div className="pd-card">
           <div className="pd-image">
-             {product.name.toLowerCase().includes('cà rốt') ? '🥕' : product.name.toLowerCase().includes('xoài') ? '🥭' : '🥬'}
+             {product.TenSP.toLowerCase().includes('cà rốt') ? '🥕' : product.TenSP.toLowerCase().includes('xoài') ? '🥭' : '🥬'}
           </div>
 
           <div className="pd-info">
-            <h1 className="pd-title">{product.name}</h1>
+            <h1 className="pd-title">{product.TenSP}</h1>
             <div className="pd-rating">⭐⭐⭐⭐⭐ (0 đánh giá) | <span style={{ color: '#28a745' }}>Đang còn hàng</span></div>
             
-            <div className="pd-price-box"><span className="pd-price">{product.price.toLocaleString()} đ</span></div>
+            <div className="pd-price-box"><span className="pd-price">{Number(product.DonGia).toLocaleString()} đ</span></div>
 
             <div className="pd-variant"><span>Khu vực:</span><button className="btn-outline">Hồ Chí Minh</button></div>
             <div className="pd-variant"><span>Trọng lượng:</span><button className="btn-active">1 kg</button></div>
@@ -78,8 +78,7 @@ const ProductDetail = () => {
           <div className="col-main">
             <SectionHeader title="Mô tả sản phẩm" />
             <div style={{ padding: '20px', color: '#444', lineHeight: '1.6' }}>
-              <h3>Chi tiết {product.name}</h3>
-              <p>{product.description || "Sản phẩm nông sản sạch, đảm bảo 100% tươi ngon, an toàn cho sức khỏe."}</p>
+              <p>{product.MoTa || "Sản phẩm nông sản sạch, đảm bảo 100% tươi ngon, an toàn cho sức khỏe."}</p>
             </div>
           </div>
           <div className="col-side">
@@ -98,13 +97,13 @@ const ProductDetail = () => {
           <div className="related-list">
             {relatedProducts.length > 0 ? (
               relatedProducts.map((item) => (
-                <div key={item.id} className="related-item">
+                <div key={item.MaSP} className="related-item">
                   <div className="related-icon">
-                    {item.name.toLowerCase().includes('cà rốt') ? '🥕' : item.name.toLowerCase().includes('xoài') ? '🥭' : '🥬'}
+                    {item.TenSP.toLowerCase().includes('cà rốt') ? '🥕' : item.TenSP.toLowerCase().includes('xoài') ? '🥭' : '🥬'}
                   </div>
-                  <h4 style={{ color: '#2e7d32', margin: '0 0 10px 0' }}>{item.name}</h4>
-                  <p style={{ color: '#d32f2f', fontWeight: 'bold', margin: '0 0 15px 0' }}>{item.price.toLocaleString()} đ</p>
-                  <Link to={`/product/${item.id}`} className="btn-view-detail">Xem chi tiết</Link>
+                  <h4 style={{ color: '#2e7d32', margin: '0 0 10px 0' }}>{item.TenSP}</h4>
+                  <p style={{ color: '#d32f2f', fontWeight: 'bold', margin: '0 0 15px 0' }}>{Number(item.DonGia).toLocaleString()} đ</p>
+                  <Link to={`/product/${item.MaSP}`} className="btn-view-detail">Xem chi tiết</Link>
                 </div>
               ))
             ) : (
@@ -112,7 +111,6 @@ const ProductDetail = () => {
             )}
           </div>
         </div>
-
       </div>
     </div>
   );
