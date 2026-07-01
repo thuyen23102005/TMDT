@@ -84,7 +84,7 @@ function Product() {
 
                                 <td>{product.DonViTinh}</td>
 
-                                <td>{product.TrangThai}</td>
+                                <td>{product.TrangThai === 1 ? "Đã ẩn" : "Đang bán"}</td>
 
                             </tr>
 

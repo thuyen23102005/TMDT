@@ -88,14 +88,23 @@
   border: 1px solid #ddd;
   border-radius: 4px;
   overflow: hidden;
+  background-color: #fff;
 }
 .qty-btn {
   background-color: #f9f9f9; border: none; padding: 5px 12px; cursor: pointer; font-size: 16px; color: #555;
 }
 .qty-btn:hover { background-color: #eee; }
 .qty-input {
-  width: 40px; border: none; border-left: 1px solid #ddd; border-right: 1px solid #ddd;
-  text-align: center; font-size: 14px;
+  width: 40px; 
+  border: none; 
+  border-left: 1px solid #ddd; 
+  border-right: 1px solid #ddd;
+  text-align: center; 
+  font-size: 14px;
+  color: #333; /* Chỉnh màu chữ đen đậm để hiển thị rõ */
+  background-color: transparent; /* Đồng bộ nền */
+  outline: none; /* Xóa viền đen khi click vào ô input */
+  font-weight: 600; /* Làm số lượng đậm lên một chút cho đẹp */
 }
 
 /* KHU VỰC MÃ GIẢM GIÁ (Bên dưới DS SP) */
