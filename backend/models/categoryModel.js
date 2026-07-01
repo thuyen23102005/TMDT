@@ -1,4 +1,4 @@
-const { connectDB } = require("../config/db");
+const { connectDB, sql } = require("../config/db");
 
 // Lấy tất cả danh mục
 const getAllCategories = async () => {
@@ -14,6 +14,56 @@ const getAllCategories = async () => {
     return result.recordset;
 };
 
+// Thêm danh mục
+const createCategory = async (category) => {
+
+    const pool = await connectDB();
+
+    await pool.request()
+        .input("TenDM", sql.NVarChar, category.TenDM)
+        .input("MoTa", sql.NVarChar, category.MoTa)
+        .query(`
+            INSERT INTO DanhMuc(TenDM, MoTa)
+            VALUES(@TenDM, @MoTa)
+        `);
+
+};
+
+// Cập nhật danh mục
+const updateCategory = async (id, category) => {
+
+    const pool = await connectDB();
+
+    await pool.request()
+        .input("MaDM", sql.Int, id)
+        .input("TenDM", sql.NVarChar, category.TenDM)
+        .input("MoTa", sql.NVarChar, category.MoTa)
+        .query(`
+            UPDATE DanhMuc
+            SET
+                TenDM = @TenDM,
+                MoTa = @MoTa
+            WHERE MaDM = @MaDM
+        `);
+
+};
+// Xóa danh mục
+const deleteCategory = async (id) => {
+
+    const pool = await connectDB();
+
+    await pool.request()
+        .input("MaDM", sql.Int, id)
+        .query(`
+            DELETE FROM DanhMuc
+            WHERE MaDM = @MaDM
+        `);
+
+};
+
 module.exports = {
-    getAllCategories
+    getAllCategories,
+    createCategory,
+    updateCategory,
+    deleteCategory
 };
