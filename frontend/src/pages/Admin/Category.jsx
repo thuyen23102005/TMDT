@@ -1,93 +1,117 @@
 import { useEffect, useState } from "react";
-import { getCategories } from "../../services/categoryApi";
+
+import {
+    getCategories,
+    createCategory,
+    updateCategory,
+    deleteCategory
+} from "../../services/categoryApi";
+
+import CategoryForm from "../../components/Category/CategoryForm";
+import CategoryTable from "../../components/Category/CategoryTable";
 
 function Category() {
 
     const [categories, setCategories] = useState([]);
+    const [editingCategory, setEditingCategory] = useState(null);
 
-
-
-useEffect(() => {
     const fetchCategories = async () => {
         try {
-            const response = await getCategories();
-            setCategories(response.data);
+
+            const res = await getCategories();
+
+            setCategories(res.data);
+
         } catch (error) {
-            console.error(error);
+
+            console.log(error);
+
         }
     };
 
-    fetchCategories();
-}, []);
+    useEffect(() => {
+        fetchCategories();
+    }, []);
 
+    const handleAdd = async (data) => {
 
+        try {
+
+            await createCategory(data);
+
+            alert("Thêm thành công!");
+
+            fetchCategories();
+
+        } catch (error) {
+
+            console.log(error);
+
+        }
+
+        
+    };
+    const handleUpdate = async (id, data) => {
+
+        try {
+
+            await updateCategory(id, data);
+
+            alert("Cập nhật thành công");
+
+            fetchCategories();
+
+            setEditingCategory(null);
+
+        } catch (error) {
+
+            console.log(error);
+
+        }
+
+    };
+    const handleDelete = async (id) => {
+
+        const confirmDelete = window.confirm(
+            "Bạn có chắc muốn xóa danh mục này không?"
+        );
+
+        if (!confirmDelete) return;
+
+        try {
+
+            await deleteCategory(id);
+
+            alert("Xóa thành công!");
+
+            fetchCategories();
+
+        } catch (error) {
+
+            console.log(error);
+
+        }
+
+    };
     return (
 
         <div className="container">
 
-            <div className="d-flex justify-content-between align-items-center mb-3">
+            <h2 className="mb-4">
+                Quản lý danh mục
+            </h2>
 
-                <h2>Quản lý danh mục</h2>
+            <CategoryForm
+                onAdd={handleAdd}
+                onUpdate={handleUpdate}
+                editingCategory={editingCategory}
+            />
 
-                <button className="btn btn-success">
-                    Thêm danh mục
-                </button>
-
-            </div>
-
-            <table className="table table-bordered table-hover">
-
-                <thead className="table-success">
-
-                    <tr>
-
-                        <th>Mã</th>
-
-                        <th>Tên danh mục</th>
-
-                        <th>Mô tả</th>
-
-                        <th width="150">
-                            Thao tác
-                        </th>
-
-                    </tr>
-
-                </thead>
-
-                <tbody>
-
-                    {
-                        categories.map(category => (
-
-                            <tr key={category.MaDM}>
-
-                                <td>{category.MaDM}</td>
-
-                                <td>{category.TenDM}</td>
-
-                                <td>{category.MoTa}</td>
-
-                                <td>
-
-                                    <button className="btn btn-warning btn-sm me-2">
-                                        Sửa
-                                    </button>
-
-                                    <button className="btn btn-danger btn-sm">
-                                        Xóa
-                                    </button>
-
-                                </td>
-
-                            </tr>
-
-                        ))
-                    }
-
-                </tbody>
-
-            </table>
+            <CategoryTable
+                categories={categories}
+                onEdit={setEditingCategory}
+                onDelete={handleDelete}
+            />
 
         </div>
 

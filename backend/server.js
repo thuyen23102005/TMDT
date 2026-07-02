@@ -7,6 +7,10 @@ const { connectDB } = require("./config/db");
 // Import Routes
 const categoryRoutes = require("./routes/categoryRoutes");
 
+const productRoutes = require('./routes/productRoutes');
+
+const cartRoutes = require('./routes/cartRoutes');
+
 const app = express();
 
 // Middleware
@@ -18,6 +22,10 @@ connectDB();
 
 // Routes
 app.use("/api/categories", categoryRoutes);
+
+app.use('/api/products', productRoutes);
+
+app.use('/api/cart', cartRoutes);
 
 // Test API
 app.get("/", (req, res) => {
