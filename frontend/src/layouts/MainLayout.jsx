@@ -15,6 +15,7 @@ const MainLayout = () => {
         </div>
         
         <div className="nav-links">
+          <Link to="/products" className="link-admin">Sản phẩm</Link>
           <Link to="/admin" className="link-admin">Trang Quản Trị</Link>
           <Link to="/cart" className="link-cart">🛒 Giỏ hàng</Link>
         </div>
