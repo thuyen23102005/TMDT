@@ -40,7 +40,12 @@ function CategoryForm({
             setTenDM(editingCategory.TenDM);
             setMoTa(editingCategory.MoTa);
 
-        }
+        }else {
+
+        setTenDM("");
+        setMoTa("");
+
+    }
 
     }, [editingCategory]);
     return (

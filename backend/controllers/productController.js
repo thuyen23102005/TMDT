@@ -23,4 +23,80 @@ const getProductById = async (req, res) => {
     }
 };
 
-module.exports = { getAllProducts, getProductById };
+const createProduct = async (req, res) => {
+
+    try {
+
+        const product = {
+            ...req.body,
+            HinhAnh: req.file ? req.file.filename : null
+        };
+
+        await productModel.createProduct(product);
+
+        res.json({
+            message: "Thêm sản phẩm thành công"
+        });
+
+    } catch (err) {
+
+        console.log(err);
+        res.status(500).json(err);
+
+    }
+
+};
+
+const updateProduct = async (req, res) => {
+
+    try {
+
+        const id = req.params.id;
+
+        const product = {
+            ...req.body,
+            HinhAnh: req.file ? req.file.filename : null
+        };
+
+        await productModel.updateProduct(id, product);
+
+        res.json({
+            message: "Cập nhật thành công"
+        });
+
+    } catch (error) {
+
+        console.log(error);
+
+        res.status(500).json(error);
+
+    }
+
+};
+
+const deleteProduct = async (req, res) => {
+
+    try {
+
+        await productModel.deleteProduct(req.params.id);
+
+        res.json({
+            message: "Xóa thành công"
+        });
+
+    } catch (err) {
+
+        console.log(err);
+
+        res.status(500).json(err);
+
+    }
+
+};
+module.exports = {
+    getAllProducts,
+    getProductById,
+    createProduct,
+    updateProduct,
+    deleteProduct
+};
