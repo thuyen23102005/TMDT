@@ -96,11 +96,17 @@ function Category() {
     return (
 
         <div className="container">
-
-            <h2 className="mb-4">
-                Quản lý danh mục
-            </h2>
-
+            <div className="d-flex justify-content-between mb-3">
+                <h2>
+                    Quản lý danh mục
+                </h2>
+                <button
+                    className="btn btn-success"
+                    onClick={() => setEditingCategory(null)}
+                >
+                    + Thêm danh mục
+                </button>
+            </div>          
             <CategoryForm
                 onAdd={handleAdd}
                 onUpdate={handleUpdate}

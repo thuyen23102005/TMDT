@@ -12,8 +12,6 @@ function CategoryTable({
 
                 <tr>
 
-                    <th>Mã</th>
-
                     <th>Tên danh mục</th>
 
                     <th>Mô tả</th>
@@ -34,7 +32,6 @@ function CategoryTable({
 
                         <tr key={category.MaDM}>
 
-                            <td>{category.MaDM}</td>
 
                             <td>{category.TenDM}</td>
 
