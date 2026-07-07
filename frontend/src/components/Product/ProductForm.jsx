@@ -7,20 +7,23 @@ function ProductForm({
 }) {
 
     const [selectedFile, setSelectedFile] = useState(null);
+    const [formData, setFormData] = useState({
+        TenSP: "",
+        MaDM: "",
+        DonGia: "",
+        MoTa: "",
+        HinhAnh: "",
+        SoLuongTon: "",
+        DonViTinh: "",
+        TrangThai: true
+    });
     useEffect(() => {
 
         if (editingProduct) {
 
-            setFormData({
-                TenSP: editingProduct.TenSP,
-                MaDM: editingProduct.MaDM,
-                DonGia: editingProduct.DonGia,
-                MoTa: editingProduct.MoTa,
-                HinhAnh: editingProduct.HinhAnh,
-                SoLuongTon: editingProduct.SoLuongTon,
-                DonViTinh: editingProduct.DonViTinh,
-                TrangThai: editingProduct.TrangThai
-            });
+            setFormData(editingProduct);
+
+            setSelectedFile(null);
 
         } else {
 
@@ -40,6 +43,7 @@ function ProductForm({
         }
 
     }, [editingProduct]);
+
     const handleImageChange = (e) => {
 
     const file = e.target.files[0];
@@ -48,17 +52,7 @@ function ProductForm({
     setSelectedFile(file);
 
 };
-    const [formData, setFormData] = useState({
-        TenSP: "",
-        MaDM: "",
-        DonGia: "",
-        MoTa: "",
-        HinhAnh: "",
-        SoLuongTon: "",
-        DonViTinh: "",
-        TrangThai: true
-    });
-    
+
 
     const handleChange = (e) => {
 
@@ -85,11 +79,15 @@ function ProductForm({
         data.append("DonViTinh", formData.DonViTinh);
         data.append("TrangThai", formData.TrangThai);
 
-        data.append("image", selectedFile);
+        // lưu tên ảnh cũ
+        data.append("HinhAnh", formData.HinhAnh);
 
-        onAdd(data);
+        // chỉ upload nếu có chọn file mới
+        if (selectedFile) {
+            data.append("image", selectedFile);
 
-    };
+            };
+    }
 
     return (
 
@@ -172,15 +170,19 @@ function ProductForm({
                         accept="image/*"
                         onChange={handleImageChange}
                     />
-
                     {
-                        selectedFile && (
-                            <img
-                                src={URL.createObjectURL(selectedFile)}
-                                alt="Preview"
-                                width="120"
-                                className="mt-2 rounded border"
-                            />
+                        formData.HinhAnh && (
+                            <div className="mb-3">
+
+                                <p>Ảnh hiện tại:</p>
+
+                                <img
+                                    src={`http://localhost:5000/uploads/${formData.HinhAnh}`}
+                                    width="120"
+                                    style={{ borderRadius: 8 }}
+                                />
+
+                            </div>
                         )
                     }
 

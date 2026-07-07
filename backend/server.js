@@ -11,12 +11,18 @@ const productRoutes = require('./routes/productRoutes');
 
 const cartRoutes = require('./routes/cartRoutes');
 
+const orderRoutes = require("./routes/orderRoutes");
+
+
 const app = express();
 
 // Middleware
 app.use(cors());
+
 app.use(express.json());
+
 app.use("/uploads", express.static("uploads"));
+
 // Kết nối Database
 connectDB();
 
@@ -26,6 +32,8 @@ app.use("/api/categories", categoryRoutes);
 app.use('/api/products', productRoutes);
 
 app.use('/api/cart', cartRoutes);
+
+app.use("/api/orders", orderRoutes);
 
 // Test API
 app.get("/", (req, res) => {
