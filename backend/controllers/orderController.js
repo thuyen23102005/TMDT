@@ -37,7 +37,35 @@ const getOrderDetail = async (req,res)=>{
     }
 
 };
+const updateStatus = async (req,res)=>{
+
+    try{
+
+        await orderModel.updateStatus(
+
+            req.params.id,
+
+            req.body.TrangThaiDonHang
+
+        );
+
+        res.json({
+
+            message:"Cập nhật thành công"
+
+        });
+
+    }catch(err){
+
+        console.log(err);
+
+        res.status(500).json(err);
+
+    }
+
+};
 module.exports={
     getAllOrders,
-    getOrderDetail
+    getOrderDetail,
+    updateStatus
 }

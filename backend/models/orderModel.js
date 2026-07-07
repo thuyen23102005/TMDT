@@ -1,4 +1,4 @@
-const { connectDB } = require("../config/db");
+const { connectDB, sql } = require("../config/db");
 
 const getAllOrders = async () => {
 
@@ -44,8 +44,25 @@ const getOrderDetail = async (id) => {
     return result.recordset;
 
 };
+const updateStatus = async (id, status) => {
 
+    const pool = await connectDB();
+
+    await pool.request()
+
+        .input("MaDH", id)
+
+        .input("TrangThaiDonHang", status)
+
+        .query(`
+            UPDATE DonHang
+            SET TrangThaiDonHang = @TrangThaiDonHang
+            WHERE MaDH = @MaDH
+        `);
+
+};
 module.exports = {
     getAllOrders,
-    getOrderDetail
+    getOrderDetail,
+    updateStatus
 };

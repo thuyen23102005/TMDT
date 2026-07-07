@@ -8,11 +8,16 @@ import { getOrderDetail } from "../../services/orderApi";
 
 import OrderDetailModal from "../../components/Order/OrderDetailModal";
 
+import StatusModal from "../../components/Order/StatusModal";
+
+import { updateOrderStatus } from "../../services/orderApi";
+
 function Order() {
 
     const [orders, setOrders] = useState([]);
     const [details, setDetails] = useState([]);
     const [showModal, setShowModal] = useState(false);
+    const [editingOrder, setEditingOrder] = useState(null);
 
     useEffect(() => {
 
@@ -38,21 +43,41 @@ function Order() {
 
     const handleDetail = async (id) => {
 
-    try {
+        try {
 
-        const res = await getOrderDetail(id);
+            const res = await getOrderDetail(id);
 
-        setDetails(res.data);
+            setDetails(res.data);
 
-        setShowModal(true);
+            setShowModal(true);
 
-    } catch (error) {
+        } catch (error) {
 
-        console.log(error);
+            console.log(error);
 
-    }
+        }
 
-};
+    };
+
+    const handleUpdateStatus = async (id, data) => {
+
+        try {
+
+            await updateOrderStatus(id, data);
+
+            alert("Cập nhật thành công!");
+
+            setEditingOrder(null);
+
+            fetchOrders();
+
+        } catch (error) {
+
+            console.log(error);
+
+        }
+
+    };
     return (
 
         <div className="container-fluid">
@@ -69,6 +94,8 @@ function Order() {
 
                 onDetail={handleDetail}
 
+                onUpdate={setEditingOrder}
+
             />
             {
                 showModal && (
@@ -77,10 +104,22 @@ function Order() {
 
                         details={details}
 
+                        onSave={handleUpdateStatus}
+
                         onClose={() => setShowModal(false)}
 
                     />
 
+                )
+            }
+            
+            {
+                editingOrder && (
+                    <StatusModal
+                        order={editingOrder}
+                        onSave={handleUpdateStatus}
+                        onClose={() => setEditingOrder(null)}
+                    />
                 )
             }
         </div>

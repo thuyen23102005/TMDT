@@ -1,4 +1,4 @@
-function OrderTable({ orders,onDetail }) {
+function OrderTable({ orders, onDetail, onUpdate }) {
 
     return (
 
@@ -59,9 +59,15 @@ function OrderTable({ orders,onDetail }) {
                                 </button>
 
                                 <button
+
                                     className="btn btn-warning btn-sm"
+
+                                    onClick={() => onUpdate(order)}
+
                                 >
+
                                     Cập nhật
+
                                 </button>
 
                             </td>
