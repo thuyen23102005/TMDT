@@ -43,12 +43,13 @@ const Home = () => {
             {products.map(product => (
               <div key={product.MaSP} className="product-card">
 
-                  <div className="product-icon">
-                      {product.TenSP.toLowerCase().includes("cà rốt")
-                          ? "🥕"
-                          : product.TenSP.toLowerCase().includes("xoài")
-                          ? "🥭"
-                          : "🥬"}
+                  <div className="product-icon" style={{ padding: 0, overflow: 'hidden', backgroundColor: 'transparent' }}>
+                      <img 
+                        src={`http://localhost:5000/uploads/${product.HinhAnh || product.image || product.hinh_anh}`} 
+                        alt={product.TenSP} 
+                        style={{ width: '100%', height: '150px', objectFit: 'contain' }}
+                        onError={(e) => { e.target.src = 'https://via.placeholder.com/150?text=No+Image' }}
+                      />
                   </div>
 
                   <h4 className="product-name">

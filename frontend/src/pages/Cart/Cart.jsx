@@ -71,8 +71,13 @@ const Cart = () => {
                       <button onClick={() => removeItem(item.id)} className="btn-remove">🗑️</button>
                     </td>
                     <td className="cart-col-product">
-                      <div className="product-icon">
-                        {item.name.toLowerCase().includes('cà rốt') ? '🥕' : '🥭'}
+                      <div className="product-icon" style={{ padding: 0, width: '60px', height: '60px', flexShrink: 0, overflow: 'hidden', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: 'transparent' }}>
+                        <img 
+                          src={`http://localhost:5000/uploads/${item.HinhAnh || item.image || item.hinh_anh}`} 
+                          alt={item.name} 
+                          style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                          onError={(e) => { e.target.src = 'https://via.placeholder.com/60?text=No+Img' }}
+                        />
                       </div>
                       <h4 className="product-name">{item.name}</h4>
                     </td>

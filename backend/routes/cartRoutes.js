@@ -7,4 +7,6 @@ router.get('/:maKH', cartController.getCartByCustomerId);
 
 router.post('/checkout', cartController.checkoutCart);
 
+router.post('/add', cartController.addToCart);
+
 module.exports = router;
