@@ -119,10 +119,10 @@ const Products = () => {
                   <div className="product-card-image">
                     {product.HinhAnh ? (
                       <img
-                        src={product.HinhAnh}
+                        src={`http://localhost:5000/uploads/${product.HinhAnh}`}
                         alt={product.TenSP}
                         className="product-card-img"
-                        onError={(e) => { e.target.style.display = 'none'; }}
+                        onError={(e) => { e.target.src = 'https://via.placeholder.com/150?text=No+Image'; }}
                       />
                     ) : (
                       <span className="product-card-icon">{getIcon(product.TenSP)}</span>
