@@ -32,7 +32,34 @@ const ProductDetail = () => {
 
   const increaseQty = () => setQuantity(prev => prev + 1);
   const decreaseQty = () => setQuantity(prev => (prev > 1 ? prev - 1 : 1));
-  const handleBuyNow = () => navigate('/cart');
+  
+  const handleAddToCart = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/cart/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          maKH: 1,
+          maSP: product.MaSP,
+          soLuong: quantity
+        })
+      });
+
+      if (response.ok) {
+        alert(`🛒 Đã thêm ${quantity} ${product.TenSP} vào giỏ hàng thành công!`);
+      } else {
+        alert("Có lỗi xảy ra khi thêm vào giỏ.");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Lỗi kết nối đến server.");
+    }
+  };
+
+  const handleBuyNow = async () => {
+    await handleAddToCart();
+    navigate('/cart');
+  };
 
   const SectionHeader = ({ title }) => <div className="section-title">{title}</div>;
 
@@ -49,8 +76,13 @@ const ProductDetail = () => {
 
       <div className="pd-container">
         <div className="pd-card">
-          <div className="pd-image">
-             {product.TenSP.toLowerCase().includes('cà rốt') ? '🥕' : product.TenSP.toLowerCase().includes('xoài') ? '🥭' : '🥬'}
+          <div className="pd-image" style={{ padding: 0, overflow: 'hidden', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
+            <img 
+              src={`http://localhost:5000/uploads/${product.HinhAnh || product.image || product.hinh_anh}`} 
+              alt={product.TenSP} 
+              style={{ maxWidth: '100%', maxHeight: '350px', objectFit: 'contain' }}
+              onError={(e) => { e.target.src = 'https://via.placeholder.com/350?text=No+Image' }}
+            />
           </div>
 
           <div className="pd-info">
@@ -68,7 +100,7 @@ const ProductDetail = () => {
                 <div className="qty-input">{quantity}</div>
                 <button onClick={increaseQty} className="qty-btn">+</button>
               </div>
-              <button className="btn-add-cart">🛒 Thêm vào giỏ</button>
+              <button onClick={handleAddToCart} className="btn-add-cart">🛒 Thêm vào giỏ</button>
               <button onClick={handleBuyNow} className="btn-buy-now">Mua ngay</button>
             </div>
           </div>
@@ -98,10 +130,15 @@ const ProductDetail = () => {
             {relatedProducts.length > 0 ? (
               relatedProducts.map((item) => (
                 <div key={item.MaSP} className="related-item">
-                  <div className="related-icon">
-                    {item.TenSP.toLowerCase().includes('cà rốt') ? '🥕' : item.TenSP.toLowerCase().includes('xoài') ? '🥭' : '🥬'}
+                  <div className="related-icon" style={{ padding: 0, overflow: 'hidden', height: '120px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                    <img 
+                      src={`http://localhost:5000/uploads/${item.HinhAnh || item.image || item.hinh_anh}`} 
+                      alt={item.TenSP} 
+                      style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                      onError={(e) => { e.target.src = 'https://via.placeholder.com/120?text=No+Image' }}
+                    />
                   </div>
-                  <h4 style={{ color: '#2e7d32', margin: '0 0 10px 0' }}>{item.TenSP}</h4>
+                  <h4 style={{ color: '#2e7d32', margin: '10px 0 10px 0' }}>{item.TenSP}</h4>
                   <p style={{ color: '#d32f2f', fontWeight: 'bold', margin: '0 0 15px 0' }}>{Number(item.DonGia).toLocaleString()} đ</p>
                   <Link to={`/product/${item.MaSP}`} className="btn-view-detail">Xem chi tiết</Link>
                 </div>
