@@ -17,7 +17,7 @@ const config = {
 
 async function connectDB() {
     try {
-        console.log(config);
+        console.log("DEBUG PASSWORD:", JSON.stringify(config.password));
         const pool = await sql.connect(config);
         console.log("✅ Connected to SQL Server");
         return pool;

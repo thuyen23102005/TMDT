@@ -9,6 +9,7 @@ const categoryRoutes = require("./routes/categoryRoutes");
 
 const app = express();
 
+const authRoutes = require("./routes/authRoutes");   
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -18,6 +19,7 @@ connectDB();
 
 // Routes
 app.use("/api/categories", categoryRoutes);
+app.use("/api/auth", authRoutes); 
 
 // Test API
 app.get("/", (req, res) => {
