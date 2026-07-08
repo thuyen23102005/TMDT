@@ -5,19 +5,22 @@ const getAllProducts = async () => {
     const pool = await connectDB();
 
     const result = await pool.request().query(`
-        SELECT 
-            sp.MaSP, 
-            sp.TenSP, 
-            sp.DonGia, 
-            sp.MoTa, 
+        SELECT
+            sp.MaSP,
+            sp.TenSP,
+            sp.MaDM,
+            sp.DonGia,
+            sp.MoTa,
             sp.HinhAnh,
-            sp.SoLuongTon, 
-            sp.DonViTinh, 
-            sp.TrangThai,  
-            dm.TenDM 
+            sp.SoLuongTon,
+            sp.DonViTinh,
+            sp.TrangThai,
+            dm.TenDM
         FROM SanPham sp
-        INNER JOIN DanhMuc dm ON sp.MaDM = dm.MaDM
-    `);
+        INNER JOIN DanhMuc dm
+        ON sp.MaDM = dm.MaDM
+        WHERE sp.TrangThai = 1
+        `);
     
     return result.recordset;
 };
@@ -117,7 +120,8 @@ const deleteProduct = async (id) => {
     await pool.request()
         .input("MaSP", sql.Int, id)
         .query(`
-            DELETE FROM SanPham
+            UPDATE SanPham
+            SET TrangThai = 0
             WHERE MaSP = @MaSP
         `);
 

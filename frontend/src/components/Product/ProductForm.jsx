@@ -17,6 +17,8 @@ function ProductForm({
         DonViTinh: "",
         TrangThai: true
     });
+    const [preview, setPreview] = useState("");
+
     useEffect(() => {
 
         if (editingProduct) {
@@ -24,6 +26,10 @@ function ProductForm({
             setFormData(editingProduct);
 
             setSelectedFile(null);
+
+            setPreview(
+                `http://localhost:5000/uploads/${editingProduct.HinhAnh}`
+            );
 
         } else {
 
@@ -39,6 +45,7 @@ function ProductForm({
             });
 
             setSelectedFile(null);
+            setPreview("");
 
         }
 
@@ -46,12 +53,15 @@ function ProductForm({
 
     const handleImageChange = (e) => {
 
-    const file = e.target.files[0];
+        const file = e.target.files[0];
 
-    
-    setSelectedFile(file);
+        if (!file) return;
 
-};
+        setSelectedFile(file);
+
+        setPreview(URL.createObjectURL(file));
+
+    };
 
 
     const handleChange = (e) => {
@@ -87,7 +97,29 @@ function ProductForm({
             data.append("image", selectedFile);
 
             };
-    }
+        console.log(formData);
+        console.log(formData.MaDM);
+        onAdd(data);    
+        resetForm();      
+};
+const resetForm = () => {
+
+    setFormData({
+        TenSP: "",
+        MaDM: "",
+        DonGia: "",
+        MoTa: "",
+        HinhAnh: "",
+        SoLuongTon: "",
+        DonViTinh: "",
+        TrangThai: true
+    });
+
+    setSelectedFile(null);
+
+    setPreview("");
+
+};
 
     return (
 
@@ -170,30 +202,48 @@ function ProductForm({
                         accept="image/*"
                         onChange={handleImageChange}
                     />
-                    {
-                        formData.HinhAnh && (
-                            <div className="mb-3">
+                    {!selectedFile && formData.HinhAnh && (
+                        <div className="mb-3">
+                            <p>
+                                <strong>Ảnh hiện tại:</strong> {formData.HinhAnh}
+                            </p>
 
-                                <p>Ảnh hiện tại:</p>
+                            <img
+                                src={`http://localhost:5000/uploads/${formData.HinhAnh}`}
+                                width="120"
+                                style={{ borderRadius: 8 }}
+                            />
+                        </div>
+                    )}
+                    {selectedFile && (
+                        <div className="mb-3">
+                            <p>
+                                <strong>Ảnh mới:</strong> {selectedFile.name}
+                            </p>
 
-                                <img
-                                    src={`http://localhost:5000/uploads/${formData.HinhAnh}`}
-                                    width="120"
-                                    style={{ borderRadius: 8 }}
-                                />
-
-                            </div>
-                        )
-                    }
-
-                    <textarea
+                            <img
+                                src={preview}
+                                width="120"
+                                style={{ borderRadius: 8 }}
+                            />
+                        </div>
+                    )}
+                                        <textarea
                         className="form-control mb-3"
                         placeholder="Mô tả"
                         name="MoTa"
                         value={formData.MoTa}
                         onChange={handleChange}
                     />
-
+                    <select
+                        className="form-control mb-2"
+                        name="TrangThai"
+                        value={formData.TrangThai}
+                        onChange={handleChange}
+                    >
+                        <option value={0}>Đang bán</option>
+                        <option value={1}>Đã ẩn</option>
+                    </select>
                     <button className="btn btn-success">
 
                         {
