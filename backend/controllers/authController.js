@@ -1,0 +1,75 @@
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const authModel = require("../models/authModel");
+
+// ===== ĐĂNG KÝ =====
+const register = async (req, res) => {
+    try {
+        const { hoTen, email, soDienThoai, password } = req.body;
+
+        if (!hoTen || !email || !soDienThoai || !password) {
+            return res.status(400).json({ message: "Vui lòng nhập đầy đủ thông tin" });
+        }
+
+        const existingUser = await authModel.findByEmail(email);
+        if (existingUser) {
+            return res.status(400).json({ message: "Email đã được sử dụng" });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Dùng email làm tên đăng nhập cho đơn giản
+        const maTK = await authModel.createTaiKhoan(email, hashedPassword, email, soDienThoai);
+        await authModel.createKhachHang(maTK, hoTen);
+
+        res.status(201).json({ message: "Đăng ký thành công" });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Lỗi máy chủ" });
+    }
+};
+
+// ===== ĐĂNG NHẬP =====
+const login = async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({ message: "Vui lòng nhập email và mật khẩu" });
+        }
+
+        const user = await authModel.findByEmail(email);
+        if (!user) {
+            return res.status(400).json({ message: "Email hoặc mật khẩu không đúng" });
+        }
+
+        const isMatch = await bcrypt.compare(password, user.MatKhau);
+        if (!isMatch) {
+            return res.status(400).json({ message: "Email hoặc mật khẩu không đúng" });
+        }
+
+        const token = jwt.sign(
+            { maTK: user.MaTK, email: user.Email, vaiTro: user.VaiTro },
+            process.env.JWT_SECRET,
+            { expiresIn: "7d" }
+        );
+
+        res.status(200).json({
+            message: "Đăng nhập thành công",
+            token,
+            user: {
+                maTK: user.MaTK,
+                email: user.Email,
+                vaiTro: user.VaiTro,
+            },
+        });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Lỗi máy chủ" });
+    }
+};
+
+module.exports = {
+    register,
+    login,
+};

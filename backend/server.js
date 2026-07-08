@@ -16,6 +16,7 @@ const orderRoutes = require("./routes/orderRoutes");
 
 const app = express();
 
+const authRoutes = require("./routes/authRoutes");   
 // Middleware
 app.use(cors());
 
@@ -28,6 +29,7 @@ connectDB();
 
 // Routes
 app.use("/api/categories", categoryRoutes);
+app.use("/api/auth", authRoutes); 
 
 app.use('/api/products', productRoutes);
 
