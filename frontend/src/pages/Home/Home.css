@@ -1,0 +1,112 @@
+/* src/pages/Home/Home.css */
+
+.home-container {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f4f9f5;
+  min-height: 100vh;
+}
+
+.hero-section {
+  background-color: #e8f5e9;
+  padding: 80px 20px;
+  text-align: center;
+  border-bottom: 1px solid #c8e6c9;
+  background-image: linear-gradient(to right bottom, #e8f5e9, #c8e6c9);
+}
+
+.hero-title {
+  color: #1b5e20;
+  font-size: 42px;
+  margin: 0 0 15px 0;
+}
+
+.hero-subtitle {
+  color: #388e3c;
+  font-size: 18px;
+  max-width: 600px;
+  margin: 0 auto 30px auto;
+  line-height: 1.6;
+}
+
+.products-section {
+  max-width: 1200px;
+  margin: 50px auto;
+  padding: 0 20px;
+}
+
+.section-title {
+  text-align: center;
+  color: #2e7d32;
+  font-size: 28px;
+  margin-bottom: 40px;
+}
+
+.loading-text {
+  text-align: center;
+  color: #4caf50;
+}
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 30px;
+}
+
+.product-card {
+  background-color: white;
+  border-radius: 15px;
+  padding: 25px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1px solid #f0f0f0;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Hiệu ứng nổi lên khi di chuột vào thẻ sản phẩm */
+.product-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.product-icon {
+  font-size: 80px;
+  margin-bottom: 15px;
+}
+
+.product-name {
+  margin: 0 0 10px 0;
+  font-size: 18px;
+  color: #333;
+  text-align: center;
+}
+
+.product-price {
+  margin: 0 0 20px 0;
+  color: #e65100;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.btn-details {
+  display: block;
+  margin-top: auto;
+  width: 100%;
+  padding: 12px 0;
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  text-align: center;
+  border: 1px solid #4caf50;
+  border-radius: 8px;
+  font-weight: bold;
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+}
+
+/* Hiệu ứng đổi màu nút khi di chuột */
+.btn-details:hover {
+  background-color: #4caf50;
+  color: white;
+}

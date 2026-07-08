@@ -3,9 +3,17 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import AdminLayout from "../layouts/AdminLayout";
 import Dashboard from "../pages/Admin/Dashboard";
 import Category from "../pages/Admin/Category";
-import UserLayout from "../layouts/UserLayout";
+import Product from "../pages/Admin/Product";
+import Order from "../pages/Admin/Order";
 
-import Home from "../pages/User/Home";
+import MainLayout from "../layouts/MainLayout";
+import Home from "../pages/Home/Home";
+import ProductDetail from "../pages/ProductDetail/ProductDetail";
+import Cart from "../pages/Cart/Cart";
+import Checkout from "../pages/Checkout/Checkout";
+import Products from "../pages/Products/Products";
+
+import UserLayout from "../layouts/UserLayout";
 import Login from "../pages/User/Login";
 import Register from "../pages/User/Register";
 import Profile from "../pages/User/Profile";
@@ -21,10 +29,17 @@ function AppRoutes() {
     return (
         <BrowserRouter>
             <Routes>
+                {/* Website khách - trang chính */}
+                <Route element={<MainLayout />}>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/products" element={<Products />} />
+                    <Route path="/cart" element={<Cart />} />
+                    <Route path="/checkout" element={<Checkout />} />
+                    <Route path="/product/:id" element={<ProductDetail />} />
+                </Route>
 
-                {/* Website khách */}
+                {/* Website khách - tài khoản */}
                 <Route path="/" element={<UserLayout />}>
-                    <Route index element={<Home />} />
                     <Route path="login" element={<Login />} />
                     <Route path="register" element={<Register />} />
 
@@ -42,8 +57,9 @@ function AppRoutes() {
                 <Route path="/admin" element={<AdminLayout />}>
                     <Route index element={<Dashboard />} />
                     <Route path="categories" element={<Category />} />
+                    <Route path="products" element={<Product />} />
+                    <Route path="/admin/orders" element={<Order />} />
                 </Route>
-
             </Routes>
         </BrowserRouter>
     );

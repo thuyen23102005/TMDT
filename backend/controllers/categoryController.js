@@ -21,6 +21,77 @@ const getAllCategories = async (req, res) => {
 
 };
 
+// POST
+const createCategory = async (req, res) => {
+
+    try {
+
+        await categoryModel.createCategory(req.body);
+
+        res.status(201).json({
+            message: "Thêm danh mục thành công"
+        });
+
+    } catch (error) {
+
+        console.log(error);
+
+        res.status(500).json(error);
+
+    }
+
+};
+
+// PUT
+const updateCategory = async (req, res) => {
+
+    try {
+
+        await categoryModel.updateCategory(
+            req.params.id,
+            req.body
+        );
+
+        res.json({
+            message: "Cập nhật thành công"
+        });
+
+    } catch (error) {
+
+        console.log(error);
+
+        res.status(500).json({
+            message: "Lỗi server"
+        });
+
+    }
+
+};
+// DELETE
+const deleteCategory = async (req, res) => {
+
+    try {
+
+        await categoryModel.deleteCategory(req.params.id);
+
+        res.json({
+            message: "Xóa thành công"
+        });
+
+    } catch (error) {
+
+        console.log(error);
+
+        res.status(500).json({
+            message: "Lỗi server"
+        });
+
+    }
+
+};
 module.exports = {
-    getAllCategories
+    getAllCategories,
+    createCategory,
+    updateCategory,
+    deleteCategory
 };
