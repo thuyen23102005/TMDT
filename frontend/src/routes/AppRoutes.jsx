@@ -5,6 +5,8 @@ import Dashboard from "../pages/Admin/Dashboard";
 import Category from "../pages/Admin/Category";
 import Product from "../pages/Admin/Product";
 import Order from "../pages/Admin/Order";
+import Customer from "../pages/Admin/Customer";
+import Voucher from "../pages/Admin/Voucher";
 
 import MainLayout from "../layouts/MainLayout";
 import Home from "../pages/Home/Home";
@@ -59,6 +61,8 @@ function AppRoutes() {
                     <Route path="categories" element={<Category />} />
                     <Route path="products" element={<Product />} />
                     <Route path="/admin/orders" element={<Order />} />
+                    <Route path="/admin/customers" element={<Customer />} />
+                    <Route path="/admin/vouchers" element={<Voucher />} />
                 </Route>
             </Routes>
         </BrowserRouter>
