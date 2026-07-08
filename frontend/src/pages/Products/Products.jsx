@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { getProducts } from '../../services/productApi';
 import { getCategories } from '../../services/categoryApi';
 import './Products.css';
@@ -8,7 +8,12 @@ const Products = () => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchParams] = useSearchParams();
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
+
+useEffect(() => {
+  setSearchTerm(searchParams.get('search') || '');
+}, [searchParams]);
   const [activeCategory, setActiveCategory] = useState(null);
 
   useEffect(() => {
