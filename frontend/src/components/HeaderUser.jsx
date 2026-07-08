@@ -1,13 +1,30 @@
-import { Link } from "react-router-dom";
-import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 
 function HeaderUser() {
     const [keyword, setKeyword] = useState("");
+    const [user, setUser] = useState(null);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const storedUser = localStorage.getItem("user");
+        if (storedUser) {
+            setUser(JSON.parse(storedUser));
+        }
+    }, []);
 
     const handleSearch = (e) => {
         e.preventDefault();
-        // TODO: điều hướng sang trang kết quả tìm kiếm
-        console.log("Tìm kiếm:", keyword);
+        if (keyword.trim()) {
+            navigate(`/products?search=${encodeURIComponent(keyword.trim())}`);
+        }
+    };
+
+    const handleLogout = () => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        setUser(null);
+        navigate("/");
     };
 
     return (
@@ -75,25 +92,53 @@ function HeaderUser() {
                     Trang chủ
                 </Link>
 
-                <Link
-                    to="/login"
-                    className="text-decoration-none fw-medium"
-                    style={{ color: "#333" }}
-                >
-                    Đăng nhập
-                </Link>
+                {user ? (
+                    <>
+                        <Link
+                            to="/profile"
+                            className="text-decoration-none fw-medium"
+                            style={{ color: "#333" }}
+                        >
+                            Xin chào, {user.HoTen || user.Ten || user.email}
+                        </Link>
 
-                <Link
-                    to="/register"
-                    className="text-decoration-none fw-medium px-3 py-2"
-                    style={{
-                        backgroundColor: "#2e7d32",
-                        color: "#fff",
-                        borderRadius: "20px",
-                    }}
-                >
-                    Đăng ký
-                </Link>
+                        <button
+                            onClick={handleLogout}
+                            className="text-decoration-none fw-medium px-3 py-2"
+                            style={{
+                                backgroundColor: "#d32f2f",
+                                color: "#fff",
+                                borderRadius: "20px",
+                                border: "none",
+                                cursor: "pointer",
+                            }}
+                        >
+                            Đăng xuất
+                        </button>
+                    </>
+                ) : (
+                    <>
+                        <Link
+                            to="/login"
+                            className="text-decoration-none fw-medium"
+                            style={{ color: "#333" }}
+                        >
+                            Đăng nhập
+                        </Link>
+
+                        <Link
+                            to="/register"
+                            className="text-decoration-none fw-medium px-3 py-2"
+                            style={{
+                                backgroundColor: "#2e7d32",
+                                color: "#fff",
+                                borderRadius: "20px",
+                            }}
+                        >
+                            Đăng ký
+                        </Link>
+                    </>
+                )}
             </nav>
         </div>
     );
