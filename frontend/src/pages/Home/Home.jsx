@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import './Home.css'; 
+import TreasureChestWidget from "../../components/TreasureChestWidget/TreasureChestWidget";
 
 const Home = () => {
   const [products, setProducts] = useState([]);
@@ -72,7 +73,7 @@ const Home = () => {
           </div>
         )}
       </section>
-      
+      <TreasureChestWidget />
     </div>
   );
 };

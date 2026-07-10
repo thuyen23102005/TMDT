@@ -11,21 +11,42 @@ const productRoutes = require('./routes/productRoutes');
 
 const cartRoutes = require('./routes/cartRoutes');
 
+const orderRoutes = require("./routes/orderRoutes");
+
+const customerRoutes = require("./routes/customerRoutes");
+
+const voucherRoutes = require("./routes/voucherRoutes");
+
+const dashboardRoutes = require("./routes/dashboardRoutes");
+
 const app = express();
 
+const authRoutes = require("./routes/authRoutes");   
 // Middleware
 app.use(cors());
+
 app.use(express.json());
+
 app.use("/uploads", express.static("uploads"));
+
 // Kết nối Database
 connectDB();
 
 // Routes
 app.use("/api/categories", categoryRoutes);
+app.use("/api/auth", authRoutes); 
 
 app.use('/api/products', productRoutes);
 
 app.use('/api/cart', cartRoutes);
+
+app.use("/api/orders", orderRoutes);
+
+app.use("/api/customers", customerRoutes);
+
+app.use("/api/vouchers", voucherRoutes);
+
+app.use("/api/dashboard", dashboardRoutes);
 
 // Test API
 app.get("/", (req, res) => {

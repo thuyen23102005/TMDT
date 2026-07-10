@@ -55,7 +55,9 @@ const updateProduct = async (req, res) => {
 
         const product = {
             ...req.body,
-            HinhAnh: req.file ? req.file.filename : null
+            HinhAnh: req.file
+                ? req.file.filename
+                : req.body.HinhAnh
         };
 
         await productModel.updateProduct(id, product);

@@ -53,19 +53,17 @@ function Product() {
         }
 
     }
-    const handleSave = async (data) => {
+   const handleSave = async (data) => {
 
         try {
 
-            if(editingProduct){
+            if (editingProduct) {
 
                 await updateProduct(editingProduct.MaSP, data);
 
                 alert("Cập nhật thành công");
 
-                setEditingProduct(null);
-
-            }else{
+            } else {
 
                 await createProduct(data);
 
@@ -73,7 +71,10 @@ function Product() {
 
             }
 
-            fetchProducts();
+            await fetchProducts();
+
+            // Reset form
+            setEditingProduct(null);
 
         } catch (error) {
 
