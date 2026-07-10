@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import './ProductDetail.css';
+import TreasureChestWidget from '../../components/TreasureChestWidget/TreasureChestWidget';
 
 const ProductDetail = () => {
   const { id } = useParams(); 
@@ -149,6 +150,8 @@ const ProductDetail = () => {
           </div>
         </div>
       </div>
+
+      <TreasureChestWidget />
     </div>
   );
 };
