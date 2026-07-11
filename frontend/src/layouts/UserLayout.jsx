@@ -1,16 +1,14 @@
 import { Outlet } from "react-router-dom";
-import HeaderUser from "../components/HeaderUser";
+import Header from "../components/Header";
 import Footer from "../components/Footer";
 
 function UserLayout() {
     return (
         <>
-            <HeaderUser />
-
+            <Header />
             <main className="container mt-4">
                 <Outlet />
             </main>
-
             <Footer />
         </>
     );
