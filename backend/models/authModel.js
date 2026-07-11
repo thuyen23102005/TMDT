@@ -46,6 +46,26 @@ const createKhachHang = async (maTK, hoTen) => {
         `);
 };
 
+// Tạo tài khoản Admin
+const createAdmin = async (tenDangNhap, matKhau, email, soDienThoai) => {
+    const pool = await connectDB();
+
+    const result = await pool
+        .request()
+        .input("TenDangNhap", sql.VarChar, tenDangNhap)
+        .input("MatKhau", sql.VarChar, matKhau)
+        .input("Email", sql.VarChar, email)
+        .input("SoDienThoai", sql.VarChar, soDienThoai)
+        .input("VaiTro", sql.NVarChar, "Admin")
+        .query(`
+            INSERT INTO TaiKhoan (TenDangNhap, MatKhau, Email, SoDienThoai, VaiTro)
+            OUTPUT INSERTED.MaTK
+            VALUES (@TenDangNhap, @MatKhau, @Email, @SoDienThoai, @VaiTro)
+        `);
+
+    return result.recordset[0].MaTK;
+};
+
 module.exports = {
     findByEmail,
     createTaiKhoan,

@@ -28,18 +28,25 @@ function Login() {
             });
 
             const data = await res.json();
+            console.log("Role nhận được:", JSON.stringify(data.user.vaiTro));
 
             if (!res.ok) {
                 setError(data.message || "Đăng nhập thất bại");
                 return;
             }
 
-            // Lưu token và thông tin user vào localStorage
+           // Lưu token và thông tin user vào localStorage
             localStorage.setItem("token", data.token);
             localStorage.setItem("user", JSON.stringify(data.user));
 
             alert("Đăng nhập thành công!");
-            navigate("/");
+
+            // Điều hướng theo vai trò
+            if (data.user.vaiTro === "Admin") {
+                navigate("/admin"); // đổi lại nếu route admin của bạn khác
+            } else {
+                navigate("/");
+            }
         } catch (err) {
             console.error(err);
             setError("Không thể kết nối tới máy chủ");
