@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { getProducts } from '../../services/productApi';
-import { getCategories } from '../../services/categoryApi';
+import { getAllProducts } from '../../services/Admin/productApi';
+import { getCategories } from '../../services/Admin/categoryApi';
 import './Products.css';
 
 const Products = () => {
@@ -17,17 +17,35 @@ useEffect(() => {
   const [activeCategory, setActiveCategory] = useState(null);
 
   useEffect(() => {
-    Promise.all([getProducts(), getCategories()])
-      .then(([productsRes, categoriesRes]) => {
-        setProducts(Array.isArray(productsRes.data) ? productsRes.data : []);
-        setCategories(Array.isArray(categoriesRes.data) ? categoriesRes.data : []);
-        setIsLoading(false);
-      })
-      .catch((error) => {
-        console.error("Lỗi khi kéo dữ liệu:", error);
-        setIsLoading(false);
-      });
-  }, []);
+
+    const fetchData = async () => {
+
+        try {
+
+            const [productsRes, categoriesRes] = await Promise.all([
+                getAllProducts(),
+                getCategories()
+            ]);
+
+            setProducts(productsRes.data);
+
+            setCategories(categoriesRes.data);
+
+        } catch (error) {
+
+            console.log(error);
+
+        } finally {
+
+            setIsLoading(false);
+
+        }
+
+    };
+
+    fetchData();
+
+}, []);
 
   // Lọc theo tên sản phẩm (TenSP) và tên danh mục (TenDM)
   const filteredProducts = products

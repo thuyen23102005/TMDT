@@ -1,10 +1,22 @@
 const { connectDB, sql } = require("../config/db");
 
-const getAllProducts = async () => {
+const getAllProducts = async (page, limit) => {
 
     const pool = await connectDB();
+    const offset = (page - 1) * limit;
 
-    const result = await pool.request().query(`
+    const totalResult = await pool.request().query(`
+        SELECT COUNT(*) AS Total
+        FROM SanPham
+        WHERE TrangThai=1
+        `);
+
+    const total = totalResult.recordset[0].Total;
+
+    const result = await pool.request()
+    .input("offset", sql.Int, offset)
+    .input("limit", sql.Int, limit)
+    .query(`
         SELECT
             sp.MaSP,
             sp.TenSP,
@@ -20,11 +32,47 @@ const getAllProducts = async () => {
         INNER JOIN DanhMuc dm
         ON sp.MaDM = dm.MaDM
         WHERE sp.TrangThai = 1
+        ORDER BY sp.MaSP DESC
+        OFFSET @offset ROWS
+        FETCH NEXT @limit ROWS ONLY 
         `);
-    
-    return result.recordset;
-};
+    return {
 
+        products: result.recordset,
+
+        total,
+
+        page,
+
+        totalPages: Math.ceil(total/limit)
+
+    };
+};
+const getAllProductsClient = async () => {
+
+    const pool = await connectDB();
+
+    const result = await pool.request().query(`
+        SELECT
+            sp.MaSP,
+            sp.MaDM,
+            sp.TenSP,
+            sp.DonGia,
+            sp.MoTa,
+            sp.HinhAnh,
+            sp.SoLuongTon,
+            sp.DonViTinh,
+            dm.TenDM
+        FROM SanPham sp
+        INNER JOIN DanhMuc dm
+            ON sp.MaDM = dm.MaDM
+        WHERE sp.TrangThai = 1
+        ORDER BY sp.MaSP DESC
+    `);
+
+    return result.recordset;
+
+};
 const getById = async (id) => {
     const pool = await connectDB();
     const result = await pool.request()
@@ -128,6 +176,7 @@ const deleteProduct = async (id) => {
 };
 module.exports = {
     getAllProducts,
+    getAllProductsClient,
     getById,
     createProduct,
     updateProduct,

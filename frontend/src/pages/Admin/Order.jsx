@@ -1,16 +1,16 @@
 import { useEffect, useState } from "react";
 
-import { getOrders } from "../../services/orderApi";
+import { getOrders } from "../../services/Admin/orderApi";
 
 import OrderTable from "../../components/Order/OrderTable";
 
-import { getOrderDetail } from "../../services/orderApi";
+import { getOrderDetail } from "../../services/Admin/orderApi";
 
 import OrderDetailModal from "../../components/Order/OrderDetailModal";
 
 import StatusModal from "../../components/Order/StatusModal";
 
-import { updateOrderStatus } from "../../services/orderApi";
+import { updateOrderStatus } from "../../services/Admin/orderApi";
 
 function Order() {
 
