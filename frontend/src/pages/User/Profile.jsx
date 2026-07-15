@@ -12,15 +12,14 @@ function Profile() {
         const storedUser = JSON.parse(localStorage.getItem('user'));
         setUser(storedUser);
 
-        // BỎ điều kiện isOrdersTab để luôn luôn gọi API lấy đơn hàng khi vào Profile
-        // Mục đích: Tính toán thành tích (Số đơn, Tổng tiền) cho tất cả các tab
+        // Luôn gọi API lấy đơn hàng khi vào Profile để tính toán thành tích
         if (storedUser) {
             fetch(`http://localhost:5000/api/orders/user/${storedUser.maTK}`)
                 .then(res => res.json())
                 .then(data => setOrders(data))
                 .catch(err => console.error("Lỗi kéo đơn hàng:", err));
         }
-    }, [location.pathname]); // Cập nhật lại mỗi khi chuyển tab trong profile để data luôn mới
+    }, [location.pathname]);
 
     // TÍNH TOÁN THÀNH TÍCH
     const totalOrders = orders.length;
@@ -99,12 +98,10 @@ function Profile() {
                             <div className="d-flex justify-content-between mt-2">
                                 <div>
                                     <div className="text-muted small">Số đơn hàng</div>
-                                    {/* CẬP NHẬT: Hiện số lượng đơn hàng thật */}
                                     <div className="fw-bold">{totalOrders} đơn hàng</div>
                                 </div>
                                 <div>
                                     <div className="text-muted small">Đã thanh toán</div>
-                                    {/* CẬP NHẬT: Hiện tổng tiền thật đã chi */}
                                     <div className="fw-bold text-success">{totalSpent.toLocaleString()} đ</div>
                                 </div>
                             </div>
@@ -112,42 +109,7 @@ function Profile() {
                     </div>
                 </div>
 
-                {/* KIỂM TRA: NẾU BẤM VÀO TAB "ĐƠN HÀNG" THÌ HIỆN DANH SÁCH, KHÔNG THÌ HIỆN OUTLET CŨ */}
-                {isOrdersTab ? (
-                    <div className="shadow-sm rounded p-3 bg-white mt-3 border">
-                        <h5 className="fw-bold mb-3 text-success">Đơn hàng của bạn</h5>
-                        {orders.length === 0 ? (
-                            <div className="text-center text-muted py-4">Chưa có đơn hàng nào. Hãy mua sắm thêm nhé!</div>
-                        ) : (
-                            <div className="table-responsive">
-                                <table className="table table-hover align-middle">
-                                    <thead className="table-light">
-                                        <tr>
-                                            <th>Mã đơn</th>
-                                            <th>Ngày đặt</th>
-                                            <th>Tổng tiền</th>
-                                            <th>Trạng thái</th>
-                                            <th>Thanh toán</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {orders.map(o => (
-                                            <tr key={o.MaDH}>
-                                                <td className="fw-bold text-secondary">#{o.MaDH}</td>
-                                                <td>{new Date(o.NgayDat).toLocaleDateString('vi-VN')}</td>
-                                                <td className="text-danger fw-bold">{Number(o.TongTien).toLocaleString()} đ</td>
-                                                <td><span className={`badge ${o.TrangThaiDonHang === 'Đã giao' ? 'bg-success' : 'bg-warning text-dark'}`}>{o.TrangThaiDonHang}</span></td>
-                                                <td><span className={`badge ${o.TrangThaiThanhToan === 'Đã thanh toán' ? 'bg-info text-dark' : 'bg-secondary'}`}>{o.TrangThaiThanhToan}</span></td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
-                    </div>
-                ) : (
-                    <Outlet />
-                )}
+                <Outlet context={{ orders }} />
             </div>
         </div>
     );

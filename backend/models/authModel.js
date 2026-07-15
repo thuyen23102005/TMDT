@@ -66,8 +66,34 @@ const createAdmin = async (tenDangNhap, matKhau, email, soDienThoai) => {
     return result.recordset[0].MaTK;
 };
 
+// Lấy thông tin tài khoản theo MaTK
+const findById = async (maTK) => {
+    const pool = await connectDB();
+    const result = await pool
+        .request()
+        .input("MaTK", sql.Int, maTK)
+        .query(`SELECT * FROM TaiKhoan WHERE MaTK = @MaTK`);
+    return result.recordset[0];
+};
+
+// Cập nhật mật khẩu mới
+const updatePassword = async (maTK, matKhauMoi) => {
+    const pool = await connectDB();
+    await pool
+        .request()
+        .input("MaTK", sql.Int, maTK)
+        .input("MatKhau", sql.VarChar, matKhauMoi)
+        .query(`
+            UPDATE TaiKhoan 
+            SET MatKhau = @MatKhau 
+            WHERE MaTK = @MaTK
+        `);
+};
+
 module.exports = {
     findByEmail,
     createTaiKhoan,
     createKhachHang,
+    findById,
+    updatePassword
 };
