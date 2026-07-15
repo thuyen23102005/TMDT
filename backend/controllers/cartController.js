@@ -1,4 +1,4 @@
-const sql = require('mssql');
+const { connectDB, sql } = require("../config/db");
 
 // 1. Lấy chi tiết giỏ hàng theo Mã Tài Khoản
 const getCartByCustomerId = async (req, res) => {
@@ -40,8 +40,23 @@ const getCartByCustomerId = async (req, res) => {
 // 2. Chốt đơn hàng
 const checkoutCart = async (req, res) => {
   try {
-    const { maKH: maTK, diaChi, tongTien, trangThaiThanhToan } = req.body;
-    const pool = await sql.connect();
+    const {
+        maKH: maTK,
+        maDC, // Phải đảm bảo frontend gửi tham số này
+        tongTien,
+        trangThaiThanhToan
+    } = req.body;
+
+    // 1. KIỂM TRA DỮ LIỆU ĐẦU VÀO NGHIÊM NGẶT
+    if (!maDC) {
+        return res.status(400).json({ message: "Vui lòng chọn địa chỉ giao hàng (MaDC)" });
+    }
+    if (!tongTien || tongTien <= 0) {
+        return res.status(400).json({ message: "Tổng tiền không hợp lệ" });
+    }
+
+    // Dùng connectDB() giống orderModel.js
+    const pool = await connectDB();
 
     const khResult = await pool.request()
       .input('MaTK', sql.Int, maTK)
@@ -50,21 +65,48 @@ const checkoutCart = async (req, res) => {
     if (khResult.recordset.length === 0) return res.status(400).json({message: "Tài khoản không hợp lệ"});
     const realMaKH = khResult.recordset[0].MaKH;
 
-    // Set trạng thái đơn hàng là Chờ xác nhận, thanh toán thì lấy từ Frontend gửi lên
+    // 2. XÁC THỰC BẢO MẬT: Kiểm tra MaDC này có đúng là của MaKH này không
+    const dcResult = await pool.request()
+      .input('MaDC', sql.Int, maDC)
+      .input('MaKH', sql.Int, realMaKH)
+      .query('SELECT MaDC FROM SoDiaChi WHERE MaDC = @MaDC AND MaKH = @MaKH');
+
+    if (dcResult.recordset.length === 0) {
+        return res.status(403).json({ message: "Địa chỉ không hợp lệ hoặc không thuộc về tài khoản này" });
+    }
+
     const ttDH = 'Chờ xác nhận';
     const ttTT = trangThaiThanhToan || 'Chưa thanh toán';
 
     await pool.request()
       .input('MaKH', sql.Int, realMaKH)
-      .input('DiaChi', sql.NVarChar(255), diaChi)
+      .input("MaDC", sql.Int, maDC)
       .input('TongTien', sql.Decimal(18,2), tongTien)
       .input('TrangThaiDH', sql.NVarChar(50), ttDH)
       .input('TrangThaiTT', sql.NVarChar(50), ttTT)
       .query(`
         BEGIN TRAN;
         DECLARE @MaDH INT;
-        INSERT INTO DonHang (MaKH, NgayDat, DiaChiNhan, PhiVanChuyen, TongTien, TrangThaiDonHang, TrangThaiThanhToan)
-        VALUES (@MaKH, GETDATE(), @DiaChi, 30000, @TongTien, @TrangThaiDH, @TrangThaiTT);
+        INSERT INTO DonHang
+        (
+            MaKH,
+            MaDC,
+            NgayDat,
+            PhiVanChuyen,
+            TongTien,
+            TrangThaiDonHang,
+            TrangThaiThanhToan
+        )
+        VALUES
+        (
+            @MaKH,
+            @MaDC,
+            GETDATE(),
+            30000,
+            @TongTien,
+            @TrangThaiDH,
+            @TrangThaiTT
+        )
         SET @MaDH = SCOPE_IDENTITY();
         
         INSERT INTO ChiTietDonHang (MaDH, MaSP, SoLuong, DonGia, ThanhTien)

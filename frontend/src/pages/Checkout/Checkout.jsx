@@ -52,7 +52,7 @@ const Checkout = () => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 maKH: storedUser.maTK,
-                diaChi: `${selectedAddress.HoTen} - ${selectedAddress.SoDienThoai} - ${selectedAddress.DiaChiChiTiet}`,
+                maDC: selectedAddress.MaDC,
                 tongTien: totalAmount,
                 trangThaiThanhToan: trangThaiThanhToan
             })

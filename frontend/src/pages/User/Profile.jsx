@@ -7,18 +7,21 @@ function Profile() {
     const [orders, setOrders] = useState([]);
     const [user, setUser] = useState(null);
 
-    useEffect(() => {
-        // Lấy thông tin user từ localStorage để hiển thị tên
+    // Tách thành hàm riêng để có thể gọi lại từ trang con
+    const fetchOrders = () => {
         const storedUser = JSON.parse(localStorage.getItem('user'));
-        setUser(storedUser);
-
-        // Luôn gọi API lấy đơn hàng khi vào Profile để tính toán thành tích
         if (storedUser) {
             fetch(`http://localhost:5000/api/orders/user/${storedUser.maTK}`)
                 .then(res => res.json())
                 .then(data => setOrders(data))
                 .catch(err => console.error("Lỗi kéo đơn hàng:", err));
         }
+    };
+
+    useEffect(() => {
+        const storedUser = JSON.parse(localStorage.getItem('user'));
+        setUser(storedUser);
+        fetchOrders(); // Gọi lần đầu khi vào trang
     }, [location.pathname]);
 
     // TÍNH TOÁN THÀNH TÍCH
@@ -108,7 +111,10 @@ function Profile() {
                         </div>
                     </div>
                 </div>
+                {/* THÊM DÒNG NÀY ĐỂ RENDER CÁC TRANG CON VÀ TRUYỀN DỮ LIỆU ĐƠN HÀNG */}
+                <Outlet context={{ orders, fetchOrders }} />
             </div>
+            
         </div>
     );
 }

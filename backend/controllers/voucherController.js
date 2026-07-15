@@ -23,20 +23,29 @@ const getAll = async (req, res) => {
 
 // Thêm
 const create = async (req, res) => {
+    try{
 
-    try {
+        if(await voucherModel.checkCodeExists(req.body.Code)){
+
+            return res.status(400).json({
+                message:"Mã giảm giá đã tồn tại."
+            });
+
+        }
 
         await voucherModel.createVoucher(req.body);
 
-        res.status(201).json({
-            message: "Thêm mã giảm giá thành công"
+        res.json({
+            message:"Thêm thành công"
         });
 
-    } catch (error) {
+    }catch(err){
 
-        console.log(error);
+        console.log(err);
 
-        res.status(500).json(error);
+        res.status(500).json({
+            message:"Lỗi server"
+        });
 
     }
 
@@ -45,25 +54,32 @@ const create = async (req, res) => {
 // Sửa
 const update = async (req, res) => {
 
-    try {
+     try{
+
+        if(await voucherModel.checkCodeExists(req.body.Code,req.params.id)){
+
+            return res.status(400).json({
+                message:"Mã giảm giá đã tồn tại."
+            });
+
+        }
 
         await voucherModel.updateVoucher(
-
             req.params.id,
-
             req.body
-
         );
 
         res.json({
-            message: "Cập nhật thành công"
+            message:"Cập nhật thành công"
         });
 
-    } catch (error) {
+    }catch(err){
 
-        console.log(error);
+        console.log(err);
 
-        res.status(500).json(error);
+        res.status(500).json({
+            message:"Lỗi server"
+        });
 
     }
 
