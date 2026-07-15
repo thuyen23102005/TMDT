@@ -95,9 +95,18 @@ const getOrdersByUser = async (maTK) => {
     return result.recordset;
 };
 
+const getOrderStatusById = async (id) => {
+    const pool = await connectDB();
+    const result = await pool.request()
+        .input("MaDH", id)
+        .query(`SELECT TrangThaiDonHang FROM DonHang WHERE MaDH = @MaDH`);
+    return result.recordset[0]; // Trả về object chứa TrangThaiDonHang
+};
+
 module.exports = {
     getAllOrders,
     getOrderDetail,
     updateStatus,
-    getOrdersByUser
+    getOrdersByUser,
+    getOrderStatusById // Thêm dòng này
 };
