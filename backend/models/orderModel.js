@@ -61,8 +61,24 @@ const updateStatus = async (id, status) => {
         `);
 
 };
+
+const getOrdersByUser = async (maTK) => {
+    const pool = await connectDB();
+    const result = await pool.request()
+        .input("MaTK", sql.Int, maTK)
+        .query(`
+            SELECT dh.MaDH, dh.NgayDat, dh.TongTien, dh.TrangThaiDonHang, dh.TrangThaiThanhToan
+            FROM DonHang dh
+            INNER JOIN KhachHang kh ON dh.MaKH = kh.MaKH
+            WHERE kh.MaTK = @MaTK
+            ORDER BY dh.NgayDat DESC
+        `);
+    return result.recordset;
+};
+
 module.exports = {
     getAllOrders,
     getOrderDetail,
-    updateStatus
+    updateStatus,
+    getOrdersByUser
 };

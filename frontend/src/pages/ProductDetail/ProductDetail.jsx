@@ -34,26 +34,53 @@ const ProductDetail = () => {
   const increaseQty = () => setQuantity(prev => prev + 1);
   const decreaseQty = () => setQuantity(prev => (prev > 1 ? prev - 1 : 1));
   
+  // Xử lý thêm vào giỏ hàng linh hoạt (có user / ko user)
   const handleAddToCart = async () => {
-    try {
-      const response = await fetch('http://localhost:5000/api/cart/add', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          maKH: 1,
-          maSP: product.MaSP,
-          soLuong: quantity
-        })
-      });
+    const storedUser = JSON.parse(localStorage.getItem("user"));
 
-      if (response.ok) {
-        alert(`🛒 Đã thêm ${quantity} ${product.TenSP} vào giỏ hàng thành công!`);
-      } else {
-        alert("Có lỗi xảy ra khi thêm vào giỏ.");
+    if (storedUser) {
+      // TRƯỜNG HỢP 1: ĐÃ ĐĂNG NHẬP -> Gửi thẳng lên Backend
+      try {
+        const response = await fetch('http://localhost:5000/api/cart/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            maKH: storedUser.maTK, // Lấy ID tài khoản thật
+            maSP: product.MaSP,
+            soLuong: quantity
+          })
+        });
+
+        if (response.ok) {
+          alert(`🛒 Đã thêm ${quantity} ${product.TenSP} vào giỏ hàng thành công!`);
+        } else {
+          alert("Có lỗi xảy ra khi thêm vào giỏ.");
+        }
+      } catch (error) {
+        console.error(error);
+        alert("Lỗi kết nối đến server.");
       }
-    } catch (error) {
-      console.error(error);
-      alert("Lỗi kết nối đến server.");
+    } else {
+      // TRƯỜNG HỢP 2: CHƯA ĐĂNG NHẬP -> Lưu vào bộ nhớ tạm trình duyệt
+      let localCart = JSON.parse(localStorage.getItem('cart') || '[]');
+      
+      const existingItemIndex = localCart.findIndex(item => item.id === product.MaSP);
+      
+      if (existingItemIndex >= 0) {
+        localCart[existingItemIndex].quantity += quantity; // Cộng dồn số lượng
+      } else {
+        localCart.push({
+          id: product.MaSP,
+          maSP: product.MaSP,
+          name: product.TenSP,
+          price: product.DonGia,
+          quantity: quantity,
+          HinhAnh: product.HinhAnh || product.image || product.hinh_anh
+        });
+      }
+      
+      localStorage.setItem('cart', JSON.stringify(localCart));
+      alert(`🛒 Đã lưu ${quantity} ${product.TenSP} vào giỏ tạm! Vui lòng đăng nhập để đồng bộ.`);
     }
   };
 
@@ -116,7 +143,7 @@ const ProductDetail = () => {
           </div>
           <div className="col-side">
             <div className="side-box">
-              <SectionHeader title="Thông tin sản phẩm" />
+              <SectionHeader title="Thông cải sản phẩm" />
               <div style={{ padding: '15px' }}>
                 <div className="side-row"><span style={{ width: '40%', fontWeight: 'bold' }}>Trọng lượng:</span><span>1 kg</span></div>
                 <div className="side-row"><span style={{ width: '40%', fontWeight: 'bold' }}>Khu vực:</span><span>Hà Nội, Hồ Chí Minh</span></div>
