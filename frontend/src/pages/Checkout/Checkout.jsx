@@ -8,6 +8,8 @@ const Checkout = () => {
 
   const [cartItems, setCartItems] = useState(location.state?.cartItems || []);
   const initialShippingType = location.state?.shippingType || 'standard';
+  // Lấy giá trị tiền giảm giá từ giỏ hàng truyền sang (Mặc định là 0 nếu không có)
+  const discount = location.state?.discount || 0; 
   
   const [shippingType, setShippingType] = useState(initialShippingType);
   const [paymentMethod, setPaymentMethod] = useState('cash');
@@ -38,7 +40,9 @@ const Checkout = () => {
 
   const subTotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
   const shippingFee = shippingType === 'standard' ? 22000 : 0;
-  const totalAmount = subTotal + shippingFee;
+  
+  // TÍNH LẠI TỔNG TIỀN CUỐI CÙNG SAU KHI TRỪ VOUCHER
+  const totalAmount = Math.max(0, subTotal + shippingFee - discount);
 
   const handleProcessOrder = async (trangThaiThanhToan) => {
     const storedUser = JSON.parse(localStorage.getItem('user'));
@@ -53,7 +57,7 @@ const Checkout = () => {
             body: JSON.stringify({
                 maKH: storedUser.maTK,
                 maDC: selectedAddress.MaDC,
-                tongTien: totalAmount,
+                tongTien: totalAmount, // Gửi Tổng tiền đã được trừ giá trị voucher xuống DB
                 trangThaiThanhToan: trangThaiThanhToan
             })
         });
@@ -171,6 +175,15 @@ const Checkout = () => {
           <div className="summary-box">
             <div className="summary-row"><span>Thành tiền</span><span>{subTotal.toLocaleString()} đ</span></div>
             <div className="summary-row"><span>Phí vận chuyển</span><span>{shippingFee === 0 ? 'Miễn phí' : `${shippingFee.toLocaleString()} đ`}</span></div>
+            
+            {/* HIỂN THỊ DÒNG VOUCHER NẾU CÓ TRONG GIỎ HÀNG */}
+            {discount > 0 && (
+                <div className="summary-row" style={{ color: '#d32f2f' }}>
+                    <span>Giảm giá Voucher</span>
+                    <span>- {discount.toLocaleString()} đ</span>
+                </div>
+            )}
+
             <div className="summary-total"><span>Tổng Số Tiền</span><span className="price">{totalAmount.toLocaleString()} đ</span></div>
             <div style={{ textAlign: 'right' }}>
               <button onClick={handleConfirmClick} className="btn-confirm" disabled={isProcessing}>

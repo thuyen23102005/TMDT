@@ -6,6 +6,8 @@ const voucherController = require("../controllers/voucherController");
 
 router.get("/", voucherController.getAll);
 
+router.get("/active", voucherController.getActive);
+
 router.post("/", voucherController.create);
 
 router.put("/:id", voucherController.update);

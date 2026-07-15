@@ -1,6 +1,6 @@
 const voucherModel = require("../models/voucherModel");
 
-// Lấy danh sách
+// Lấy danh sách (Admin)
 const getAll = async (req, res) => {
 
     try {
@@ -19,6 +19,17 @@ const getAll = async (req, res) => {
 
     }
 
+};
+
+// Lấy danh sách (Khách hàng)
+const getActive = async (req, res) => {
+    try {
+        const vouchers = await voucherModel.getActiveVouchers();
+        res.status(200).json(vouchers);
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Lỗi server" });
+    }
 };
 
 // Thêm
@@ -107,10 +118,9 @@ const remove = async (req, res) => {
 };
 
 module.exports = {
-
     getAll,
+    getActive,
     create,
     update,
     remove
-
 };

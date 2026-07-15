@@ -26,6 +26,7 @@ import SoDiaChi from "../pages/User/Profile/SoDiaChi";
 import DoiMatKhau from "../pages/User/Profile/DoiMatKhau";
 import UuDaiThanhVien from "../pages/User/Profile/UuDaiThanhVien";
 import DonHang from "../pages/User/Profile/DonHang";
+import VoucherWallet from "../pages/User/Profile/VoucherWallet";
 import MyDanhGia from "../pages/User/Profile/MyDanhGia";
 
 function AppRoutes() {
@@ -53,6 +54,7 @@ function AppRoutes() {
                         <Route path="doi-mat-khau" element={<DoiMatKhau />} />
                         <Route path="uu-dai" element={<UuDaiThanhVien />} />
                         <Route path="don-hang" element={<DonHang />} />
+                        <Route path="vi-voucher" element={<VoucherWallet />} />
                         <Route path="danh-gia" element={<MyDanhGia />} />
                     </Route>
                 </Route>

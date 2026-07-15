@@ -129,10 +129,23 @@ const checkCodeExists = async (code, id = null) => {
     return result.recordset.length > 0;
 
 };
+
+const getActiveVouchers = async () => {
+    const pool = await connectDB();
+    const result = await pool.request().query(`
+        SELECT MaGG, Code, LoaiGiam, GiaTriGiam, NgayBD, NgayKT, DieuKienApDung, SoLuong
+        FROM MaGiamGia
+        WHERE SoLuong > 0 AND NgayKT >= CAST(GETDATE() AS DATE)
+        ORDER BY NgayKT ASC
+    `);
+    return result.recordset;
+};
+
 module.exports = {
     getAllVoucher,
     createVoucher,
     updateVoucher,
     deleteVoucher,
-    checkCodeExists
+    checkCodeExists,
+    getActiveVouchers
 };

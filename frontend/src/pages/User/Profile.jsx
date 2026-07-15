@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 function Profile() {
     const location = useLocation();
     const isOrdersTab = location.pathname.includes('don-hang');
-    const isReviewsTab = location.pathname.includes('danh-gia'); // Check xem có đang ở tab đánh giá không
+    const isReviewsTab = location.pathname.includes('danh-gia');
+    const isVoucherTab = location.pathname.includes('vi-voucher');
     const [orders, setOrders] = useState([]);
     const [user, setUser] = useState(null);
 
@@ -66,9 +67,14 @@ function Profile() {
                         <li className="py-1">
                             <Link to="/profile/don-hang" className={`text-decoration-none ${isOrdersTab ? 'fw-bold text-success' : 'text-dark'}`}>📄 Đơn hàng của tôi</Link>
                         </li>
-                        <li className="py-1"><a href="#" className="text-dark text-decoration-none">🎟️ Ví voucher</a></li>
+
+                        <li className="py-1">
+                            <Link to="/profile/vi-voucher" className={`text-decoration-none ${isVoucherTab ? 'fw-bold text-success' : 'text-dark'}`}>🎟️ Ví voucher</Link>
+                        </li>
+
                         <li className="py-1"><a href="#" className="text-dark text-decoration-none">✉️ Thông báo</a></li>
                         <li className="py-1"><a href="#" className="text-dark text-decoration-none">♡ Sản phẩm yêu thích</a></li>
+                        
                         <li className="py-1">
                             <Link to="/profile/danh-gia" className={`text-decoration-none ${isReviewsTab ? 'fw-bold text-success' : 'text-dark'}`}>★ Đánh giá của tôi</Link>
                         </li>
@@ -114,7 +120,7 @@ function Profile() {
                         </div>
                     </div>
                 </div>
-                {/* THÊM DÒNG NÀY ĐỂ RENDER CÁC TRANG CON VÀ TRUYỀN DỮ LIỆU ĐƠN HÀNG */}
+                
                 <Outlet context={{ orders, fetchOrders }} />
             </div>
             
