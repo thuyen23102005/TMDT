@@ -11,6 +11,7 @@ const findByEmail = async (email) => {
 
     return result.recordset[0];
 };
+
 // Tìm tài khoản theo mã tài khoản
 const findById = async (maTK) => {
     const pool = await connectDB();
@@ -39,7 +40,8 @@ const createTaiKhoan = async (tenDangNhap, matKhau, email, soDienThoai) => {
         .input("SoDienThoai", sql.VarChar, soDienThoai)
         .input("VaiTro", sql.NVarChar, "Khách hàng")
         .query(`
-            INSERT INTO TaiKhoan (TenDangNhap, MatKhau, Email, SoDienThoai, VaiTro)
+            INSERT INTO TaiKhoan 
+            (TenDangNhap, MatKhau, Email, SoDienThoai, VaiTro)
             OUTPUT INSERTED.MaTK
             VALUES (@TenDangNhap, @MatKhau, @Email, @SoDienThoai, @VaiTro)
         `);
@@ -73,7 +75,8 @@ const createAdmin = async (tenDangNhap, matKhau, email, soDienThoai) => {
         .input("SoDienThoai", sql.VarChar, soDienThoai)
         .input("VaiTro", sql.NVarChar, "Admin")
         .query(`
-            INSERT INTO TaiKhoan (TenDangNhap, MatKhau, Email, SoDienThoai, VaiTro)
+            INSERT INTO TaiKhoan 
+            (TenDangNhap, MatKhau, Email, SoDienThoai, VaiTro)
             OUTPUT INSERTED.MaTK
             VALUES (@TenDangNhap, @MatKhau, @Email, @SoDienThoai, @VaiTro)
         `);

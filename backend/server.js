@@ -16,7 +16,11 @@ const orderRoutes = require("./routes/orderRoutes");
 
 const customerRoutes = require("./routes/customerRoutes");
 
+const addressRoutes = require('./routes/addressRoutes'); 
+
 const voucherRoutes = require("./routes/voucherRoutes");
+
+const reviewRoutes = require("./routes/reviewRoutes");
 
 const dashboardRoutes = require("./routes/dashboardRoutes");
 
@@ -44,6 +48,10 @@ app.use('/api/cart', cartRoutes);
 app.use("/api/orders", orderRoutes);
 
 app.use("/api/customers", customerRoutes);
+
+app.use('/api/addresses', addressRoutes);
+
+app.use("/api/reviews", reviewRoutes);
 
 app.use("/api/vouchers", voucherRoutes);
 

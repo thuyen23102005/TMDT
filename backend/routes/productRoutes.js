@@ -5,6 +5,7 @@ const productController = require("../controllers/productController");
 const upload = require("../middlewares/upload");
 
 
+router.get("/all", productController.getAllProductsClient);
 router.get("/", productController.getAllProducts);
 router.get("/:id", productController.getProductById);
 

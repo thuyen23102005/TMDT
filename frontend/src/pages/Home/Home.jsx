@@ -2,24 +2,36 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import './Home.css'; 
 import TreasureChestWidget from "../../components/TreasureChestWidget/TreasureChestWidget";
-
+import { getAllProducts } from "../../services/Client/productApi";
 const Home = () => {
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/products')
-      .then(response => response.json())
-      .then(data => {
-        setProducts(data);
-        setIsLoading(false);
-      })
-      .catch(error => {
-        console.error("Lỗi kéo dữ liệu sản phẩm:", error);
-        setIsLoading(false);
-      });
-  }, []);
 
+    const fetchProducts = async () => {
+
+        try {
+
+            const res = await getAllProducts();
+
+            setProducts(res.data);
+
+        } catch (error) {
+
+            console.log(error);
+
+        } finally {
+
+            setIsLoading(false);
+
+        }
+
+    };
+
+    fetchProducts();
+
+}, []);
   return (
     <div className="home-container">
       

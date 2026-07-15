@@ -9,31 +9,70 @@ const Cart = () => {
   const [shippingType, setShippingType] = useState('standard');
   const navigate = useNavigate();
 
+  const storedUser = JSON.parse(localStorage.getItem("user"));
+
   useEffect(() => {
-    fetch('http://localhost:5000/api/cart/1')
-      .then((res) => res.json())
-      .then((data) => {
-        const formattedData = data.map(item => ({
-          ...item,
-          quantity: Number(item.quantity) || 1
-        }));
-        setCartItems(formattedData);
-        setIsLoading(false);
-      })
-      .catch((err) => { console.error(err); setIsLoading(false); });
+    if (storedUser) {
+      // Lấy từ Database
+      fetch(`http://localhost:5000/api/cart/${storedUser.maTK}`)
+        .then((res) => res.json())
+        .then((data) => {
+          const formattedData = data.map(item => ({
+            ...item,
+            quantity: Number(item.quantity) || 1
+          }));
+          setCartItems(formattedData);
+          setIsLoading(false);
+        })
+        .catch((err) => { console.error(err); setIsLoading(false); });
+    } else {
+      // Lấy từ LocalStorage
+      const localCart = JSON.parse(localStorage.getItem('cart') || '[]');
+      setCartItems(localCart);
+      setIsLoading(false);
+    }
   }, []);
 
   const updateQuantity = (id, delta) => {
-    setCartItems(prev => prev.map(item => 
-      item.id === id 
-        ? { ...item, quantity: Math.max(1, Number(item.quantity) + delta) } 
-        : item
-    ));
+    setCartItems(prev => {
+      const updatedCart = prev.map(item => 
+        item.id === id ? { ...item, quantity: Math.max(1, Number(item.quantity) + delta) } : item
+      );
+      if (!storedUser) localStorage.setItem('cart', JSON.stringify(updatedCart));
+      return updatedCart;
+    });
   };
 
-  const removeItem = (id) => {
+  // HÀM XÓA ĐÃ ĐƯỢC CẬP NHẬT GỌI API
+  const removeItem = async (id) => {
     if(window.confirm("Bạn có chắc muốn bỏ sản phẩm này?")) {
-      setCartItems(prev => prev.filter(item => item.id !== id));
+      // 1. Cập nhật giao diện (Xóa khỏi màn hình ngay lập tức cho mượt)
+      setCartItems(prev => {
+        const updatedCart = prev.filter(item => item.id !== id);
+        // Nếu chưa đăng nhập thì lưu vào LocalStorage
+        if (!storedUser) localStorage.setItem('cart', JSON.stringify(updatedCart));
+        return updatedCart;
+      });
+
+      // 2. Nếu đã đăng nhập -> Gọi API xóa dưới Database
+      if (storedUser) {
+        try {
+          await fetch(`http://localhost:5000/api/cart/remove/${storedUser.maTK}/${id}`, {
+            method: 'DELETE'
+          });
+        } catch (error) {
+          console.error("Lỗi xóa sản phẩm trên server:", error);
+        }
+      }
+    }
+  };
+
+  const handleCheckoutClick = () => {
+    if (!storedUser) {
+        alert("Vui lòng đăng nhập để tiến hành thanh toán!");
+        navigate('/login');
+    } else {
+        navigate('/checkout', { state: { cartItems, shippingType } });
     }
   };
 
@@ -86,14 +125,9 @@ const Cart = () => {
                     <td className="cart-col-qty">
                       <div className="qty-control">
                         <button className="qty-btn" onClick={() => updateQuantity(item.id, -1)}>-</button>
-                        
-                        <div 
-                          className="qty-input" 
-                          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                        >
+                        <div className="qty-input" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           {item.quantity}
                         </div>
-                        
                         <button className="qty-btn" onClick={() => updateQuantity(item.id, 1)}>+</button>
                       </div>
                     </td>
@@ -123,12 +157,12 @@ const Cart = () => {
                 <span>Tổng</span>
                 <span className="summary-total-val">{totalAmount.toLocaleString()} đ</span>
               </div>
-              <button className="btn-checkout" onClick={() => navigate('/checkout', { state: { cartItems, shippingType } })}>TIẾN HÀNH THANH TOÁN</button>
+              <button className="btn-checkout" onClick={handleCheckoutClick}>TIẾN HÀNH THANH TOÁN</button>
             </div>
           </div>
         </div>
       )}
-            <TreasureChestWidget />
+      <TreasureChestWidget />
     </div>
   );
 };

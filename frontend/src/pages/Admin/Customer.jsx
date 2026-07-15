@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import {
     getCustomers,
     updateCustomerStatus
-} from "../../services/customerApi";
+} from "../../services/Admin/customerApi";
 
 import CustomerTable from "../../components/Customer/CustomerTable";
 

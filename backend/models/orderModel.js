@@ -7,14 +7,33 @@ const getAllOrders = async () => {
     const result = await pool.request().query(`
         SELECT
             dh.MaDH,
-            kh.HoTen,
+
+            kh.HoTen AS TenKhachHang,
+
+            dc.HoTen AS NguoiNhan,
+
+            dc.SoDienThoai,
+
+            dc.DiaChiChiTiet,
+
             dh.NgayDat,
+
+            dh.PhiVanChuyen,
+
             dh.TongTien,
+
             dh.TrangThaiDonHang,
+
             dh.TrangThaiThanhToan
+
         FROM DonHang dh
+
         INNER JOIN KhachHang kh
             ON dh.MaKH = kh.MaKH
+
+        INNER JOIN SoDiaChi dc
+            ON dh.MaDC = dc.MaDC
+
         ORDER BY dh.MaDH DESC
     `);
 
@@ -61,8 +80,33 @@ const updateStatus = async (id, status) => {
         `);
 
 };
+
+const getOrdersByUser = async (maTK) => {
+    const pool = await connectDB();
+    const result = await pool.request()
+        .input("MaTK", sql.Int, maTK)
+        .query(`
+            SELECT dh.MaDH, dh.NgayDat, dh.TongTien, dh.TrangThaiDonHang, dh.TrangThaiThanhToan
+            FROM DonHang dh
+            INNER JOIN KhachHang kh ON dh.MaKH = kh.MaKH
+            WHERE kh.MaTK = @MaTK
+            ORDER BY dh.NgayDat DESC
+        `);
+    return result.recordset;
+};
+
+const getOrderStatusById = async (id) => {
+    const pool = await connectDB();
+    const result = await pool.request()
+        .input("MaDH", id)
+        .query(`SELECT TrangThaiDonHang FROM DonHang WHERE MaDH = @MaDH`);
+    return result.recordset[0]; // Trả về object chứa TrangThaiDonHang
+};
+
 module.exports = {
     getAllOrders,
     getOrderDetail,
-    updateStatus
+    updateStatus,
+    getOrdersByUser,
+    getOrderStatusById // Thêm dòng này
 };

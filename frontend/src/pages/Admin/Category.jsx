@@ -5,7 +5,7 @@ import {
     createCategory,
     updateCategory,
     deleteCategory
-} from "../../services/categoryApi";
+} from "../../services/Admin/categoryApi";
 
 import CategoryForm from "../../components/Category/CategoryForm";
 import CategoryTable from "../../components/Category/CategoryTable";

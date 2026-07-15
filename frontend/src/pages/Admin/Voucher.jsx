@@ -5,7 +5,7 @@ import {
     createVoucher,
     updateVoucher,
     deleteVoucher
-} from "../../services/voucherApi";
+} from "../../services/Admin/voucherApi";
 
 import VoucherForm from "../../components/Voucher/VoucherForm";
 import VoucherTable from "../../components/Voucher/VoucherTable";
@@ -41,48 +41,81 @@ function Voucher() {
     // ===========================
     // THÊM
     // ===========================
+const handleAdd = async (data) => {
 
-    const handleAdd = async (data) => {
+    const isExist = vouchers.some(v =>
+        v.Code.trim().toUpperCase() ===
+        data.Code.trim().toUpperCase()
+    );
 
-        try {
+    if (isExist) {
 
-            await createVoucher(data);
+        return {
+            codeError: "Mã giảm giá đã tồn tại."
+        };
 
-            alert("Thêm mã giảm giá thành công");
+    }
 
-            fetchVouchers();
+    try {
 
-        } catch (error) {
+        await createVoucher(data);
 
-            console.log(error);
+        alert("Thêm mã giảm giá thành công");
 
-        }
+        fetchVouchers();
 
-    };
+        return {
+            success: true
+        };
+
+    } catch (error) {
+
+        console.log(error);
+
+    }
+
+};
 
     // ===========================
     // CẬP NHẬT
     // ===========================
+const handleUpdate = async (id, data) => {
 
-    const handleUpdate = async (id, data) => {
+    const isExist = vouchers.some(v =>
+        v.MaGG !== id &&
+        v.Code.trim().toUpperCase() ===
+        data.Code.trim().toUpperCase()
+    );
 
-        try {
+    if (isExist) {
 
-            await updateVoucher(id, data);
+        return {
+            codeError: "Mã giảm giá đã tồn tại."
+        };
 
-            alert("Cập nhật thành công");
+    }
 
-            fetchVouchers();
+    try {
 
-            setEditingVoucher(null);
+        await updateVoucher(id, data);
 
-        } catch (error) {
+        alert("Cập nhật thành công");
 
-            console.log(error);
+        fetchVouchers();
 
-        }
+        setEditingVoucher(null);
 
-    };
+        return {
+            success: true
+        };
+
+    } catch (error) {
+
+        console.log(error);
+
+    }
+
+};
 
     // ===========================
     // XÓA
