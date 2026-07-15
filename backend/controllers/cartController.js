@@ -252,9 +252,47 @@ const mergeCart = async (req, res) => {
   }
 };
 
+const removeFromCart = async (req, res) => {
+  try {
+    const { maKH: maTK, maSP } = req.params;
+    const pool = await sql.connect();
+
+    // 1. CHUYỂN MaTK THÀNH MaKH
+    const khResult = await pool.request()
+      .input('MaTK', sql.Int, maTK)
+      .query('SELECT MaKH FROM KhachHang WHERE MaTK = @MaTK');
+
+    if (khResult.recordset.length === 0) {
+        return res.status(400).json({ message: "Tài khoản không hợp lệ" });
+    }
+    const realMaKH = khResult.recordset[0].MaKH;
+
+    // 2. TÌM MaGH (Mã Giỏ Hàng) của Khách hàng
+    let cartResult = await pool.request()
+      .input('MaKH', sql.Int, realMaKH)
+      .query(`SELECT MaGH FROM GioHang WHERE MaKH = @MaKH`);
+      
+    if (cartResult.recordset.length > 0) {
+        const maGH = cartResult.recordset[0].MaGH;
+        
+        // 3. XÓA SẢN PHẨM KHỎI CHI TIẾT GIỎ HÀNG
+        await pool.request()
+            .input('MaGH', sql.Int, maGH)
+            .input('MaSP', sql.Int, maSP)
+            .query(`DELETE FROM ChiTietGioHang WHERE MaGH = @MaGH AND MaSP = @MaSP`);
+    }
+
+    res.status(200).json({ message: "Đã xóa sản phẩm khỏi giỏ hàng" });
+  } catch (error) {
+    console.error("Lỗi khi xóa sản phẩm:", error);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
 module.exports = {
   getCartByCustomerId,
   checkoutCart,
   addToCart,
+  removeFromCart,
   mergeCart
 };

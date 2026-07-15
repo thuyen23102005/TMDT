@@ -12,35 +12,44 @@ const ProductDetail = () => {
   const [quantity, setQuantity] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
 
-  // State tạm cho phần đánh giá
+  // STATE ĐÁNH GIÁ
+  const [reviews, setReviews] = useState([]);
+  const [canReview, setCanReview] = useState(false);
   const [rating, setRating] = useState(5);
   const [reviewText, setReviewText] = useState('');
+  const storedUser = JSON.parse(localStorage.getItem("user"));
 
   useEffect(() => {
     setIsLoading(true);
     Promise.all([
       fetch(`http://localhost:5000/api/products/${id}`).then(res => res.json()),
-      fetch(`http://localhost:5000/api/products/all`).then(res => res.json())
+      fetch(`http://localhost:5000/api/products/all`).then(res => res.json()),
+      fetch(`http://localhost:5000/api/reviews/product/${id}`).then(res => res.json())
     ])
-    .then(([productData, allProductsData]) => {
+    .then(([productData, allProductsData, reviewsData]) => {
       setProduct(productData);
       const filtered = allProductsData.filter(item => item.MaSP !== parseInt(id)).slice(0, 4);
       setRelatedProducts(filtered);
+      setReviews(reviewsData);
       setIsLoading(false);
       setQuantity(1); 
     })
-    .catch(err => {
-      console.error(err);
-      setIsLoading(false);
-    });
+    .catch(err => { console.error(err); setIsLoading(false); });
+
+    // Kiểm tra quyền đánh giá nếu đã đăng nhập
+    if (storedUser) {
+        fetch(`http://localhost:5000/api/reviews/check/${storedUser.maTK}/${id}`)
+            .then(res => res.json())
+            .then(data => setCanReview(data.canReview))
+            .catch(err => console.error(err));
+    }
   }, [id]);
 
   const increaseQty = () => setQuantity(prev => prev + 1);
   const decreaseQty = () => setQuantity(prev => (prev > 1 ? prev - 1 : 1));
   
+  // HÀM ĐÃ ĐƯỢC KHÔI PHỤC LẠI ĐẦY ĐỦ
   const handleAddToCart = async () => {
-    const storedUser = JSON.parse(localStorage.getItem("user"));
-
     if (storedUser) {
       try {
         const response = await fetch('http://localhost:5000/api/cart/add', {
@@ -90,24 +99,38 @@ const ProductDetail = () => {
     navigate('/cart');
   };
 
-  const submitReview = () => {
-    // Tạm thời log ra, sau này sẽ gọi API lưu vào bảng DanhGia
-    const storedUser = JSON.parse(localStorage.getItem("user"));
-    if (!storedUser) {
-        alert("Vui lòng đăng nhập để đánh giá sản phẩm!");
-        return navigate('/login');
-    }
+  // XỬ LÝ GỬI ĐÁNH GIÁ
+  const submitReview = async () => {
     if (!reviewText.trim()) return alert("Vui lòng nhập nội dung đánh giá!");
-    
-    alert(`Cảm ơn bạn đã đánh giá ${rating} sao! (Tính năng lưu Data đang xây dựng)`);
-    setReviewText('');
-    setRating(5);
+    try {
+        const res = await fetch('http://localhost:5000/api/reviews', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ maTK: storedUser.maTK, maSP: id, soSao: rating, noiDung: reviewText })
+        });
+        if (res.ok) {
+            alert("Cảm ơn bạn đã đánh giá sản phẩm!");
+            setReviewText('');
+            setRating(5);
+            // Kéo lại danh sách đánh giá mới nhất
+            const newReviews = await fetch(`http://localhost:5000/api/reviews/product/${id}`).then(r => r.json());
+            setReviews(newReviews);
+        } else {
+            const err = await res.json();
+            alert(err.message);
+        }
+    } catch (error) {
+        alert("Lỗi kết nối Server.");
+    }
   };
 
   const SectionHeader = ({ title }) => <div className="section-title">{title}</div>;
 
   if (isLoading) return <h3 style={{ textAlign: 'center', marginTop: '50px', color: '#4caf50' }}>Đang tải thông tin...</h3>;
   if (!product) return <h3 style={{ textAlign: 'center', marginTop: '50px', color: 'red' }}>Sản phẩm không tồn tại</h3>;
+
+  // Tính trung bình sao
+  const avgStar = reviews.length > 0 ? (reviews.reduce((a, b) => a + b.SoSao, 0) / reviews.length).toFixed(1) : 5;
 
   return (
     <div className="pd-wrapper">
@@ -120,20 +143,17 @@ const ProductDetail = () => {
       <div className="pd-container">
         <div className="pd-card">
           <div className="pd-image" style={{ padding: 0, overflow: 'hidden', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
-            <img 
-              src={`http://localhost:5000/uploads/${product.HinhAnh || product.image || product.hinh_anh}`} 
-              alt={product.TenSP} 
-              style={{ maxWidth: '100%', maxHeight: '350px', objectFit: 'contain' }}
-              onError={(e) => { e.target.src = 'https://via.placeholder.com/350?text=No+Image' }}
-            />
+            <img src={`http://localhost:5000/uploads/${product.HinhAnh || product.image || product.hinh_anh}`} alt={product.TenSP} style={{ maxWidth: '100%', maxHeight: '350px', objectFit: 'contain' }} onError={(e) => { e.target.src = 'https://via.placeholder.com/350?text=No+Image' }} />
           </div>
 
           <div className="pd-info">
             <h1 className="pd-title">{product.TenSP}</h1>
-            <div className="pd-rating">⭐⭐⭐⭐⭐ (0 đánh giá) | <span style={{ color: '#28a745' }}>Đang còn hàng</span></div>
+            <div className="pd-rating">
+                <span style={{color: '#ffc107'}}>{"★".repeat(Math.round(avgStar)) + "☆".repeat(5 - Math.round(avgStar))}</span> 
+                ({reviews.length} đánh giá) | <span style={{ color: '#28a745' }}>Đang còn hàng</span>
+            </div>
             
             <div className="pd-price-box"><span className="pd-price">{Number(product.DonGia).toLocaleString()} đ</span></div>
-
             <div className="pd-variant"><span>Khu vực:</span><button className="btn-outline">Hồ Chí Minh</button></div>
             <div className="pd-variant"><span>Trọng lượng:</span><button className="btn-active">1 kg</button></div>
 
@@ -152,9 +172,7 @@ const ProductDetail = () => {
         <div className="pd-columns">
           <div className="col-main">
             <SectionHeader title="Mô tả sản phẩm" />
-            <div style={{ padding: '20px', color: '#444', lineHeight: '1.6' }}>
-              <p>{product.MoTa || "Sản phẩm nông sản sạch, đảm bảo 100% tươi ngon, an toàn cho sức khỏe."}</p>
-            </div>
+            <div style={{ padding: '20px', color: '#444', lineHeight: '1.6' }}><p>{product.MoTa || "Sản phẩm nông sản sạch, đảm bảo 100% tươi ngon, an toàn cho sức khỏe."}</p></div>
           </div>
           <div className="col-side">
             <div className="side-box">
@@ -167,53 +185,42 @@ const ProductDetail = () => {
           </div>
         </div>
 
-        {/* KHU VỰC MỚI: ĐÁNH GIÁ SẢN PHẨM */}
+        {/* KHU VỰC ĐÁNH GIÁ SẢN PHẨM */}
         <div style={{ backgroundColor: '#fff', borderRadius: '8px', padding: '20px', marginTop: '30px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
             <SectionHeader title="Đánh giá sản phẩm" />
             <div className="review-section" style={{ padding: '10px' }}>
-                {/* Hiển thị danh sách đánh giá (Mặc định đang trống) */}
-                <div className="review-list" style={{ marginBottom: '30px', color: '#666', fontStyle: 'italic', textAlign: 'center', padding: '20px 0' }}>
-                    Chưa có đánh giá nào. Hãy là người đầu tiên nhận xét về sản phẩm này!
+                
+                <div className="review-list" style={{ marginBottom: '30px' }}>
+                    {reviews.length === 0 ? (
+                        <div style={{ color: '#666', fontStyle: 'italic', textAlign: 'center', padding: '20px 0' }}>Chưa có đánh giá nào.</div>
+                    ) : (
+                        reviews.map(rv => (
+                            <div key={rv.MaDG} style={{ borderBottom: '1px solid #eee', paddingBottom: '15px', marginBottom: '15px' }}>
+                                <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>{rv.HoTen} <span style={{ color: '#ffc107', marginLeft: '10px' }}>{"★".repeat(rv.SoSao)}{"☆".repeat(5-rv.SoSao)}</span></div>
+                                <div style={{ fontSize: '12px', color: '#999', marginBottom: '10px' }}>{new Date(rv.NgayDG).toLocaleDateString('vi-VN')}</div>
+                                <div style={{ color: '#333' }}>{rv.NoiDung}</div>
+                            </div>
+                        ))
+                    )}
                 </div>
 
-                {/* Form viết đánh giá mới */}
-                <div className="review-form" style={{ borderTop: '1px solid #eee', paddingTop: '20px' }}>
-                    <h5 style={{ color: '#2e7d32', marginBottom: '15px', fontWeight: 'bold' }}>Viết đánh giá của bạn</h5>
-                    
-                    <div className="d-flex align-items-center mb-3">
-                        <span style={{ marginRight: '15px', fontWeight: '500' }}>Chọn số sao: </span>
-                        {[1, 2, 3, 4, 5].map(star => (
-                            <span 
-                                key={star} 
-                                onClick={() => setRating(star)}
-                                style={{ 
-                                    cursor: 'pointer', 
-                                    fontSize: '24px', 
-                                    color: star <= rating ? '#ffc107' : '#e4e5e9',
-                                    marginRight: '5px'
-                                }}
-                            >
-                                ★
-                            </span>
-                        ))}
+                {canReview ? (
+                    <div className="review-form" style={{ borderTop: '1px solid #eee', paddingTop: '20px' }}>
+                        <h5 style={{ color: '#2e7d32', marginBottom: '15px', fontWeight: 'bold' }}>Viết đánh giá của bạn</h5>
+                        <div className="d-flex align-items-center mb-3">
+                            <span style={{ marginRight: '15px', fontWeight: '500' }}>Chọn số sao: </span>
+                            {[1, 2, 3, 4, 5].map(star => (
+                                <span key={star} onClick={() => setRating(star)} style={{ cursor: 'pointer', fontSize: '24px', color: star <= rating ? '#ffc107' : '#e4e5e9', marginRight: '5px' }}>★</span>
+                            ))}
+                        </div>
+                        <textarea className="form-control mb-3" rows="4" placeholder="Nhập nội dung đánh giá..." value={reviewText} onChange={(e) => setReviewText(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}></textarea>
+                        <button onClick={submitReview} style={{ backgroundColor: '#2e7d32', color: 'white', padding: '10px 24px', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>Gửi đánh giá</button>
                     </div>
-
-                    <textarea 
-                        className="form-control mb-3" 
-                        rows="4" 
-                        placeholder="Nhập nội dung đánh giá về chất lượng sản phẩm, giao hàng..."
-                        value={reviewText}
-                        onChange={(e) => setReviewText(e.target.value)}
-                        style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
-                    ></textarea>
-
-                    <button 
-                        onClick={submitReview}
-                        style={{ backgroundColor: '#2e7d32', color: 'white', padding: '10px 24px', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}
-                    >
-                        Gửi đánh giá
-                    </button>
-                </div>
+                ) : (
+                    <div style={{ borderTop: '1px solid #eee', paddingTop: '20px', textAlign: 'center', color: '#d32f2f', fontStyle: 'italic' }}>
+                        * Bạn cần mua và nhận sản phẩm này thành công để có thể viết đánh giá.
+                    </div>
+                )}
             </div>
         </div>
 
