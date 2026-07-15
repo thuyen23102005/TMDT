@@ -67,15 +67,6 @@ function Header() {
                     Sản phẩm
                 </Link>
 
-                {user && user.vaiTro === "Admin" && (
-                    <Link
-                        to="/admin"
-                        className="text-decoration-none fw-medium"
-                        style={{ color: "#333", fontSize: "15px" }}
-                    >
-                        Trang Quản Trị
-                    </Link>
-                )}
 
                 <Link
                     to="/cart"
@@ -93,9 +84,6 @@ function Header() {
 
                 {user ? (
                     <>
-                        <span className="fw-medium" style={{ color: "#333", fontSize: "15px" }}>
-                            Xin chào, {user.HoTen || user.Ten || user.email}
-                        </span>
                         <Link
                             to="/profile"
                             title="Trang cá nhân"

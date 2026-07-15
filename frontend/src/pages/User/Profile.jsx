@@ -108,8 +108,6 @@ function Profile() {
                         </div>
                     </div>
                 </div>
-
-                <Outlet context={{ orders }} />
             </div>
         </div>
     );

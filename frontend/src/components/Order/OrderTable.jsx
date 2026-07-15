@@ -2,25 +2,29 @@ function OrderTable({ orders, onDetail, onUpdate }) {
 
     return (
 
-        <table className="table table-bordered table-hover">
+        <table className="table table-bordered table-hover align-middle">
 
-            <thead className="table-success">
+            <thead className="table-success text-center">
 
                 <tr>
 
-                    <th>Mã đơn</th>
+                    <th width="180">Khách hàng</th>
 
-                    <th>Khách hàng</th>
+                    <th width="180">Người nhận</th>
 
-                    <th>Ngày đặt</th>
+                    <th width="130">SĐT</th>
 
-                    <th>Tổng tiền</th>
+                    <th>Địa chỉ nhận</th>
 
-                    <th>Thanh toán</th>
+                    <th width="120">Ngày đặt</th>
 
-                    <th>Trạng thái</th>
+                    <th width="120">Tổng tiền</th>
 
-                    <th width="170">Thao tác</th>
+                    <th width="150">Thanh toán</th>
+
+                    <th width="160">Trạng thái</th>
+
+                    <th width="180">Thao tác</th>
 
                 </tr>
 
@@ -29,52 +33,112 @@ function OrderTable({ orders, onDetail, onUpdate }) {
             <tbody>
 
                 {
-                    orders.map(order => (
+                    orders.length === 0 ? (
 
-                        <tr key={order.MaDH}>
+                        <tr>
 
-                            <td>{order.MaDH}</td>
-
-                            <td>{order.HoTen}</td>
-
-                            <td>
-                                {new Date(order.NgayDat).toLocaleDateString()}
-                            </td>
-
-                            <td>
-                                {Number(order.TongTien).toLocaleString()} đ
-                            </td>
-
-                            <td>{order.TrangThaiThanhToan}</td>
-
-                            <td>{order.TrangThaiDonHang}</td>
-
-                            <td>
-
-                                <button
-                                    className="btn btn-info btn-sm me-2"
-                                    onClick={() => onDetail(order.MaDH)}
-                                >
-                                    Chi tiết
-                                </button>
-
-                                <button
-
-                                    className="btn btn-warning btn-sm"
-
-                                    onClick={() => onUpdate(order)}
-
-                                >
-
-                                    Cập nhật
-
-                                </button>
-
+                            <td colSpan="9" className="text-center py-4">
+                                Chưa có đơn hàng.
                             </td>
 
                         </tr>
 
-                    ))
+                    ) : (
+
+                        orders.map(order => (
+
+                            <tr key={order.MaDH}>
+
+                                <td>
+
+                                    <strong>{order.TenKhachHang}</strong>
+
+                                </td>
+
+                                <td>{order.NguoiNhan}</td>
+
+                                <td>{order.SoDienThoai}</td>
+
+                                <td
+                                    style={{
+                                        maxWidth: "280px",
+                                        whiteSpace: "normal"
+                                    }}
+                                >
+                                    {order.DiaChiChiTiet}
+                                </td>
+
+                                <td>
+
+                                    {new Date(order.NgayDat).toLocaleDateString("vi-VN")}
+
+                                </td>
+
+                                <td className="fw-bold text-danger">
+
+                                    {Number(order.TongTien).toLocaleString()} đ
+
+                                </td>
+
+                                <td>
+
+                                    <span
+                                        className={`badge ${
+                                            order.TrangThaiThanhToan === "Đã thanh toán"
+                                                ? "bg-success"
+                                                : "bg-warning text-dark"
+                                        }`}
+                                    >
+                                        {order.TrangThaiThanhToan}
+                                    </span>
+
+                                </td>
+
+                                <td>
+
+                                    <span
+                                        className={`badge
+                                            ${
+                                                order.TrangThaiDonHang === "Chờ xác nhận"
+                                                    ? "bg-secondary"
+                                                : order.TrangThaiDonHang === "Đã xác nhận"
+                                                    ? "bg-primary"
+                                                : order.TrangThaiDonHang === "Đang giao"
+                                                    ? "bg-warning text-dark"
+                                                : order.TrangThaiDonHang === "Đã giao"
+                                                    ? "bg-success"
+                                                : "bg-danger"
+                                            }
+                                        `}
+                                    >
+                                        {order.TrangThaiDonHang}
+                                    </span>
+
+                                </td>
+
+                                <td>
+
+                                    <button
+                                        className="btn btn-info btn-sm me-2"
+                                        onClick={() => onDetail(order.MaDH)}
+                                    >
+                                        Chi tiết
+                                    </button>
+
+                                    <button
+                                        className="btn btn-warning btn-sm"
+                                        onClick={() => onUpdate(order)}
+                                    >
+                                        Cập nhật
+                                    </button>
+
+                                </td>
+
+                            </tr>
+
+                        ))
+
+                    )
                 }
 
             </tbody>
