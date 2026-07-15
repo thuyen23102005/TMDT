@@ -7,14 +7,33 @@ const getAllOrders = async () => {
     const result = await pool.request().query(`
         SELECT
             dh.MaDH,
-            kh.HoTen,
+
+            kh.HoTen AS TenKhachHang,
+
+            dc.HoTen AS NguoiNhan,
+
+            dc.SoDienThoai,
+
+            dc.DiaChiChiTiet,
+
             dh.NgayDat,
+
+            dh.PhiVanChuyen,
+
             dh.TongTien,
+
             dh.TrangThaiDonHang,
+
             dh.TrangThaiThanhToan
+
         FROM DonHang dh
+
         INNER JOIN KhachHang kh
             ON dh.MaKH = kh.MaKH
+
+        INNER JOIN SoDiaChi dc
+            ON dh.MaDC = dc.MaDC
+
         ORDER BY dh.MaDH DESC
     `);
 

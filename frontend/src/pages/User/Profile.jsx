@@ -115,7 +115,7 @@ function Profile() {
                 {/* KIỂM TRA: NẾU BẤM VÀO TAB "ĐƠN HÀNG" THÌ HIỆN DANH SÁCH, KHÔNG THÌ HIỆN OUTLET CŨ */}
                 {isOrdersTab ? (
                     <div className="shadow-sm rounded p-3 bg-white mt-3 border">
-                        <h5 className="fw-bold mb-3 text-success">Đơn hàng của bạn</h5>
+                        <h5 className="fw-bold mb-3 text-success">Đơn hàng của tôi</h5>
                         {orders.length === 0 ? (
                             <div className="text-center text-muted py-4">Chưa có đơn hàng nào. Hãy mua sắm thêm nhé!</div>
                         ) : (
