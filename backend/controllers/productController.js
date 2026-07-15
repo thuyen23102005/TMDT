@@ -1,9 +1,33 @@
 const productModel = require("../models/productModel");
 
+const getAllProductsClient = async (req, res) => {
+
+    try {
+
+        const products = await productModel.getAllProductsClient();
+
+        res.json(products);
+
+    } catch (error) {
+
+        console.log(error);
+
+        res.status(500).json({
+            message: "Lỗi server"
+        });
+
+    }
+
+};
 const getAllProducts = async (req, res) => {
     try {
-        const products = await productModel.getAllProducts();
-        res.status(200).json(products);
+        const page = parseInt(req.query.page) || 1;
+
+        const limit = parseInt(req.query.limit) || 5;
+
+        const data = await productModel.getAllProducts(page, limit);
+
+        res.json(data);
     } catch (error) {
         console.error(error);
         res.status(500).json({
@@ -97,6 +121,7 @@ const deleteProduct = async (req, res) => {
 };
 module.exports = {
     getAllProducts,
+    getAllProductsClient,
     getProductById,
     createProduct,
     updateProduct,

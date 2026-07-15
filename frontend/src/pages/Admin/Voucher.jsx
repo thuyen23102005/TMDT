@@ -5,7 +5,7 @@ import {
     createVoucher,
     updateVoucher,
     deleteVoucher
-} from "../../services/voucherApi";
+} from "../../services/Admin/voucherApi";
 
 import VoucherForm from "../../components/Voucher/VoucherForm";
 import VoucherTable from "../../components/Voucher/VoucherTable";

@@ -4,31 +4,37 @@ import {
     createProduct,
     updateProduct,
     deleteProduct
-} from "../../services/productApi";
+} from "../../services/Admin/productApi";
 
-import { getCategories } from "../../services/categoryApi";
+import { getCategories } from "../../services/Admin/categoryApi";
 
 import ProductForm from "../../components/Product/ProductForm";
+
+import Pagination from "../../components/Common/Pagination";
 
 function Product() {
 
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
     const [editingProduct, setEditingProduct] = useState(null);
+    const [page,setPage]=useState(1);
+    const [totalPages,setTotalPages]=useState(1);
     useEffect(() => {
 
-    fetchProducts();
+    fetchProducts(page);
     fetchCategories();
 
-}, []);
+}, [page]);
 
-    async function fetchProducts() {
+    async function fetchProducts(currentPage) {
 
         try {
 
-            const res = await getProducts();
+            const res = await getProducts(currentPage);
 
-            setProducts(res.data);
+            setProducts(res.data.products);
+
+            setTotalPages(res.data.totalPages); 
 
         } catch (error) {
 
@@ -210,7 +216,11 @@ function Product() {
                 </tbody>
 
             </table>
-
+        <Pagination
+            page={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+        />
         </div>
 
     );

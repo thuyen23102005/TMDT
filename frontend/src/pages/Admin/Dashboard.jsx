@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getDashboard } from "../../services/dashboardApi";
+import { getDashboard } from "../../services/Admin/dashboardApi";
 
 function Dashboard() {
 
