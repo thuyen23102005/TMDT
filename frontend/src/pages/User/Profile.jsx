@@ -65,7 +65,9 @@ function Profile() {
                         <li className="py-1"><a href="#" className="text-dark text-decoration-none">🎟️ Ví voucher</a></li>
                         <li className="py-1"><a href="#" className="text-dark text-decoration-none">✉️ Thông báo</a></li>
                         <li className="py-1"><a href="#" className="text-dark text-decoration-none">♡ Sản phẩm yêu thích</a></li>
-                        <li className="py-1"><a href="#" className="text-dark text-decoration-none">★ Đánh giá của tôi</a></li>
+                        <li className="py-1">
+                            <Link to="/profile/danh-gia" className={`text-decoration-none ${location.pathname.includes('danh-gia') ? 'fw-bold text-success' : 'text-dark'}`}>★ Đánh giá của tôi</Link>
+                        </li>
                     </ul>
                 </div>
             </div>

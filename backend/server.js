@@ -15,7 +15,9 @@ const orderRoutes = require("./routes/orderRoutes");
 
 const customerRoutes = require("./routes/customerRoutes");
 
-const addressRoutes = require('./routes/addressRoutes'); // Thêm dòng này ở trên
+const addressRoutes = require('./routes/addressRoutes');
+
+const reviewRoutes = require('./routes/reviewRoutes');
 
 const voucherRoutes = require("./routes/voucherRoutes");
 
@@ -47,6 +49,8 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/customers", customerRoutes);
 
 app.use('/api/addresses', addressRoutes);
+
+app.use('/api/reviews', reviewRoutes);
 
 app.use("/api/vouchers", voucherRoutes);
 
