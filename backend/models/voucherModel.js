@@ -101,10 +101,38 @@ const deleteVoucher = async (id) => {
         `);
 
 };
+// Kiểm tra Code đã tồn tại chưa
+const checkCodeExists = async (code, id = null) => {
 
+    const pool = await connectDB();
+
+    let query = `
+        SELECT MaGG
+        FROM MaGiamGia
+        WHERE Code = @Code
+    `;
+
+    const request = pool.request()
+        .input("Code", sql.VarChar, code);
+
+    // Khi sửa thì bỏ qua chính voucher đang sửa
+    if (id) {
+
+        query += " AND MaGG <> @MaGG";
+
+        request.input("MaGG", sql.Int, id);
+
+    }
+
+    const result = await request.query(query);
+
+    return result.recordset.length > 0;
+
+};
 module.exports = {
     getAllVoucher,
     createVoucher,
     updateVoucher,
-    deleteVoucher
+    deleteVoucher,
+    checkCodeExists
 };
