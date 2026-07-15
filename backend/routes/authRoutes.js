@@ -2,15 +2,37 @@ const express = require("express");
 const router = express.Router();
 
 const authController = require("../controllers/authController");
-const { verifyToken } = require("../middlewares/authMiddleware");
+const { verifyToken, isAdmin } = require("../middlewares/authMiddleware");
 
-// POST /api/auth/register
+
 router.post("/register", authController.register);
 
-// POST /api/auth/login
 router.post("/login", authController.login);
 
-// POST /api/auth/changePassword
-router.put("/change-password", verifyToken, authController.changePassword);
+
+// Admin tạo tài khoản Admin
+router.post(
+    "/register-admin",
+    verifyToken,
+    isAdmin,
+    authController.registerAdmin
+);
+
+
+// Đổi mật khẩu
+router.put(
+    "/change-password",
+    verifyToken,
+    authController.changePassword
+);
+
+
+// Xác thực mật khẩu
+router.post(
+    "/verify-password",
+    verifyToken,
+    authController.verifyPassword
+);
+
 
 module.exports = router;

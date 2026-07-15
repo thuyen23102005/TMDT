@@ -4,6 +4,7 @@ require("dotenv").config();
 
 const { connectDB } = require("./config/db");
 
+const createDefaultAdmin = require("./utils/createDefaultAdmin");
 // Import Routes
 const categoryRoutes = require("./routes/categoryRoutes");
 
@@ -65,6 +66,9 @@ app.get("/", (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
     console.log(`🚀 Server đang chạy tại: http://localhost:${PORT}`);
+
+    await connectDB();
+    await createDefaultAdmin();
 });
