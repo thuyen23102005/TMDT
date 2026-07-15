@@ -12,11 +12,7 @@ function Sidebar() {
             className="bg-success text-white p-3"
             style={{
                 width: "250px",
-                height: "100vh",
-                position: "fixed",
-                left: 0,
-                top: 0,
-                overflowY: "auto"
+                minHeight: "100vh"
             }}
         >
             <h3 className="text-center mb-4">

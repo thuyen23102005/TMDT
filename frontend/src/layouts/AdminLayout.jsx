@@ -1,25 +1,19 @@
 import { Outlet } from "react-router-dom";
 
 import Sidebar from "../components/Sidebar";
-import HeaderAdmin from "../components/HeaderAdmin";
+import Header from "../components/Header";
 
 function AdminLayout() {
 
     return (
 
-        <div>
+        <div className="d-flex">
 
             <Sidebar />
 
-            <div
-                style={{
-                    marginLeft: "250px",
-                    minHeight: "100vh",
-                    background: "#f8f9fa"
-                }}
-            >
+            <div className="flex-grow-1 bg-light">
 
-                <HeaderAdmin />
+                <Header />
 
                 <div className="p-4">
 
