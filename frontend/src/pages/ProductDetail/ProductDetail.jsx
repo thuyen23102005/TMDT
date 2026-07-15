@@ -12,11 +12,15 @@ const ProductDetail = () => {
   const [quantity, setQuantity] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
 
+  // State tạm cho phần đánh giá
+  const [rating, setRating] = useState(5);
+  const [reviewText, setReviewText] = useState('');
+
   useEffect(() => {
     setIsLoading(true);
     Promise.all([
       fetch(`http://localhost:5000/api/products/${id}`).then(res => res.json()),
-      fetch(`http://localhost:5000/api/products`).then(res => res.json())
+      fetch(`http://localhost:5000/api/products/all`).then(res => res.json())
     ])
     .then(([productData, allProductsData]) => {
       setProduct(productData);
@@ -34,18 +38,16 @@ const ProductDetail = () => {
   const increaseQty = () => setQuantity(prev => prev + 1);
   const decreaseQty = () => setQuantity(prev => (prev > 1 ? prev - 1 : 1));
   
-  // Xử lý thêm vào giỏ hàng linh hoạt (có user / ko user)
   const handleAddToCart = async () => {
     const storedUser = JSON.parse(localStorage.getItem("user"));
 
     if (storedUser) {
-      // TRƯỜNG HỢP 1: ĐÃ ĐĂNG NHẬP -> Gửi thẳng lên Backend
       try {
         const response = await fetch('http://localhost:5000/api/cart/add', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            maKH: storedUser.maTK, // Lấy ID tài khoản thật
+            maKH: storedUser.maTK, 
             maSP: product.MaSP,
             soLuong: quantity
           })
@@ -61,13 +63,12 @@ const ProductDetail = () => {
         alert("Lỗi kết nối đến server.");
       }
     } else {
-      // TRƯỜNG HỢP 2: CHƯA ĐĂNG NHẬP -> Lưu vào bộ nhớ tạm trình duyệt
       let localCart = JSON.parse(localStorage.getItem('cart') || '[]');
       
       const existingItemIndex = localCart.findIndex(item => item.id === product.MaSP);
       
       if (existingItemIndex >= 0) {
-        localCart[existingItemIndex].quantity += quantity; // Cộng dồn số lượng
+        localCart[existingItemIndex].quantity += quantity; 
       } else {
         localCart.push({
           id: product.MaSP,
@@ -87,6 +88,20 @@ const ProductDetail = () => {
   const handleBuyNow = async () => {
     await handleAddToCart();
     navigate('/cart');
+  };
+
+  const submitReview = () => {
+    // Tạm thời log ra, sau này sẽ gọi API lưu vào bảng DanhGia
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+    if (!storedUser) {
+        alert("Vui lòng đăng nhập để đánh giá sản phẩm!");
+        return navigate('/login');
+    }
+    if (!reviewText.trim()) return alert("Vui lòng nhập nội dung đánh giá!");
+    
+    alert(`Cảm ơn bạn đã đánh giá ${rating} sao! (Tính năng lưu Data đang xây dựng)`);
+    setReviewText('');
+    setRating(5);
   };
 
   const SectionHeader = ({ title }) => <div className="section-title">{title}</div>;
@@ -143,7 +158,7 @@ const ProductDetail = () => {
           </div>
           <div className="col-side">
             <div className="side-box">
-              <SectionHeader title="Thông cải sản phẩm" />
+              <SectionHeader title="Thông tin sản phẩm" />
               <div style={{ padding: '15px' }}>
                 <div className="side-row"><span style={{ width: '40%', fontWeight: 'bold' }}>Trọng lượng:</span><span>1 kg</span></div>
                 <div className="side-row"><span style={{ width: '40%', fontWeight: 'bold' }}>Khu vực:</span><span>Hà Nội, Hồ Chí Minh</span></div>
@@ -152,7 +167,57 @@ const ProductDetail = () => {
           </div>
         </div>
 
-        <div className="related-box">
+        {/* KHU VỰC MỚI: ĐÁNH GIÁ SẢN PHẨM */}
+        <div style={{ backgroundColor: '#fff', borderRadius: '8px', padding: '20px', marginTop: '30px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
+            <SectionHeader title="Đánh giá sản phẩm" />
+            <div className="review-section" style={{ padding: '10px' }}>
+                {/* Hiển thị danh sách đánh giá (Mặc định đang trống) */}
+                <div className="review-list" style={{ marginBottom: '30px', color: '#666', fontStyle: 'italic', textAlign: 'center', padding: '20px 0' }}>
+                    Chưa có đánh giá nào. Hãy là người đầu tiên nhận xét về sản phẩm này!
+                </div>
+
+                {/* Form viết đánh giá mới */}
+                <div className="review-form" style={{ borderTop: '1px solid #eee', paddingTop: '20px' }}>
+                    <h5 style={{ color: '#2e7d32', marginBottom: '15px', fontWeight: 'bold' }}>Viết đánh giá của bạn</h5>
+                    
+                    <div className="d-flex align-items-center mb-3">
+                        <span style={{ marginRight: '15px', fontWeight: '500' }}>Chọn số sao: </span>
+                        {[1, 2, 3, 4, 5].map(star => (
+                            <span 
+                                key={star} 
+                                onClick={() => setRating(star)}
+                                style={{ 
+                                    cursor: 'pointer', 
+                                    fontSize: '24px', 
+                                    color: star <= rating ? '#ffc107' : '#e4e5e9',
+                                    marginRight: '5px'
+                                }}
+                            >
+                                ★
+                            </span>
+                        ))}
+                    </div>
+
+                    <textarea 
+                        className="form-control mb-3" 
+                        rows="4" 
+                        placeholder="Nhập nội dung đánh giá về chất lượng sản phẩm, giao hàng..."
+                        value={reviewText}
+                        onChange={(e) => setReviewText(e.target.value)}
+                        style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+                    ></textarea>
+
+                    <button 
+                        onClick={submitReview}
+                        style={{ backgroundColor: '#2e7d32', color: 'white', padding: '10px 24px', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}
+                    >
+                        Gửi đánh giá
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div className="related-box" style={{ marginTop: '30px' }}>
           <SectionHeader title="Các sản phẩm khác" />
           <div className="related-list">
             {relatedProducts.length > 0 ? (

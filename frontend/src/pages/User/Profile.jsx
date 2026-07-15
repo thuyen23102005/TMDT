@@ -12,15 +12,14 @@ function Profile() {
         const storedUser = JSON.parse(localStorage.getItem('user'));
         setUser(storedUser);
 
-        // BỎ điều kiện isOrdersTab để luôn luôn gọi API lấy đơn hàng khi vào Profile
-        // Mục đích: Tính toán thành tích (Số đơn, Tổng tiền) cho tất cả các tab
+        // Luôn gọi API lấy đơn hàng khi vào Profile để tính toán thành tích
         if (storedUser) {
             fetch(`http://localhost:5000/api/orders/user/${storedUser.maTK}`)
                 .then(res => res.json())
                 .then(data => setOrders(data))
                 .catch(err => console.error("Lỗi kéo đơn hàng:", err));
         }
-    }, [location.pathname]); // Cập nhật lại mỗi khi chuyển tab trong profile để data luôn mới
+    }, [location.pathname]);
 
     // TÍNH TOÁN THÀNH TÍCH
     const totalOrders = orders.length;
@@ -99,12 +98,10 @@ function Profile() {
                             <div className="d-flex justify-content-between mt-2">
                                 <div>
                                     <div className="text-muted small">Số đơn hàng</div>
-                                    {/* CẬP NHẬT: Hiện số lượng đơn hàng thật */}
                                     <div className="fw-bold">{totalOrders} đơn hàng</div>
                                 </div>
                                 <div>
                                     <div className="text-muted small">Đã thanh toán</div>
-                                    {/* CẬP NHẬT: Hiện tổng tiền thật đã chi */}
                                     <div className="fw-bold text-success">{totalSpent.toLocaleString()} đ</div>
                                 </div>
                             </div>
@@ -112,6 +109,7 @@ function Profile() {
                     </div>
                 </div>
 
+<<<<<<< HEAD
                 {/* KIỂM TRA: NẾU BẤM VÀO TAB "ĐƠN HÀNG" THÌ HIỆN DANH SÁCH, KHÔNG THÌ HIỆN OUTLET CŨ */}
                 {isOrdersTab ? (
                     <div className="shadow-sm rounded p-3 bg-white mt-3 border">
@@ -148,6 +146,9 @@ function Profile() {
                 ) : (
                     <Outlet />
                 )}
+=======
+                <Outlet context={{ orders }} />
+>>>>>>> 79754eaef218026f2ef140352ece22c3cca1d9a0
             </div>
         </div>
     );
