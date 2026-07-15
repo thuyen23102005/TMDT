@@ -43,13 +43,27 @@ const Cart = () => {
     });
   };
 
-  const removeItem = (id) => {
+  // HÀM XÓA ĐÃ ĐƯỢC CẬP NHẬT GỌI API
+  const removeItem = async (id) => {
     if(window.confirm("Bạn có chắc muốn bỏ sản phẩm này?")) {
+      // 1. Cập nhật giao diện (Xóa khỏi màn hình ngay lập tức cho mượt)
       setCartItems(prev => {
         const updatedCart = prev.filter(item => item.id !== id);
+        // Nếu chưa đăng nhập thì lưu vào LocalStorage
         if (!storedUser) localStorage.setItem('cart', JSON.stringify(updatedCart));
         return updatedCart;
       });
+
+      // 2. Nếu đã đăng nhập -> Gọi API xóa dưới Database
+      if (storedUser) {
+        try {
+          await fetch(`http://localhost:5000/api/cart/remove/${storedUser.maTK}/${id}`, {
+            method: 'DELETE'
+          });
+        } catch (error) {
+          console.error("Lỗi xóa sản phẩm trên server:", error);
+        }
+      }
     }
   };
 

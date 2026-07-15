@@ -3,7 +3,7 @@ const { connectDB, sql } = require("../config/db");
 // 1. Lấy chi tiết giỏ hàng theo Mã Tài Khoản
 const getCartByCustomerId = async (req, res) => {
   try {
-    const maTK = req.params.maKH; // React đang gửi maTK vào đây
+    const maTK = req.params.maKH; 
     const pool = await sql.connect(); 
 
     // CHUYỂN MaTK THÀNH MaKH
@@ -11,7 +11,7 @@ const getCartByCustomerId = async (req, res) => {
       .input('MaTK', sql.Int, maTK)
       .query('SELECT MaKH FROM KhachHang WHERE MaTK = @MaTK');
 
-    // Nếu không phải khách hàng (vd: Admin) thì trả về giỏ trống
+    // Nếu không phải khách hàng thì trả về giỏ trống
     if (khResult.recordset.length === 0) return res.json([]); 
     const realMaKH = khResult.recordset[0].MaKH;
     
@@ -37,17 +37,16 @@ const getCartByCustomerId = async (req, res) => {
   }
 };
 
-// 2. Chốt đơn hàng
+// 2. Chốt đơn hàng (ĐÃ CẬP NHẬT SQL MaDC)
 const checkoutCart = async (req, res) => {
   try {
     const {
         maKH: maTK,
-        maDC, // Phải đảm bảo frontend gửi tham số này
+        maDC, 
         tongTien,
         trangThaiThanhToan
     } = req.body;
 
-    // 1. KIỂM TRA DỮ LIỆU ĐẦU VÀO NGHIÊM NGẶT
     if (!maDC) {
         return res.status(400).json({ message: "Vui lòng chọn địa chỉ giao hàng (MaDC)" });
     }
@@ -55,7 +54,6 @@ const checkoutCart = async (req, res) => {
         return res.status(400).json({ message: "Tổng tiền không hợp lệ" });
     }
 
-    // Dùng connectDB() giống orderModel.js
     const pool = await connectDB();
 
     const khResult = await pool.request()
@@ -65,7 +63,6 @@ const checkoutCart = async (req, res) => {
     if (khResult.recordset.length === 0) return res.status(400).json({message: "Tài khoản không hợp lệ"});
     const realMaKH = khResult.recordset[0].MaKH;
 
-    // 2. XÁC THỰC BẢO MẬT: Kiểm tra MaDC này có đúng là của MaKH này không
     const dcResult = await pool.request()
       .input('MaDC', sql.Int, maDC)
       .input('MaKH', sql.Int, realMaKH)
@@ -136,7 +133,6 @@ const addToCart = async (req, res) => {
     const { maKH: maTK, maSP, soLuong } = req.body;
     const pool = await sql.connect();
 
-    // CHUYỂN MaTK THÀNH MaKH
     const khResult = await pool.request()
       .input('MaTK', sql.Int, maTK)
       .query('SELECT MaKH FROM KhachHang WHERE MaTK = @MaTK');
@@ -146,7 +142,6 @@ const addToCart = async (req, res) => {
     }
     const realMaKH = khResult.recordset[0].MaKH;
 
-    // TÌM HOẶC TẠO GIỎ HÀNG DỰA TRÊN MÃ KHÁCH HÀNG THẬT
     let cartResult = await pool.request()
       .input('MaKH', sql.Int, realMaKH)
       .query(`SELECT MaGH FROM GioHang WHERE MaKH = @MaKH`);
@@ -198,7 +193,6 @@ const mergeCart = async (req, res) => {
 
     const pool = await sql.connect();
 
-    // CHUYỂN MaTK THÀNH MaKH
     const khResult = await pool.request()
       .input('MaTK', sql.Int, maTK)
       .query('SELECT MaKH FROM KhachHang WHERE MaTK = @MaTK');
@@ -252,9 +246,45 @@ const mergeCart = async (req, res) => {
   }
 };
 
+// 5. HÀM XÓA SẢN PHẨM KHỎI GIỎ HÀNG (Đã được khôi phục)
+const removeFromCart = async (req, res) => {
+  try {
+    const { maKH: maTK, maSP } = req.params;
+    const pool = await sql.connect();
+
+    const khResult = await pool.request()
+      .input('MaTK', sql.Int, maTK)
+      .query('SELECT MaKH FROM KhachHang WHERE MaTK = @MaTK');
+
+    if (khResult.recordset.length === 0) {
+        return res.status(400).json({ message: "Tài khoản không hợp lệ" });
+    }
+    const realMaKH = khResult.recordset[0].MaKH;
+
+    let cartResult = await pool.request()
+      .input('MaKH', sql.Int, realMaKH)
+      .query(`SELECT MaGH FROM GioHang WHERE MaKH = @MaKH`);
+      
+    if (cartResult.recordset.length > 0) {
+        const maGH = cartResult.recordset[0].MaGH;
+        
+        await pool.request()
+            .input('MaGH', sql.Int, maGH)
+            .input('MaSP', sql.Int, maSP)
+            .query(`DELETE FROM ChiTietGioHang WHERE MaGH = @MaGH AND MaSP = @MaSP`);
+    }
+
+    res.status(200).json({ message: "Đã xóa sản phẩm khỏi giỏ hàng" });
+  } catch (error) {
+    console.error("Lỗi khi xóa sản phẩm:", error);
+    res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
 module.exports = {
   getCartByCustomerId,
   checkoutCart,
   addToCart,
-  mergeCart
+  mergeCart,
+  removeFromCart
 };
