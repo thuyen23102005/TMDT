@@ -48,8 +48,56 @@ const ProductDetail = () => {
   const increaseQty = () => setQuantity(prev => prev + 1);
   const decreaseQty = () => setQuantity(prev => (prev > 1 ? prev - 1 : 1));
   
-  const handleAddToCart = async () => { /* Giữ nguyên logic cũ của bạn */ };
-  const handleBuyNow = async () => { await handleAddToCart(); navigate('/cart'); };
+  // HÀM ĐÃ ĐƯỢC KHÔI PHỤC LẠI ĐẦY ĐỦ
+  const handleAddToCart = async () => {
+    if (storedUser) {
+      try {
+        const response = await fetch('http://localhost:5000/api/cart/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            maKH: storedUser.maTK, 
+            maSP: product.MaSP,
+            soLuong: quantity
+          })
+        });
+
+        if (response.ok) {
+          alert(`🛒 Đã thêm ${quantity} ${product.TenSP} vào giỏ hàng thành công!`);
+        } else {
+          alert("Có lỗi xảy ra khi thêm vào giỏ.");
+        }
+      } catch (error) {
+        console.error(error);
+        alert("Lỗi kết nối đến server.");
+      }
+    } else {
+      let localCart = JSON.parse(localStorage.getItem('cart') || '[]');
+      
+      const existingItemIndex = localCart.findIndex(item => item.id === product.MaSP);
+      
+      if (existingItemIndex >= 0) {
+        localCart[existingItemIndex].quantity += quantity; 
+      } else {
+        localCart.push({
+          id: product.MaSP,
+          maSP: product.MaSP,
+          name: product.TenSP,
+          price: product.DonGia,
+          quantity: quantity,
+          HinhAnh: product.HinhAnh || product.image || product.hinh_anh
+        });
+      }
+      
+      localStorage.setItem('cart', JSON.stringify(localCart));
+      alert(`🛒 Đã lưu ${quantity} ${product.TenSP} vào giỏ tạm! Vui lòng đăng nhập để đồng bộ.`);
+    }
+  };
+
+  const handleBuyNow = async () => {
+    await handleAddToCart();
+    navigate('/cart');
+  };
 
   // XỬ LÝ GỬI ĐÁNH GIÁ
   const submitReview = async () => {
