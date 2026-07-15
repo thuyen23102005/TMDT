@@ -81,8 +81,6 @@ const createAdmin = async (tenDangNhap, matKhau, email, soDienThoai) => {
     return result.recordset[0].MaTK;
 };
 
-<<<<<<< Updated upstream
-=======
 // Cập nhật mật khẩu
 const updatePassword = async (maTK, hashedPassword) => {
     const pool = await connectDB();
@@ -98,15 +96,11 @@ const updatePassword = async (maTK, hashedPassword) => {
         `);
 };
 
->>>>>>> Stashed changes
 module.exports = {
     findByEmail,
     findById,
     createTaiKhoan,
     createKhachHang,
-<<<<<<< Updated upstream
-=======
     createAdmin,
     updatePassword,
->>>>>>> Stashed changes
 };

@@ -93,13 +93,12 @@
         }
     };
 
-<<<<<<< Updated upstream
     module.exports = {
         register,
         login,
         registerAdmin, // thêm dòng này
     };
-=======
+
     // ===== ĐỔI MẬT KHẨU =====
     const changePassword = async (req, res) => {
         try {
@@ -169,4 +168,3 @@
         changePassword,
         verifyPassword   // <-- dòng mới thêm
     };
->>>>>>> Stashed changes

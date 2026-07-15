@@ -1,8 +1,3 @@
-<<<<<<< Updated upstream
-import { Link, Outlet } from "react-router-dom";
-
-function Profile() {
-=======
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 
@@ -60,7 +55,6 @@ function Profile() {
 
     // 🌟 HÀM HELPER: Kiểm tra xem mục hiện tại có đang kích hoạt (Active) hay không
     const getActiveStyle = (path) => {
-        // So sánh chính xác hoặc so sánh chuỗi con (phù hợp cho các sub-route)
         const isActive = path === "/profile" 
             ? location.pathname === "/profile" 
             : location.pathname.includes(path);
@@ -73,7 +67,6 @@ function Profile() {
         };
     };
 
->>>>>>> Stashed changes
     return (
         <div className="row g-4 pb-5">
             {/* Sidebar */}
@@ -88,12 +81,6 @@ function Profile() {
                 >
                     {/* Avatar + overlay upload khi hover */}
                     <div
-<<<<<<< Updated upstream
-                        className="rounded-circle bg-secondary mx-auto mb-2"
-                        style={{ width: "80px", height: "80px" }}
-                    ></div>
-                    <strong>Họ và tên</strong>
-=======
                         onMouseEnter={() => setIsHoveringAvatar(true)}
                         onMouseLeave={() => setIsHoveringAvatar(false)}
                         onClick={() => fileInputRef.current?.click()}
@@ -135,7 +122,6 @@ function Profile() {
                     />
 
                     <strong style={{ wordBreak: "break-word" }}>{displayName}</strong>
->>>>>>> Stashed changes
                 </div>
 
                 <div className="rounded-4 p-3 bg-white" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
@@ -164,12 +150,6 @@ function Profile() {
                             </Link>
                         </li>
                     </ul>
-<<<<<<< Updated upstream
-                    <hr />
-                    <ul className="list-unstyled ms-2">
-                        <li className="py-1">
-                            <Link to="/profile/don-hang" className="text-dark text-decoration-none">📄 Đơn hàng của tôi</Link>
-=======
                     <hr className="my-2" />
                     <ul className="list-unstyled mb-0">
                         <li>
@@ -196,7 +176,6 @@ function Profile() {
                             <a href="#" className="text-dark text-decoration-none d-block" style={menuLinkStyle}>
                                 ★ Đánh giá của tôi
                             </a>
->>>>>>> Stashed changes
                         </li>
                     </ul>
                 </div>
@@ -231,15 +210,10 @@ function Profile() {
                             </div>
                             <div className="d-flex justify-content-between">
                                 <div>
-<<<<<<< Updated upstream
-                                    <div className="text-muted small">Điểm hiện có</div>
-                                    <div className="fw-bold">100.000.000</div>
-=======
                                     <div className="text-muted small mb-1">Điểm hiện có</div>
                                     <div className="fs-4 fw-bold text-success">
                                         {(totalSpent * 0.1).toLocaleString()}
                                     </div>
->>>>>>> Stashed changes
                                 </div>
                                 <div className="text-end">
                                     <div className="text-muted small mb-1">Free ship hiện có</div>
@@ -259,36 +233,22 @@ function Profile() {
                             </div>
                             <div className="d-flex justify-content-between">
                                 <div>
-<<<<<<< Updated upstream
-                                    <div className="text-muted small">Số đơn hàng</div>
-                                    <div className="fw-bold">234 đơn hàng</div>
-                                </div>
-                                <div>
-                                    <div className="text-muted small">Đã thanh toán</div>
-                                    <div className="fw-bold">100.000.000 đ</div>
-=======
                                     <div className="text-muted small mb-1">Số đơn hàng</div>
                                     <div className="fs-4 fw-bold">{totalOrders} đơn hàng</div>
                                 </div>
                                 <div className="text-end">
                                     <div className="text-muted small mb-1">Đã thanh toán</div>
                                     <div className="fs-4 fw-bold text-success">{totalSpent.toLocaleString()} đ</div>
->>>>>>> Stashed changes
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-<<<<<<< Updated upstream
-                {/* Đây là chỗ nội dung tab con sẽ hiển thị */}
-                <Outlet />
-=======
                 {/* Route con render tại đây */}
                 <div className="mt-3">
                     <Outlet />
                 </div>
->>>>>>> Stashed changes
             </div>
         </div>
     );

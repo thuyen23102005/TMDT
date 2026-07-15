@@ -10,7 +10,7 @@ function Login() {
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
-    // 🌟 THÊM: Tự động chuyển hướng nếu người dùng ĐÃ đăng nhập sẵn
+    // 🌟 Tự động chuyển hướng nếu người dùng ĐÃ đăng nhập sẵn
     useEffect(() => {
         const token = localStorage.getItem("token");
         const userJson = localStorage.getItem("user");
@@ -51,24 +51,20 @@ function Login() {
             });
 
             const data = await res.json();
-            console.log("Role nhận được:", JSON.stringify(data.user.vaiTro));
 
             if (!res.ok) {
                 setError(data.message || "Đăng nhập thất bại");
                 return;
             }
 
-           // Lưu token và thông tin user vào localStorage
+            console.log("Role nhận được:", data.user?.vaiTro);
+
+            // 1. Lưu token và thông tin user vào localStorage
             localStorage.setItem("token", data.token);
             localStorage.setItem("user", JSON.stringify(data.user));
 
-<<<<<<< Updated upstream
             alert("Đăng nhập thành công!");
 
-            // Điều hướng theo vai trò
-            if (data.user.vaiTro === "Admin") {
-                navigate("/admin"); // đổi lại nếu route admin của bạn khác
-=======
             // 2. ĐỒNG BỘ GIỎ HÀNG (Chạy ngầm)
             const localCart = JSON.parse(localStorage.getItem('cart') || '[]');
             if (localCart.length > 0) {
@@ -84,13 +80,10 @@ function Login() {
                 .catch((err) => console.error("Lỗi đồng bộ giỏ hàng:", err));
             }
 
-            alert("Đăng nhập thành công!");
-
-            // 3. Điều hướng ngay sau khi đăng nhập thành công
-            const role = data.user.vaiTro ? data.user.vaiTro.trim() : "";
+            // 3. Điều hướng ngay sau khi đăng nhập thành công theo vai trò
+            const role = data.user && data.user.vaiTro ? data.user.vaiTro.trim() : "";
             if (role === "Admin") {
                 navigate("/admin");
->>>>>>> Stashed changes
             } else {
                 navigate("/");
             }
