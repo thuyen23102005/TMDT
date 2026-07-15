@@ -3,6 +3,8 @@ const router = express.Router();
 const cartController = require('../controllers/cartController');
 
 // GET
+router.post('/merge', cartController.mergeCart);
+
 router.get('/:maKH', cartController.getCartByCustomerId);
 
 router.post('/checkout', cartController.checkoutCart);

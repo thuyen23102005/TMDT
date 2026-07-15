@@ -28,22 +28,36 @@ function Login() {
             });
 
             const data = await res.json();
-            console.log("Role nhận được:", JSON.stringify(data.user.vaiTro));
 
             if (!res.ok) {
                 setError(data.message || "Đăng nhập thất bại");
                 return;
             }
 
-           // Lưu token và thông tin user vào localStorage
+            // 1. Lưu token và thông tin user
             localStorage.setItem("token", data.token);
             localStorage.setItem("user", JSON.stringify(data.user));
 
+            // 2. ĐỒNG BỘ GIỎ HÀNG (Đã bỏ await để chạy ngầm, không làm chậm Login)
+            const localCart = JSON.parse(localStorage.getItem('cart') || '[]');
+            if (localCart.length > 0) {
+                fetch("http://localhost:5000/api/cart/merge", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ 
+                        maKH: data.user.maTK, 
+                        localCart: localCart 
+                    })
+                })
+                .then(() => localStorage.removeItem('cart')) // Gộp xong xóa giỏ tạm
+                .catch((err) => console.error("Lỗi đồng bộ giỏ hàng:", err));
+            }
+
             alert("Đăng nhập thành công!");
 
-            // Điều hướng theo vai trò
+            // 3. Điều hướng
             if (data.user.vaiTro === "Admin") {
-                navigate("/admin"); // đổi lại nếu route admin của bạn khác
+                navigate("/admin");
             } else {
                 navigate("/");
             }

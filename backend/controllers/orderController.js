@@ -64,8 +64,20 @@ const updateStatus = async (req,res)=>{
     }
 
 };
+
+const getOrdersByUser = async (req, res) => {
+    try {
+        const orders = await orderModel.getOrdersByUser(req.params.maTK);
+        res.status(200).json(orders);
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Lỗi server" });
+    }
+};
+
 module.exports={
     getAllOrders,
     getOrderDetail,
-    updateStatus
+    updateStatus,
+    getOrdersByUser
 }
