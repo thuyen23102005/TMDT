@@ -43,6 +43,7 @@ const Cart = () => {
     });
   };
 
+  // HÀM XÓA ĐÃ ĐƯỢC CẬP NHẬT GỌI API
   const removeItem = async (id) => {
     if(window.confirm("Bạn có chắc muốn bỏ sản phẩm này?")) {
       // 1. Cập nhật giao diện (Xóa khỏi màn hình ngay lập tức cho mượt)

@@ -48,7 +48,6 @@ const ProductDetail = () => {
   const increaseQty = () => setQuantity(prev => prev + 1);
   const decreaseQty = () => setQuantity(prev => (prev > 1 ? prev - 1 : 1));
   
-  // HÀM ĐÃ ĐƯỢC KHÔI PHỤC LẠI ĐẦY ĐỦ
   const handleAddToCart = async () => {
     if (storedUser) {
       try {
@@ -231,12 +230,7 @@ const ProductDetail = () => {
               relatedProducts.map((item) => (
                 <div key={item.MaSP} className="related-item">
                   <div className="related-icon" style={{ padding: 0, overflow: 'hidden', height: '120px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                    <img 
-                      src={`http://localhost:5000/uploads/${item.HinhAnh || item.image || item.hinh_anh}`} 
-                      alt={item.TenSP} 
-                      style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
-                      onError={(e) => { e.target.src = 'https://via.placeholder.com/120?text=No+Image' }}
-                    />
+                    <img src={`http://localhost:5000/uploads/${item.HinhAnh || item.image || item.hinh_anh}`} alt={item.TenSP} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} onError={(e) => { e.target.src = 'https://via.placeholder.com/120?text=No+Image' }} />
                   </div>
                   <h4 style={{ color: '#2e7d32', margin: '10px 0 10px 0' }}>{item.TenSP}</h4>
                   <p style={{ color: '#d32f2f', fontWeight: 'bold', margin: '0 0 15px 0' }}>{Number(item.DonGia).toLocaleString()} đ</p>
@@ -249,7 +243,6 @@ const ProductDetail = () => {
           </div>
         </div>
       </div>
-
       <TreasureChestWidget />
     </div>
   );

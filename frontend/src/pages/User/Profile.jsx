@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 function Profile() {
     const location = useLocation();
     const isOrdersTab = location.pathname.includes('don-hang');
+    const isReviewsTab = location.pathname.includes('danh-gia'); // Check xem có đang ở tab đánh giá không
     const [orders, setOrders] = useState([]);
     const [user, setUser] = useState(null);
 
@@ -69,7 +70,7 @@ function Profile() {
                         <li className="py-1"><a href="#" className="text-dark text-decoration-none">✉️ Thông báo</a></li>
                         <li className="py-1"><a href="#" className="text-dark text-decoration-none">♡ Sản phẩm yêu thích</a></li>
                         <li className="py-1">
-                            <Link to="/profile/danh-gia" className={`text-decoration-none ${location.pathname.includes('danh-gia') ? 'fw-bold text-success' : 'text-dark'}`}>★ Đánh giá của tôi</Link>
+                            <Link to="/profile/danh-gia" className={`text-decoration-none ${isReviewsTab ? 'fw-bold text-success' : 'text-dark'}`}>★ Đánh giá của tôi</Link>
                         </li>
                     </ul>
                 </div>
