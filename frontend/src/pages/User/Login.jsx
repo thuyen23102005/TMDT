@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 function Login() {
@@ -9,6 +9,29 @@ function Login() {
     });
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+
+    // 🌟 THÊM: Tự động chuyển hướng nếu người dùng ĐÃ đăng nhập sẵn
+    useEffect(() => {
+        const token = localStorage.getItem("token");
+        const userJson = localStorage.getItem("user");
+
+        if (token && userJson) {
+            try {
+                const user = JSON.parse(userJson);
+                if (user && user.vaiTro) {
+                    if (user.vaiTro.trim() === "Admin") {
+                        navigate("/admin");
+                    } else {
+                        navigate("/");
+                    }
+                }
+            } catch (e) {
+                // Nếu dữ liệu localStorage bị lỗi, xóa đi để người dùng đăng nhập lại
+                localStorage.removeItem("token");
+                localStorage.removeItem("user");
+            }
+        }
+    }, [navigate]);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -39,11 +62,35 @@ function Login() {
             localStorage.setItem("token", data.token);
             localStorage.setItem("user", JSON.stringify(data.user));
 
+<<<<<<< Updated upstream
             alert("Đăng nhập thành công!");
 
             // Điều hướng theo vai trò
             if (data.user.vaiTro === "Admin") {
                 navigate("/admin"); // đổi lại nếu route admin của bạn khác
+=======
+            // 2. ĐỒNG BỘ GIỎ HÀNG (Chạy ngầm)
+            const localCart = JSON.parse(localStorage.getItem('cart') || '[]');
+            if (localCart.length > 0) {
+                fetch("http://localhost:5000/api/cart/merge", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ 
+                        maKH: data.user.maTK, 
+                        localCart: localCart 
+                    })
+                })
+                .then(() => localStorage.removeItem('cart'))
+                .catch((err) => console.error("Lỗi đồng bộ giỏ hàng:", err));
+            }
+
+            alert("Đăng nhập thành công!");
+
+            // 3. Điều hướng ngay sau khi đăng nhập thành công
+            const role = data.user.vaiTro ? data.user.vaiTro.trim() : "";
+            if (role === "Admin") {
+                navigate("/admin");
+>>>>>>> Stashed changes
             } else {
                 navigate("/");
             }

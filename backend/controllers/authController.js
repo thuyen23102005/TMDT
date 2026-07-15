@@ -93,8 +93,80 @@
         }
     };
 
+<<<<<<< Updated upstream
     module.exports = {
         register,
         login,
         registerAdmin, // thêm dòng này
     };
+=======
+    // ===== ĐỔI MẬT KHẨU =====
+    const changePassword = async (req, res) => {
+        try {
+            // Lấy maTK từ req.user (được giải mã bởi middleware verifyToken)
+            const maTK = req.user.maTK; 
+            const { matKhauCu, matKhauMoi } = req.body;
+
+            if (!matKhauCu || !matKhauMoi) {
+                return res.status(400).json({ message: "Vui lòng nhập đầy đủ mật khẩu cũ và mới" });
+            }
+
+            // 1. Tìm user
+            const user = await authModel.findById(maTK);
+            if (!user) {
+                return res.status(404).json({ message: "Không tìm thấy người dùng" });
+            }
+
+            // 2. So sánh mật khẩu cũ
+            const isMatch = await bcrypt.compare(matKhauCu, user.MatKhau);
+            if (!isMatch) {
+                return res.status(400).json({ message: "Mật khẩu cũ không đúng" });
+            }
+
+            // 3. Mã hóa mật khẩu mới và cập nhật
+            const hashedNewPassword = await bcrypt.hash(matKhauMoi, 10);
+            await authModel.updatePassword(maTK, hashedNewPassword);
+
+            res.status(200).json({ message: "Đổi mật khẩu thành công" });
+
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ message: "Lỗi máy chủ" });
+        }
+    };
+
+    // ===== XÁC THỰC MẬT KHẨU (dùng khi đổi email, thao tác nhạy cảm...) =====
+    const verifyPassword = async (req, res) => {
+        try {
+            const maTK = req.user.maTK; // lấy từ token, nhờ middleware verifyToken
+            const { password } = req.body;
+
+            if (!password) {
+                return res.status(400).json({ message: "Vui lòng nhập mật khẩu" });
+            }
+
+            const user = await authModel.findById(maTK);
+            if (!user) {
+                return res.status(404).json({ message: "Không tìm thấy người dùng" });
+            }
+
+            const isMatch = await bcrypt.compare(password, user.MatKhau);
+            if (!isMatch) {
+                return res.status(400).json({ valid: false, message: "Mật khẩu không chính xác" });
+            }
+
+            res.status(200).json({ valid: true, message: "Xác thực thành công" });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ message: "Lỗi máy chủ" });
+        }
+    };
+
+    module.exports = {
+        register,
+        login,
+        registerAdmin,
+        changePassword,
+        verifyPassword   // <-- dòng mới thêm
+    };
+>>>>>>> Stashed changes
