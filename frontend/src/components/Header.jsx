@@ -93,9 +93,6 @@ function Header() {
 
                 {user ? (
                     <>
-                        <span className="fw-medium" style={{ color: "#333", fontSize: "15px" }}>
-                            Xin chào, {user.HoTen || user.Ten || user.email}
-                        </span>
                         <Link
                             to="/profile"
                             title="Trang cá nhân"
