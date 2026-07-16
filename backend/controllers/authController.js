@@ -1,7 +1,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const authModel = require("../models/authModel");
-
+const notificationModel = require("../models/notificationModel"); // Đã thêm Model thông báo
 
 // ===== ĐĂNG KÝ =====
 const register = async (req, res) => {
@@ -122,6 +122,18 @@ const changePassword = async (req, res) => {
             hashedNewPassword
         );
 
+        // --- TẠO THÔNG BÁO ---
+        try {
+            await notificationModel.createNotification(
+                maTK,
+                'account',
+                'Cập nhật mật khẩu thành công 🔒',
+                'Mật khẩu tài khoản của bạn đã được thay đổi an toàn. Nếu không phải bạn thực hiện, vui lòng liên hệ hỗ trợ ngay lập tức.'
+            );
+        } catch (errNotify) {
+            console.error("Lỗi gửi thông báo đổi mật khẩu:", errNotify);
+        }
+        // ---------------------
 
         res.status(200).json({
             message: "Đổi mật khẩu thành công"
@@ -135,7 +147,6 @@ const changePassword = async (req, res) => {
         });
     }
 };
-
 
 
 // ===== XÁC THỰC MẬT KHẨU =====

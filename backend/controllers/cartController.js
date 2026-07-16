@@ -1,4 +1,5 @@
 const { connectDB, sql } = require("../config/db");
+const notificationModel = require("../models/notificationModel");
 
 // 1. Lấy chi tiết giỏ hàng theo Mã Tài Khoản
 const getCartByCustomerId = async (req, res) => {
@@ -119,6 +120,19 @@ const checkoutCart = async (req, res) => {
         WHERE gh.MaKH = @MaKH;
         COMMIT TRAN;
       `);
+
+    // --- TẠO THÔNG BÁO ĐẶT HÀNG ---
+    try {
+        await notificationModel.createNotification(
+            maTK, 
+            'order', 
+            'Đặt hàng thành công 🎉', 
+            `Đơn hàng của bạn đã được hệ thống ghi nhận và đang chờ xử lý. Tổng tiền: ${tongTien.toLocaleString()} đ.`
+        );
+    } catch (notifyErr) {
+        console.error("Lỗi gửi thông báo đặt hàng:", notifyErr);
+    }
+    // ------------------------------
 
     res.json({ message: "Chốt đơn thành công!" });
   } catch (error) {

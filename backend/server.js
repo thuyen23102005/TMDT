@@ -16,7 +16,9 @@ const orderRoutes = require("./routes/orderRoutes");
 
 const customerRoutes = require("./routes/customerRoutes");
 
-const addressRoutes = require('./routes/addressRoutes'); 
+const addressRoutes = require('./routes/addressRoutes');
+
+const notificationRoutes = require("./routes/notificationRoutes");
 
 const voucherRoutes = require("./routes/voucherRoutes");
 
@@ -50,6 +52,8 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/customers", customerRoutes);
 
 app.use('/api/addresses', addressRoutes);
+
+app.use("/api/notifications", notificationRoutes);
 
 app.use("/api/reviews", reviewRoutes);
 
