@@ -11,13 +11,18 @@ const ProductDetail = () => {
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [quantity, setQuantity] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
+  
+  const [isFavorite, setIsFavorite] = useState(false);
 
-  // STATE ĐÁNH GIÁ
   const [reviews, setReviews] = useState([]);
   const [canReview, setCanReview] = useState(false);
   const [rating, setRating] = useState(5);
   const [reviewText, setReviewText] = useState('');
+  
+  // Lấy thông tin user
   const storedUser = JSON.parse(localStorage.getItem("user"));
+  // Xác định key lưu trữ dựa vào user
+  const favKey = storedUser ? `favorites_${storedUser.maTK}` : 'favorites';
 
   useEffect(() => {
     setIsLoading(true);
@@ -33,17 +38,20 @@ const ProductDetail = () => {
       setReviews(reviewsData);
       setIsLoading(false);
       setQuantity(1); 
+
+      // Đọc đúng key của tài khoản hiện tại
+      const favIds = JSON.parse(localStorage.getItem(favKey) || '[]');
+      setIsFavorite(favIds.includes(productData.MaSP));
     })
     .catch(err => { console.error(err); setIsLoading(false); });
 
-    // Kiểm tra quyền đánh giá nếu đã đăng nhập
     if (storedUser) {
         fetch(`http://localhost:5000/api/reviews/check/${storedUser.maTK}/${id}`)
             .then(res => res.json())
             .then(data => setCanReview(data.canReview))
             .catch(err => console.error(err));
     }
-  }, [id]);
+  }, [id, favKey]); // Thêm favKey vào dependency
 
   const increaseQty = () => setQuantity(prev => prev + 1);
   const decreaseQty = () => setQuantity(prev => (prev > 1 ? prev - 1 : 1));
@@ -72,7 +80,6 @@ const ProductDetail = () => {
       }
     } else {
       let localCart = JSON.parse(localStorage.getItem('cart') || '[]');
-      
       const existingItemIndex = localCart.findIndex(item => item.id === product.MaSP);
       
       if (existingItemIndex >= 0) {
@@ -98,7 +105,18 @@ const ProductDetail = () => {
     navigate('/cart');
   };
 
-  // XỬ LÝ GỬI ĐÁNH GIÁ
+  // CẬP NHẬT: Xử lý click yêu thích dùng key riêng
+  const toggleFavorite = () => {
+    let favIds = JSON.parse(localStorage.getItem(favKey) || '[]');
+    if (isFavorite) {
+      favIds = favIds.filter(favId => favId !== product.MaSP);
+    } else {
+      favIds.push(product.MaSP);
+    }
+    localStorage.setItem(favKey, JSON.stringify(favIds));
+    setIsFavorite(!isFavorite);
+  };
+
   const submitReview = async () => {
     if (!reviewText.trim()) return alert("Vui lòng nhập nội dung đánh giá!");
     try {
@@ -111,7 +129,6 @@ const ProductDetail = () => {
             alert("Cảm ơn bạn đã đánh giá sản phẩm!");
             setReviewText('');
             setRating(5);
-            // Kéo lại danh sách đánh giá mới nhất
             const newReviews = await fetch(`http://localhost:5000/api/reviews/product/${id}`).then(r => r.json());
             setReviews(newReviews);
         } else {
@@ -128,7 +145,6 @@ const ProductDetail = () => {
   if (isLoading) return <h3 style={{ textAlign: 'center', marginTop: '50px', color: '#4caf50' }}>Đang tải thông tin...</h3>;
   if (!product) return <h3 style={{ textAlign: 'center', marginTop: '50px', color: 'red' }}>Sản phẩm không tồn tại</h3>;
 
-  // Tính trung bình sao
   const avgStar = reviews.length > 0 ? (reviews.reduce((a, b) => a + b.SoSao, 0) / reviews.length).toFixed(1) : 5;
 
   return (
@@ -146,7 +162,25 @@ const ProductDetail = () => {
           </div>
 
           <div className="pd-info">
-            <h1 className="pd-title">{product.TenSP}</h1>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <h1 className="pd-title" style={{ margin: 0 }}>{product.TenSP}</h1>
+                <span 
+                    onClick={toggleFavorite}
+                    style={{ 
+                        fontSize: '32px', 
+                        color: '#e91e63', 
+                        cursor: 'pointer', 
+                        userSelect: 'none',
+                        transition: 'transform 0.2s'
+                    }}
+                    onMouseDown={(e) => e.target.style.transform = 'scale(0.8)'}
+                    onMouseUp={(e) => e.target.style.transform = 'scale(1)'}
+                    title={isFavorite ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
+                >
+                    {isFavorite ? '♥' : '♡'}
+                </span>
+            </div>
+            
             <div className="pd-rating">
                 <span style={{color: '#ffc107'}}>{"★".repeat(Math.round(avgStar)) + "☆".repeat(5 - Math.round(avgStar))}</span> 
                 ({reviews.length} đánh giá) | <span style={{ color: '#28a745' }}>Đang còn hàng</span>
@@ -175,7 +209,7 @@ const ProductDetail = () => {
           </div>
           <div className="col-side">
             <div className="side-box">
-              <SectionHeader title="Thông tin sản phẩm" />
+              <SectionHeader title="Thông margin phẩm" />
               <div style={{ padding: '15px' }}>
                 <div className="side-row"><span style={{ width: '40%', fontWeight: 'bold' }}>Trọng lượng:</span><span>1 kg</span></div>
                 <div className="side-row"><span style={{ width: '40%', fontWeight: 'bold' }}>Khu vực:</span><span>Hà Nội, Hồ Chí Minh</span></div>
@@ -184,7 +218,6 @@ const ProductDetail = () => {
           </div>
         </div>
 
-        {/* KHU VỰC ĐÁNH GIÁ SẢN PHẨM */}
         <div style={{ backgroundColor: '#fff', borderRadius: '8px', padding: '20px', marginTop: '30px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
             <SectionHeader title="Đánh giá sản phẩm" />
             <div className="review-section" style={{ padding: '10px' }}>

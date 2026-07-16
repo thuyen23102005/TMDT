@@ -201,13 +201,15 @@ function Profile() {
                         🎟️ Ví voucher
                     </Link>
 
-                    <a href="#" style={menuLinkStyle} className="text-dark">
+                    <Link to="/profile/thong-bao" 
+                        style={getActiveStyle("/profile/thong-bao")}>
                         ✉️ Thông báo
-                    </a>
+                    </Link>
 
-                    <a href="#" style={menuLinkStyle} className="text-dark">
+                    <Link to="/profile/yeu-thich" 
+                        style={getActiveStyle("/profile/yeu-thich")}>
                         ♡ Sản phẩm yêu thích
-                    </a>
+                    </Link>
 
                     <Link to="/profile/danh-gia"
                         style={getActiveStyle("/profile/danh-gia")}>
@@ -235,7 +237,8 @@ function Profile() {
                 <div className="row g-3 mb-3">
 
                     <div className="col-md-6">
-                        <div className="bg-white rounded-4 p-4">
+                        {/* Thêm h-100 vào đây */}
+                        <div className="bg-white rounded-4 p-4 border h-100">
                             <h6>🎁 Ưu đãi</h6>
                             <h3>
                                 {(totalSpent * 0.1).toLocaleString()}
@@ -244,13 +247,14 @@ function Profile() {
                     </div>
 
                     <div className="col-md-6">
-                        <div className="bg-white rounded-4 p-4">
+                        {/* Thêm h-100 vào đây */}
+                        <div className="bg-white rounded-4 p-4 border h-100">
                             <h6>🏆 Thành tích</h6>
-                            <p>
-                                {totalOrders} đơn hàng
+                            <p className="mb-2">
+                                Số đơn hàng đã đặt là: <strong>{totalOrders}</strong> đơn hàng
                             </p>
-                            <p>
-                                {totalSpent.toLocaleString()} đ
+                            <p className="mb-0">
+                                Tổng số tiền đã thanh toán: <strong>{totalSpent.toLocaleString()} đ</strong>
                             </p>
                         </div>
                     </div>
