@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 function Login() {
@@ -9,6 +9,29 @@ function Login() {
     });
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+
+    // 🌟 Tự động chuyển hướng nếu người dùng ĐÃ đăng nhập sẵn
+    useEffect(() => {
+        const token = localStorage.getItem("token");
+        const userJson = localStorage.getItem("user");
+
+        if (token && userJson) {
+            try {
+                const user = JSON.parse(userJson);
+                if (user && user.vaiTro) {
+                    if (user.vaiTro.trim() === "Admin") {
+                        navigate("/admin");
+                    } else {
+                        navigate("/");
+                    }
+                }
+            } catch (e) {
+                // Nếu dữ liệu localStorage bị lỗi, xóa đi để người dùng đăng nhập lại
+                localStorage.removeItem("token");
+                localStorage.removeItem("user");
+            }
+        }
+    }, [navigate]);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -34,11 +57,15 @@ function Login() {
                 return;
             }
 
-            // 1. Lưu token và thông tin user
+            console.log("Role nhận được:", data.user?.vaiTro);
+
+            // 1. Lưu token và thông tin user vào localStorage
             localStorage.setItem("token", data.token);
             localStorage.setItem("user", JSON.stringify(data.user));
 
-            // 2. ĐỒNG BỘ GIỎ HÀNG (Đã bỏ await để chạy ngầm, không làm chậm Login)
+            alert("Đăng nhập thành công!");
+
+            // 2. ĐỒNG BỘ GIỎ HÀNG (Chạy ngầm)
             const localCart = JSON.parse(localStorage.getItem('cart') || '[]');
             if (localCart.length > 0) {
                 fetch("http://localhost:5000/api/cart/merge", {
@@ -49,14 +76,13 @@ function Login() {
                         localCart: localCart 
                     })
                 })
-                .then(() => localStorage.removeItem('cart')) // Gộp xong xóa giỏ tạm
+                .then(() => localStorage.removeItem('cart'))
                 .catch((err) => console.error("Lỗi đồng bộ giỏ hàng:", err));
             }
 
-            alert("Đăng nhập thành công!");
-
-            // 3. Điều hướng
-            if (data.user.vaiTro === "Admin") {
+            // 3. Điều hướng ngay sau khi đăng nhập thành công theo vai trò
+            const role = data.user && data.user.vaiTro ? data.user.vaiTro.trim() : "";
+            if (role === "Admin") {
                 navigate("/admin");
             } else {
                 navigate("/");

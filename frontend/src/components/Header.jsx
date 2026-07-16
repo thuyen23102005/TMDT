@@ -1,18 +1,50 @@
-
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 
 function Header() {
     const [keyword, setKeyword] = useState("");
     const [user, setUser] = useState(null);
+    const [unreadCount, setUnreadCount] = useState(0); 
     const navigate = useNavigate();
 
     useEffect(() => {
         const storedUser = localStorage.getItem("user");
         if (storedUser) {
-            setUser(JSON.parse(storedUser));
+            const parsedUser = JSON.parse(storedUser);
+            setUser(parsedUser);
+            fetchUnreadCount(parsedUser.maTK);
         }
+
+        const handleNotificationUpdate = () => {
+            const currentUser = JSON.parse(localStorage.getItem("user"));
+            if (currentUser) {
+                fetchUnreadCount(currentUser.maTK);
+            }
+        };
+
+        window.addEventListener('updateNotificationCount', handleNotificationUpdate);
+        return () => window.removeEventListener('updateNotificationCount', handleNotificationUpdate);
     }, []);
+
+    useEffect(() => {
+        if (!user) return;
+        const timer = setInterval(() => {
+            fetchUnreadCount(user.maTK);
+        }, 30000); 
+        return () => clearInterval(timer);
+    }, [user]);
+
+    const fetchUnreadCount = (maTK) => {
+        fetch(`http://localhost:5000/api/notifications/${maTK}`)
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) {
+                    const count = data.filter(notif => !notif.DaDoc).length;
+                    setUnreadCount(count);
+                }
+            })
+            .catch(err => console.error("Lỗi đếm thông báo Header:", err));
+    };
 
     const handleSearch = (e) => {
         e.preventDefault();
@@ -25,6 +57,7 @@ function Header() {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         setUser(null);
+        setUnreadCount(0); 
         navigate("/");
     };
 
@@ -58,7 +91,7 @@ function Header() {
                 </button>
             </form>
 
-            <nav className="d-flex align-items-center flex-shrink-0" style={{ gap: "28px" }}>
+            <nav className="d-flex align-items-center flex-shrink-0" style={{ gap: "25px" }}>
                 <Link
                     to="/products"
                     className="text-decoration-none fw-medium"
@@ -66,7 +99,6 @@ function Header() {
                 >
                     Sản phẩm
                 </Link>
-
 
                 <Link
                     to="/cart"
@@ -84,6 +116,49 @@ function Header() {
 
                 {user ? (
                     <>
+                        {/* CHUÔNG ĐƯỢC ÉP CSS TRONG SUỐT HOÀN TOÀN */}
+                        <Link 
+                            to="/profile/thong-bao" 
+                            title="Thông báo"
+                            style={{ 
+                                position: "relative",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                width: "40px", 
+                                height: "40px", 
+                                textDecoration: "none",
+                                backgroundColor: "transparent", /* ÉP BUỘC TRONG SUỐT */
+                                background: "none",
+                                border: "none",
+                                outline: "none",
+                                cursor: "pointer"
+                            }}
+                        >
+                            <span style={{ fontSize: "22px", background: "transparent", lineHeight: "1" }}>🔔</span>
+                            
+                            {/* CHẤM ĐỎ */}
+                            {unreadCount > 0 && (
+                                <span 
+                                    style={{ 
+                                        position: "absolute",
+                                        top: "0px", 
+                                        right: "0px", 
+                                        backgroundColor: "#d32f2f",
+                                        color: "white",
+                                        fontSize: "10px", 
+                                        fontWeight: "bold",
+                                        padding: "3px 5px",
+                                        borderRadius: "50%",
+                                        border: "2px solid #fff",
+                                        lineHeight: "1"
+                                    }}
+                                >
+                                    {unreadCount > 99 ? '99+' : unreadCount}
+                                </span>
+                            )}
+                        </Link>
+
                         <Link
                             to="/profile"
                             title="Trang cá nhân"
@@ -101,6 +176,7 @@ function Header() {
                         >
                             👤
                         </Link>
+                        
                         <button
                             onClick={handleLogout}
                             className="px-3 py-2"

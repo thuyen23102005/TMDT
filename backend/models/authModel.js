@@ -12,6 +12,22 @@ const findByEmail = async (email) => {
     return result.recordset[0];
 };
 
+// Tìm tài khoản theo mã tài khoản
+const findById = async (maTK) => {
+    const pool = await connectDB();
+
+    const result = await pool
+        .request()
+        .input("MaTK", sql.Int, maTK)
+        .query(`
+            SELECT *
+            FROM TaiKhoan
+            WHERE MaTK = @MaTK
+        `);
+
+    return result.recordset[0];
+};
+
 // Tạo tài khoản mới
 const createTaiKhoan = async (tenDangNhap, matKhau, email, soDienThoai) => {
     const pool = await connectDB();
@@ -24,7 +40,8 @@ const createTaiKhoan = async (tenDangNhap, matKhau, email, soDienThoai) => {
         .input("SoDienThoai", sql.VarChar, soDienThoai)
         .input("VaiTro", sql.NVarChar, "Khách hàng")
         .query(`
-            INSERT INTO TaiKhoan (TenDangNhap, MatKhau, Email, SoDienThoai, VaiTro)
+            INSERT INTO TaiKhoan 
+            (TenDangNhap, MatKhau, Email, SoDienThoai, VaiTro)
             OUTPUT INSERTED.MaTK
             VALUES (@TenDangNhap, @MatKhau, @Email, @SoDienThoai, @VaiTro)
         `);
@@ -58,7 +75,8 @@ const createAdmin = async (tenDangNhap, matKhau, email, soDienThoai) => {
         .input("SoDienThoai", sql.VarChar, soDienThoai)
         .input("VaiTro", sql.NVarChar, "Admin")
         .query(`
-            INSERT INTO TaiKhoan (TenDangNhap, MatKhau, Email, SoDienThoai, VaiTro)
+            INSERT INTO TaiKhoan 
+            (TenDangNhap, MatKhau, Email, SoDienThoai, VaiTro)
             OUTPUT INSERTED.MaTK
             VALUES (@TenDangNhap, @MatKhau, @Email, @SoDienThoai, @VaiTro)
         `);
@@ -66,34 +84,26 @@ const createAdmin = async (tenDangNhap, matKhau, email, soDienThoai) => {
     return result.recordset[0].MaTK;
 };
 
-// Lấy thông tin tài khoản theo MaTK
-const findById = async (maTK) => {
+// Cập nhật mật khẩu
+const updatePassword = async (maTK, hashedPassword) => {
     const pool = await connectDB();
-    const result = await pool
-        .request()
-        .input("MaTK", sql.Int, maTK)
-        .query(`SELECT * FROM TaiKhoan WHERE MaTK = @MaTK`);
-    return result.recordset[0];
-};
 
-// Cập nhật mật khẩu mới
-const updatePassword = async (maTK, matKhauMoi) => {
-    const pool = await connectDB();
     await pool
         .request()
         .input("MaTK", sql.Int, maTK)
-        .input("MatKhau", sql.VarChar, matKhauMoi)
+        .input("MatKhau", sql.VarChar, hashedPassword)
         .query(`
-            UPDATE TaiKhoan 
-            SET MatKhau = @MatKhau 
+            UPDATE TaiKhoan
+            SET MatKhau = @MatKhau
             WHERE MaTK = @MaTK
         `);
 };
 
 module.exports = {
     findByEmail,
+    findById,
     createTaiKhoan,
     createKhachHang,
-    findById,
-    updatePassword
+    createAdmin,
+    updatePassword,
 };

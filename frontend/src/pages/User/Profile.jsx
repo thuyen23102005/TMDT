@@ -1,131 +1,276 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 function Profile() {
+
     const location = useLocation();
+
     const isOrdersTab = location.pathname.includes('don-hang');
     const isReviewsTab = location.pathname.includes('danh-gia');
     const isVoucherTab = location.pathname.includes('vi-voucher');
+
     const [orders, setOrders] = useState([]);
     const [user, setUser] = useState(null);
 
-    // Tách thành hàm riêng để có thể gọi lại từ trang con
+    const [avatarUrl, setAvatarUrl] = useState(null);
+    const [isHoveringAvatar, setIsHoveringAvatar] = useState(false);
+
+    const fileInputRef = useRef(null);
+
+
     const fetchOrders = () => {
-        const storedUser = JSON.parse(localStorage.getItem('user'));
+
+        const storedUser = JSON.parse(localStorage.getItem("user"));
+
         if (storedUser) {
             fetch(`http://localhost:5000/api/orders/user/${storedUser.maTK}`)
                 .then(res => res.json())
                 .then(data => setOrders(data))
-                .catch(err => console.error("Lỗi kéo đơn hàng:", err));
+                .catch(err => console.log(err));
         }
+
     };
 
+
     useEffect(() => {
-        const storedUser = JSON.parse(localStorage.getItem('user'));
+
+        const storedUser = JSON.parse(localStorage.getItem("user"));
+
         setUser(storedUser);
-        fetchOrders(); // Gọi lần đầu khi vào trang
+
+        if (storedUser?.avatarUrl) {
+            setAvatarUrl(storedUser.avatarUrl);
+        }
+
+        fetchOrders();
+
     }, [location.pathname]);
 
-    // TÍNH TOÁN THÀNH TÍCH
+
     const totalOrders = orders.length;
-    // Chỉ tính tổng tiền của những đơn có trạng thái 'Đã thanh toán'
+
     const totalSpent = orders
-        .filter(o => o.TrangThaiThanhToan === 'Đã thanh toán') 
+        .filter(o => o.TrangThaiThanhToan === "Đã thanh toán")
         .reduce((sum, o) => sum + Number(o.TongTien), 0);
 
+
+    const displayName =
+        user ? (user.HoTen || user.email) : "Họ và tên";
+
+    const avatarLetter =
+        displayName.charAt(0).toUpperCase();
+
+
+    const handleAvatarChange = (e) => {
+
+        const file = e.target.files[0];
+
+        if (!file) return;
+
+        setAvatarUrl(
+            URL.createObjectURL(file)
+        );
+
+    };
+
+
+    const menuLinkStyle = {
+        display: "flex",
+        alignItems: "center",
+        gap: "10px",
+        padding: "10px 12px",
+        borderRadius: "10px",
+        textDecoration: "none"
+    };
+
+
+    const getActiveStyle = (path) => {
+
+        const active =
+            path === "/profile"
+                ? location.pathname === "/profile"
+                : location.pathname.includes(path);
+
+        return {
+            ...menuLinkStyle,
+            color: active ? "#2e7d32" : "#212529",
+            fontWeight: active ? 700 : 400,
+            backgroundColor:
+                active
+                    ? "rgba(46,125,50,0.08)"
+                    : "transparent"
+        };
+
+    };
+
+
     return (
-        <div className="row">
-            {/* Sidebar */}
-            <div className="col-md-3 mb-4">
-                <div className="shadow-sm rounded p-3 text-center mb-3">
+
+        <div className="row g-4 pb-5">
+
+            <div className="col-md-3">
+
+                <div
+                    className="rounded-4 p-4 text-center mb-3"
+                    style={{
+                        background: "linear-gradient(135deg,#2e7d32,#66bb6a)",
+                        color: "#fff"
+                    }}
+                >
+
                     <div
-                        className="rounded-circle bg-secondary mx-auto mb-2"
-                        style={{ width: "80px", height: "80px" }}
-                    ></div>
-                    {/* Lấy tên user hoặc email hiển thị ra */}
-                    <strong>{user ? (user.HoTen || user.email) : 'Họ và tên'}</strong>
+                        onMouseEnter={() => setIsHoveringAvatar(true)}
+                        onMouseLeave={() => setIsHoveringAvatar(false)}
+                        onClick={() => fileInputRef.current.click()}
+
+                        className="rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center fw-bold position-relative"
+
+                        style={{
+                            width: "84px",
+                            height: "84px",
+                            background: avatarUrl
+                                ? `url(${avatarUrl}) center/cover`
+                                : "rgba(255,255,255,.2)",
+                            fontSize: "32px",
+                            cursor: "pointer",
+                            overflow: "hidden"
+                        }}
+                    >
+
+                        {!avatarUrl && avatarLetter}
+
+                        {
+                            isHoveringAvatar &&
+                            <div
+                                className="position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center"
+                                style={{
+                                    background: "rgba(0,0,0,.5)"
+                                }}
+                            >
+                                📷
+                            </div>
+                        }
+
+                    </div>
+
+                    <input
+                        type="file"
+                        accept="image/*"
+                        ref={fileInputRef}
+                        onChange={handleAvatarChange}
+                        style={{ display: "none" }}
+                    />
+
+                    <strong>{displayName}</strong>
+
                 </div>
 
-                <div className="shadow-sm rounded p-2">
-                    <div className="fw-bold mb-2">Thông tin tài khoản</div>
-                    <ul className="list-unstyled ms-2">
-                        <li className="py-1">
-                            <Link to="/profile" className="text-dark text-decoration-none">Hồ sơ cá nhân</Link>
-                        </li>
-                        <li className="py-1">
-                            <Link to="/profile/dia-chi" className="text-dark text-decoration-none">Sổ địa chỉ</Link>
-                        </li>
-                        <li className="py-1">
-                            <Link to="/profile/doi-mat-khau" className="text-dark text-decoration-none">Đổi mật khẩu</Link>
-                        </li>
-                        <li className="py-1">
-                            <Link to="/profile/uu-dai" className="text-dark text-decoration-none">Ưu đãi thành viên</Link>
-                        </li>
-                    </ul>
+                <div className="rounded-4 p-3 bg-white">
+
+                    <h6>Thông tin tài khoản</h6>
+
+                    <Link to="/profile"
+                        style={getActiveStyle("/profile")}>
+                        👤 Hồ sơ cá nhân
+                    </Link>
+
+                    <Link to="/profile/dia-chi"
+                        style={getActiveStyle("/profile/dia-chi")}>
+                        📍 Sổ địa chỉ
+                    </Link>
+
+                    <Link to="/profile/doi-mat-khau"
+                        style={getActiveStyle("/profile/doi-mat-khau")}>
+                        🔒 Đổi mật khẩu
+                    </Link>
+
+                    <Link to="/profile/uu-dai"
+                        style={getActiveStyle("/profile/uu-dai")}>
+                        🎁 Ưu đãi thành viên
+                    </Link>
+
                     <hr />
-                    <ul className="list-unstyled ms-2">
-                        <li className="py-1">
-                            <Link to="/profile/don-hang" className={`text-decoration-none ${isOrdersTab ? 'fw-bold text-success' : 'text-dark'}`}>📄 Đơn hàng của tôi</Link>
-                        </li>
 
-                        <li className="py-1">
-                            <Link to="/profile/vi-voucher" className={`text-decoration-none ${isVoucherTab ? 'fw-bold text-success' : 'text-dark'}`}>🎟️ Ví voucher</Link>
-                        </li>
+                    <Link to="/profile/don-hang"
+                        style={getActiveStyle("/profile/don-hang")}>
+                        📄 Đơn hàng của tôi
+                    </Link>
 
-                        <li className="py-1"><a href="#" className="text-dark text-decoration-none">✉️ Thông báo</a></li>
-                        <li className="py-1"><a href="#" className="text-dark text-decoration-none">♡ Sản phẩm yêu thích</a></li>
-                        
-                        <li className="py-1">
-                            <Link to="/profile/danh-gia" className={`text-decoration-none ${isReviewsTab ? 'fw-bold text-success' : 'text-dark'}`}>★ Đánh giá của tôi</Link>
-                        </li>
-                    </ul>
+                    <Link to="/profile/vi-voucher"
+                        style={getActiveStyle("/profile/vi-voucher")}>
+                        🎟️ Ví voucher
+                    </Link>
+
+                    <Link to="/profile/thong-bao" 
+                        style={getActiveStyle("/profile/thong-bao")}>
+                        ✉️ Thông báo
+                    </Link>
+
+                    <Link to="/profile/yeu-thich" 
+                        style={getActiveStyle("/profile/yeu-thich")}>
+                        ♡ Sản phẩm yêu thích
+                    </Link>
+
+                    <Link to="/profile/danh-gia"
+                        style={getActiveStyle("/profile/danh-gia")}>
+                        ★ Đánh giá của tôi
+                    </Link>
+
                 </div>
+
             </div>
 
-            {/* Nội dung chính - thay đổi theo route con */}
             <div className="col-md-9">
-                {/* Banner ưu đãi + thành tích */}
-                <div className="shadow-sm rounded mb-3 bg-light" style={{ height: "140px" }}></div>
 
-                <div className="row mb-3">
-                    <div className="col-md-6">
-                        <div className="shadow-sm rounded p-3">
-                            <strong>ƯU ĐÃI CỦA BẠN</strong>
-                            <div className="d-flex justify-content-between mt-2">
-                                <div>
-                                    <div className="text-muted small">Điểm hiện có</div>
-                                    {/* Giả lập điểm = 10% số tiền đã tiêu */}
-                                    <div className="fw-bold">{(totalSpent * 0.1).toLocaleString()}</div>
-                                </div>
-                                <div>
-                                    <div className="text-muted small">Free ship hiện có</div>
-                                    <div className="fw-bold">0</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="col-md-6">
-                        <div className="shadow-sm rounded p-3">
-                            <strong>THÀNH TÍCH CỦA NĂM NAY</strong>
-                            <div className="d-flex justify-content-between mt-2">
-                                <div>
-                                    <div className="text-muted small">Số đơn hàng</div>
-                                    <div className="fw-bold">{totalOrders} đơn hàng</div>
-                                </div>
-                                <div>
-                                    <div className="text-muted small">Đã thanh toán</div>
-                                    <div className="fw-bold text-success">{totalSpent.toLocaleString()} đ</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div
+                    className="rounded-4 mb-3 p-4"
+                    style={{
+                        background: "#2e7d32",
+                        color: "#fff"
+                    }}
+                >
+                    <h4>
+                        Xin chào {displayName}
+                    </h4>
                 </div>
-                
-                <Outlet context={{ orders, fetchOrders }} />
+
+                <div className="row g-3 mb-3">
+
+                    <div className="col-md-6">
+                        {/* Thêm h-100 vào đây */}
+                        <div className="bg-white rounded-4 p-4 border h-100">
+                            <h6>🎁 Ưu đãi</h6>
+                            <h3>
+                                {(totalSpent * 0.1).toLocaleString()}
+                            </h3>
+                        </div>
+                    </div>
+
+                    <div className="col-md-6">
+                        {/* Thêm h-100 vào đây */}
+                        <div className="bg-white rounded-4 p-4 border h-100">
+                            <h6>🏆 Thành tích</h6>
+                            <p className="mb-2">
+                                Số đơn hàng đã đặt là: <strong>{totalOrders}</strong> đơn hàng
+                            </p>
+                            <p className="mb-0">
+                                Tổng số tiền đã thanh toán: <strong>{totalSpent.toLocaleString()} đ</strong>
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div className="mt-3">
+                    <Outlet context={{ orders, fetchOrders }} />
+                </div>
+
             </div>
-            
+
         </div>
+
     );
+
 }
 
 export default Profile;

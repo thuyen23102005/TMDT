@@ -1,42 +1,29 @@
 const orderModel = require("../models/orderModel");
+const notificationModel = require("../models/notificationModel"); 
+const { connectDB, sql } = require("../config/db"); // THÊM DÒNG NÀY ĐỂ KẾT NỐI DB TÌM MaTK
 
 const getAllOrders = async (req, res) => {
-
     try {
-
         const orders = await orderModel.getAllOrders();
-
         res.status(200).json(orders);
-
     } catch (error) {
-
         console.log(error);
-
         res.status(500).json({
             message: "Lỗi server"
         });
-
     }
-
 };
 
 const getOrderDetail = async (req,res)=>{
-
     try{
-
         const detail = await orderModel.getOrderDetail(req.params.id);
-
         res.json(detail);
-
     }catch(err){
-
         console.log(err);
-
         res.status(500).json(err);
-
     }
-
 };
+
 const updateStatus = async (req, res) => {
     try {
         const orderId = req.params.id;
@@ -51,13 +38,13 @@ const updateStatus = async (req, res) => {
 
         const currentStatus = currentOrder.TrangThaiDonHang;
 
-        // 2. Khai báo luồng trạng thái (State Machine) đồng bộ với Frontend
+        // 2. Khai báo luồng trạng thái
         const allowedTransitions = {
             "Chờ xác nhận": ["Chờ xác nhận", "Đã xác nhận", "Đã hủy"],
             "Đã xác nhận": ["Đã xác nhận", "Đang giao", "Đã hủy"],
             "Đang giao": ["Đang giao", "Đã giao", "Đã hủy"],
-            "Đã giao": ["Đã giao"], // Trạng thái cuối, không thể đổi
-            "Đã hủy": ["Đã hủy"]    // Trạng thái cuối, không thể đổi
+            "Đã giao": ["Đã giao"], 
+            "Đã hủy": ["Đã hủy"]    
         };
 
         // 3. Kiểm tra tính hợp lệ của thao tác chuyển đổi
@@ -69,9 +56,51 @@ const updateStatus = async (req, res) => {
             });
         }
 
-        // 4. Nếu hợp lệ, tiến hành thực thi câu lệnh UPDATE
+        // 4. Cập nhật trạng thái
         await orderModel.updateStatus(orderId, newStatus);
         
+        // --- 5. TẠO THÔNG BÁO TỰ ĐỘNG ---
+        try {
+            const pool = await connectDB();
+            
+            // TRUY VẤN TÌM CHÍNH XÁC MaTK CỦA NGƯỜI ĐẶT ĐƠN HÀNG NÀY
+            const userResult = await pool.request()
+                .input('MaDH', sql.Int, orderId)
+                .query(`
+                    SELECT kh.MaTK 
+                    FROM DonHang dh
+                    JOIN KhachHang kh ON dh.MaKH = kh.MaKH
+                    WHERE dh.MaDH = @MaDH
+                `);
+
+            if (userResult.recordset.length > 0) {
+                const maTK = userResult.recordset[0].MaTK; // Lấy được mã tài khoản đích
+                let title = "";
+                let content = "";
+
+                if (newStatus === "Đã hủy") {
+                    title = "Đơn hàng đã bị hủy ❌";
+                    content = `Đơn hàng #${orderId} của bạn đã được hủy thành công.`;
+                } else if (newStatus === "Đã xác nhận") {
+                    title = "Đơn hàng đã được xác nhận ✅";
+                    content = `Đơn hàng #${orderId} của bạn đã được cửa hàng xác nhận và đang đóng gói.`;
+                } else if (newStatus === "Đang giao") {
+                    title = "Đơn hàng đang được giao 🚚";
+                    content = `Đơn hàng #${orderId} của bạn đang trên đường giao đến. Vui lòng chú ý điện thoại để nhận hàng nhé.`;
+                } else if (newStatus === "Đã giao") {
+                    title = "Giao hàng thành công 🎉";
+                    content = `Đơn hàng #${orderId} đã được giao thành công. Cảm ơn bạn đã tin tưởng và mua sắm!`;
+                }
+
+                if (title !== "") {
+                    await notificationModel.createNotification(maTK, 'order', title, content);
+                }
+            }
+        } catch (notifyErr) {
+            console.error("Lỗi tạo thông báo trạng thái đơn hàng:", notifyErr);
+        }
+        // ---------------------------------
+
         res.json({ message: "Cập nhật thành công" });
 
     } catch (err) {
