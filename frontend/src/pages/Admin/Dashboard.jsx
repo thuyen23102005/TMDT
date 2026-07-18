@@ -7,6 +7,7 @@ function Dashboard() {
         TongSanPham: 0,
         TongKhachHang: 0,
         TongDonHang: 0,
+        TongMaGiamGia: 0,
         TongDoanhThu: 0
     });
 
@@ -42,72 +43,51 @@ function Dashboard() {
 
             <div className="row">
 
-                <div className="col-md-3 mb-3">
-
-                    <div className="card text-white bg-success">
-
+                <div className="col-md mb-3">
+                    <div className="card text-white bg-success h-100">
                         <div className="card-body">
-
                             <h5>Tổng sản phẩm</h5>
-
                             <h2>{data.TongSanPham}</h2>
-
                         </div>
-
                     </div>
-
                 </div>
 
-                <div className="col-md-3 mb-3">
-
-                    <div className="card text-white bg-primary">
-
+                <div className="col-md mb-3">
+                    <div className="card text-white bg-primary h-100">
                         <div className="card-body">
-
                             <h5>Tổng khách hàng</h5>
-
                             <h2>{data.TongKhachHang}</h2>
-
                         </div>
-
                     </div>
-
                 </div>
 
-                <div className="col-md-3 mb-3">
-
-                    <div className="card text-white bg-warning">
-
+                <div className="col-md mb-3">
+                    <div className="card text-white bg-warning h-100">
                         <div className="card-body">
-
                             <h5>Tổng đơn hàng</h5>
-
                             <h2>{data.TongDonHang}</h2>
-
                         </div>
-
                     </div>
-
                 </div>
 
-                <div className="col-md-3 mb-3">
-
-                    <div className="card text-white bg-danger">
-
+                <div className="col-md mb-3">
+                    <div className="card text-white bg-info h-100">
                         <div className="card-body">
-
-                            <h5>Tổng doanh thu</h5>
-
-                            <h4>
-
-                                {Number(data.TongDoanhThu).toLocaleString()} đ
-
-                            </h4>
-
+                            <h5>Tổng mã giảm giá</h5>
+                            <h2>{data.TongMaGiamGia}</h2>
                         </div>
-
                     </div>
+                </div>
 
+                <div className="col-md mb-3">
+                    <div className="card text-white bg-danger h-100">
+                        <div className="card-body">
+                            <h5>Tổng doanh thu</h5>
+                            <h2>
+                                {Number(data.TongDoanhThu).toLocaleString()} đ
+                            </h2>
+                        </div>
+                    </div>
                 </div>
 
             </div>

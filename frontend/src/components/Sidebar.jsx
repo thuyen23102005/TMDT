@@ -53,11 +53,6 @@ function Sidebar() {
                 <NavLink to="/admin/vouchers" className={getNavLinkClass}>
                     Quản lý mã giảm giá
                 </NavLink>
-
-                <NavLink to="/admin/revenue" className={getNavLinkClass}>
-                    Doanh thu
-                </NavLink>
-
             </div>
         </div>
     );
