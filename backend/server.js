@@ -29,6 +29,8 @@ const dashboardRoutes = require("./routes/dashboardRoutes");
 const app = express();
 
 const authRoutes = require("./routes/authRoutes");   
+
+const reportRoutes = require("./routes/reportRoutes");
 // Middleware
 app.use(cors());
 
@@ -60,6 +62,8 @@ app.use("/api/reviews", reviewRoutes);
 app.use("/api/vouchers", voucherRoutes);
 
 app.use("/api/dashboard", dashboardRoutes);
+
+app.use("/api/report", reportRoutes);
 
 // Test API
 app.get("/", (req, res) => {
