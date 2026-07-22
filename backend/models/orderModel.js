@@ -1,53 +1,31 @@
 const { connectDB, sql } = require("../config/db");
 
 const getAllOrders = async () => {
-
     const pool = await connectDB();
-
     const result = await pool.request().query(`
         SELECT
             dh.MaDH,
-
             kh.HoTen AS TenKhachHang,
-
             dc.HoTen AS NguoiNhan,
-
             dc.SoDienThoai,
-
             dc.DiaChiChiTiet,
-
             dh.NgayDat,
-
             dh.PhiVanChuyen,
-
             dh.TongTien,
-
             dh.TrangThaiDonHang,
-
             dh.TrangThaiThanhToan
-
         FROM DonHang dh
-
-        INNER JOIN KhachHang kh
-            ON dh.MaKH = kh.MaKH
-
-        INNER JOIN SoDiaChi dc
-            ON dh.MaDC = dc.MaDC
-
+        INNER JOIN KhachHang kh ON dh.MaKH = kh.MaKH
+        LEFT JOIN SoDiaChi dc ON dh.MaDC = dc.MaDC
         ORDER BY dh.MaDH DESC
     `);
-
     return result.recordset;
-
 };
+
 const getOrderDetail = async (id) => {
-
     const pool = await connectDB();
-
     const result = await pool.request()
-
         .input("MaDH", id)
-
         .query(`
             SELECT
                 sp.TenSP,
@@ -55,30 +33,22 @@ const getOrderDetail = async (id) => {
                 ct.DonGia,
                 ct.ThanhTien
             FROM ChiTietDonHang ct
-            INNER JOIN SanPham sp
-                ON ct.MaSP = sp.MaSP
+            INNER JOIN SanPham sp ON ct.MaSP = sp.MaSP
             WHERE ct.MaDH = @MaDH
         `);
-
     return result.recordset;
-
 };
+
 const updateStatus = async (id, status) => {
-
     const pool = await connectDB();
-
     await pool.request()
-
         .input("MaDH", id)
-
         .input("TrangThaiDonHang", status)
-
         .query(`
             UPDATE DonHang
             SET TrangThaiDonHang = @TrangThaiDonHang
             WHERE MaDH = @MaDH
         `);
-
 };
 
 const getOrdersByUser = async (maTK) => {
@@ -96,11 +66,45 @@ const getOrdersByUser = async (maTK) => {
 };
 
 const getOrderStatusById = async (id) => {
+
+    const pool = await connectDB();
+
+    const result = await pool.request()
+
+        .input("MaDH", id)
+
+        .query(`
+            SELECT
+                TrangThaiDonHang,
+                TrangThaiThanhToan
+            FROM DonHang
+            WHERE MaDH = @MaDH
+        `);
+
+    return result.recordset[0];
+
+};
+
+// Cập nhật riêng trạng thái thanh toán (dùng cho MoMo IPN / check-status / SePay webhook)
+const updatePaymentStatus = async (maDH, trangThaiThanhToan) => {
+    const pool = await connectDB();
+    await pool.request()
+        .input("MaDH", sql.Int, maDH)
+        .input("TrangThaiThanhToan", sql.NVarChar(50), trangThaiThanhToan)
+        .query(`
+            UPDATE DonHang
+            SET TrangThaiThanhToan = @TrangThaiThanhToan
+            WHERE MaDH = @MaDH
+        `);
+};
+
+// Lấy riêng trạng thái thanh toán (dùng cho frontend polling khi chờ VietQR/SePay)
+const getPaymentStatusById = async (maDH) => {
     const pool = await connectDB();
     const result = await pool.request()
-        .input("MaDH", id)
-        .query(`SELECT TrangThaiDonHang FROM DonHang WHERE MaDH = @MaDH`);
-    return result.recordset[0]; // Trả về object chứa TrangThaiDonHang
+        .input("MaDH", sql.Int, maDH)
+        .query(`SELECT TrangThaiThanhToan FROM DonHang WHERE MaDH = @MaDH`);
+    return result.recordset[0];
 };
 
 module.exports = {
@@ -108,5 +112,7 @@ module.exports = {
     getOrderDetail,
     updateStatus,
     getOrdersByUser,
-    getOrderStatusById // Thêm dòng này
+    getOrderStatusById,
+    updatePaymentStatus,
+    getPaymentStatusById
 };

@@ -1,5 +1,52 @@
 const { connectDB, sql } = require("../config/db");
 
+const checkProductName = async (TenSP) => {
+
+    const pool = await connectDB();
+
+    const result = await pool.request()
+        .input("TenSP", sql.NVarChar, TenSP)
+        .query(`
+            SELECT 1
+            FROM SanPham
+            WHERE TenSP = @TenSP
+        `);
+
+    return result.recordset.length > 0;
+};
+
+const checkProductNameUpdate = async (MaSP, TenSP) => {
+
+    const pool = await connectDB();
+
+    const result = await pool.request()
+        .input("MaSP", sql.Int, MaSP)
+        .input("TenSP", sql.NVarChar, TenSP)
+        .query(`
+            SELECT 1
+            FROM SanPham
+            WHERE TenSP = @TenSP
+            AND MaSP <> @MaSP
+        `);
+
+    return result.recordset.length > 0;
+};
+
+const checkCategoryExists = async (MaDM) => {
+
+    const pool = await connectDB();
+
+    const result = await pool.request()
+        .input("MaDM", sql.Int, MaDM)
+        .query(`
+            SELECT 1
+            FROM DanhMuc
+            WHERE MaDM = @MaDM
+        `);
+
+    return result.recordset.length > 0;
+};
+
 const getAllProducts = async (page, limit) => {
 
     const pool = await connectDB();
@@ -174,11 +221,53 @@ const deleteProduct = async (id) => {
         `);
 
 };
+
+// Tìm sản phẩm liên quan theo từ khóa - dùng cho Chatbot tư vấn
+const searchProducts = async (keyword, limit = 5) => {
+
+    const pool = await connectDB();
+
+    const words = keyword.split(/\s+/).filter(w => w.length > 1);
+
+    if (words.length === 0) return [];
+
+    const request = pool.request().input("limit", sql.Int, limit);
+
+    const conditions = words.map((word, i) => {
+        const paramName = `kw${i}`;
+        request.input(paramName, sql.NVarChar, `%${word}%`);
+        return `(sp.TenSP LIKE @${paramName} OR sp.MoTa LIKE @${paramName} OR dm.TenDM LIKE @${paramName})`;
+    }).join(" OR ");
+
+    const result = await request.query(`
+        SELECT TOP (@limit)
+            sp.MaSP,
+            sp.TenSP,
+            sp.DonGia,
+            sp.MoTa,
+            sp.SoLuongTon,
+            sp.DonViTinh,
+            dm.TenDM
+        FROM SanPham sp
+        INNER JOIN DanhMuc dm
+            ON sp.MaDM = dm.MaDM
+        WHERE sp.TrangThai = 1
+          AND (${conditions})
+        ORDER BY sp.MaSP DESC
+    `);
+
+    return result.recordset;
+};
+
 module.exports = {
     getAllProducts,
     getAllProductsClient,
     getById,
     createProduct,
     updateProduct,
-    deleteProduct
+    deleteProduct,
+    checkProductName,
+    checkProductNameUpdate,
+    checkCategoryExists
+
 };

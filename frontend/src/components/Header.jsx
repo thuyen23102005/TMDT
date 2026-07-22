@@ -73,21 +73,19 @@ function Header() {
                 </span>
             </Link>
 
-            <form onSubmit={handleSearch} className="d-flex flex-grow-1" style={{ maxWidth: "500px" }}>
+            <form onSubmit={handleSearch} className="ns-search-form flex-grow-1" style={{ maxWidth: "500px" }}>
                 <input
                     type="text"
-                    className="form-control"
+                    className="ns-search-input"
                     placeholder="Tìm kiếm sản phẩm..."
                     value={keyword}
                     onChange={(e) => setKeyword(e.target.value)}
-                    style={{ borderRadius: "20px 0 0 20px", borderRight: "none" }}
                 />
-                <button
-                    type="submit"
-                    className="btn"
-                    style={{ borderRadius: "0 20px 20px 0", backgroundColor: "#2e7d32", color: "#fff", border: "1px solid #2e7d32", padding: "0 20px" }}
-                >
-                    🔍
+                <button type="submit" className="ns-search-btn" aria-label="Tìm kiếm">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" />
+                        <path d="M20 20L16.65 16.65" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" />
+                    </svg>
                 </button>
             </form>
 
@@ -244,6 +242,68 @@ function Header() {
                     </>
                 )}
             </nav>
+
+            <style>{`
+                .ns-search-form {
+                    display: flex;
+                    align-items: center;
+                    background: #fff;
+                    border: 1.5px solid #e2e6e2;
+                    border-radius: 999px;
+                    overflow: hidden;
+                    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+                }
+
+                .ns-search-form:hover {
+                    border-color: #c9d6c9;
+                }
+
+                .ns-search-form:focus-within {
+                    border-color: #2e7d32;
+                    box-shadow: 0 0 0 4px rgba(46, 125, 50, 0.12);
+                }
+
+                .ns-search-input {
+                    flex: 1;
+                    min-width: 0;
+                    padding: 11px 18px;
+                    border: none;
+                    outline: none;
+                    font-size: 14px;
+                    background: transparent;
+                    color: #333;
+                }
+
+                .ns-search-input::placeholder {
+                    color: #9aa39a;
+                }
+
+                .ns-search-btn {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-shrink: 0;
+                    width: 40px;
+                    height: 40px;
+                    margin: 3px;
+                    border-radius: 50%;
+                    background: linear-gradient(135deg, #43a047, #1b5e20);
+                    color: #fff;
+                    border: none;
+                    cursor: pointer;
+                    transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+                }
+
+                .ns-search-btn:hover {
+                    transform: scale(1.07);
+                    box-shadow: 0 4px 12px rgba(27, 94, 32, 0.35);
+                    filter: brightness(1.05);
+                }
+
+                .ns-search-btn:active {
+                    transform: scale(0.96);
+                }
+            `}</style>
         </div>
     );
 }
