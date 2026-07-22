@@ -266,11 +266,8 @@ module.exports = {
     createProduct,
     updateProduct,
     deleteProduct,
-<<<<<<< HEAD
     checkProductName,
     checkProductNameUpdate,
     checkCategoryExists
-=======
-    searchProducts   
->>>>>>> fc70fe52261a3ef643babfc787886da6746cdda1
+
 };
