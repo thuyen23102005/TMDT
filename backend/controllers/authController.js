@@ -1,51 +1,34 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const authModel = require("../models/authModel");
-
+const notificationModel = require("../models/notificationModel"); // Đã thêm Model thông báo
 
 // ===== ĐĂNG KÝ =====
 const register = async (req, res) => {
     try {
-        const { tenDangNhap, hoTen, email, matKhau, soDienThoai } = req.body;
+        const { hoTen, email, soDienThoai, password } = req.body;
 
-        if (!email || !matKhau || !tenDangNhap) {
-            return res.status(400).json({
-                message: "Vui lòng nhập đầy đủ thông tin"
-            });
+        if (!hoTen || !email || !soDienThoai || !password) {
+            return res.status(400).json({ message: "Vui lòng nhập đầy đủ thông tin" });
         }
 
         const existingUser = await authModel.findByEmail(email);
-
         if (existingUser) {
-            return res.status(400).json({
-                message: "Email đã được sử dụng"
-            });
+            return res.status(400).json({ message: "Email đã được sử dụng" });
         }
 
-        const hashedPassword = await bcrypt.hash(matKhau, 10);
+        const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Tạo tài khoản trước, lấy MaTK vừa tạo
-        const maTK = await authModel.createTaiKhoan(
-            tenDangNhap,
-            hashedPassword,
-            email,
-            soDienThoai
-        );
-
-        // Tạo hồ sơ khách hàng liên kết với tài khoản
+        // Dùng email làm tên đăng nhập cho đơn giản
+        const maTK = await authModel.createTaiKhoan(email, hashedPassword, email, soDienThoai);
         await authModel.createKhachHang(maTK, hoTen);
 
-        res.status(201).json({
-            message: "Đăng ký thành công",
-            maTK,
-        });
-
+        res.status(201).json({ message: "Đăng ký thành công" });
     } catch (error) {
-        console.error(error);
+        console.log(error);
         res.status(500).json({ message: "Lỗi máy chủ" });
     }
 };
-
 
 // ===== ĐĂNG NHẬP =====
 const login = async (req, res) => {
@@ -53,29 +36,21 @@ const login = async (req, res) => {
         const { email, password } = req.body;
 
         if (!email || !password) {
-            return res.status(400).json({
-                message: "Vui lòng nhập đầy đủ email và mật khẩu"
-            });
+            return res.status(400).json({ message: "Vui lòng nhập email và mật khẩu" });
         }
 
         const user = await authModel.findByEmail(email);
-
         if (!user) {
-            return res.status(404).json({
-                message: "Email không tồn tại"
-            });
+            return res.status(400).json({ message: "Email hoặc mật khẩu không đúng" });
         }
 
         const isMatch = await bcrypt.compare(password, user.MatKhau);
-
         if (!isMatch) {
-            return res.status(400).json({
-                message: "Mật khẩu không đúng"
-            });
+            return res.status(400).json({ message: "Email hoặc mật khẩu không đúng" });
         }
 
         const token = jwt.sign(
-            { maTK: user.MaTK, vaiTro: user.VaiTro },
+            { maTK: user.MaTK, email: user.Email, vaiTro: user.VaiTro },
             process.env.JWT_SECRET,
             { expiresIn: "7d" }
         );
@@ -86,13 +61,13 @@ const login = async (req, res) => {
             user: {
                 maTK: user.MaTK,
                 email: user.Email,
-                tenDangNhap: user.TenDangNhap,
-                vaiTro: user.VaiTro,
-            }
+                vaiTro: user.VaiTro.trim(),
+                HoTen: user.HoTen || "",
+                SoDienThoai: user.SoDienThoai || "",
+            },
         });
-
     } catch (error) {
-        console.error(error);
+        console.log(error);
         res.status(500).json({ message: "Lỗi máy chủ" });
     }
 };
@@ -170,6 +145,19 @@ const changePassword = async (req, res) => {
 
         await authModel.updatePassword(maTK, hashedNewPassword);
 
+        // --- TẠO THÔNG BÁO ---
+        try {
+            await notificationModel.createNotification(
+                maTK,
+                'account',
+                'Cập nhật mật khẩu thành công 🔒',
+                'Mật khẩu tài khoản của bạn đã được thay đổi an toàn. Nếu không phải bạn thực hiện, vui lòng liên hệ hỗ trợ ngay lập tức.'
+            );
+        } catch (errNotify) {
+            console.error("Lỗi gửi thông báo đổi mật khẩu:", errNotify);
+        }
+        // ---------------------
+
         res.status(200).json({
             message: "Đổi mật khẩu thành công"
         });
@@ -215,11 +203,36 @@ const verifyPassword = async (req, res) => {
     }
 };
 
+// ===== CẬP NHẬT HỒ SƠ =====
+const updateProfile = async (req, res) => {
+    try {
+        const maTK = req.user.maTK;
+        const { hoTen, soDienThoai, gioiTinh, ngaySinh } = req.body;
+
+        if (!hoTen || !soDienThoai) {
+            return res.status(400).json({
+                message: "Vui lòng nhập đầy đủ họ tên và số điện thoại"
+            });
+        }
+
+        await authModel.updateProfile(maTK, { hoTen, soDienThoai, gioiTinh, ngaySinh });
+
+        res.status(200).json({
+            message: "Cập nhật hồ sơ thành công",
+            user: { hoTen, soDienThoai, gioiTinh, ngaySinh }
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Lỗi máy chủ" });
+    }
+};
 
 module.exports = {
     register,
     login,
     registerAdmin,
     changePassword,
-    verifyPassword
+    verifyPassword,
+    updateProfile
 };

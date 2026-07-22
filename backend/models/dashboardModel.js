@@ -9,7 +9,7 @@ const getDashboard = async () => {
             (
                 SELECT COUNT(*)
                 FROM SanPham
-                WHERE TrangThai = 0
+                WHERE TrangThai = 1
             ) AS TongSanPham,
 
             (
@@ -21,6 +21,14 @@ const getDashboard = async () => {
                 SELECT COUNT(*)
                 FROM DonHang
             ) AS TongDonHang,
+
+            (
+                SELECT COUNT(*) AS TongMaGiamGia
+                FROM MaGiamGia
+                WHERE
+                    SoLuong > 0
+                    AND CAST(GETDATE() AS DATE) BETWEEN NgayBD AND NgayKT
+            ) AS TongMaGiamGia,
 
             (
                 SELECT ISNULL(SUM(TongTien), 0)

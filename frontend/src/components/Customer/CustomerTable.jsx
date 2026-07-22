@@ -11,8 +11,6 @@ function CustomerTable({
 
                 <tr>
 
-                    <th>Mã</th>
-
                     <th>Họ tên</th>
 
                     <th>Email</th>
@@ -39,8 +37,6 @@ function CustomerTable({
                     customers.map(customer => (
 
                         <tr key={customer.MaKH}>
-
-                            <td>{customer.MaKH}</td>
 
                             <td>{customer.HoTen}</td>
 

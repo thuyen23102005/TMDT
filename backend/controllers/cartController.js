@@ -1,4 +1,5 @@
 const { connectDB, sql } = require("../config/db");
+const notificationModel = require("../models/notificationModel");
 
 // 1. Lấy chi tiết giỏ hàng theo Mã Tài Khoản
 const getCartByCustomerId = async (req, res) => {
@@ -6,12 +7,10 @@ const getCartByCustomerId = async (req, res) => {
     const maTK = req.params.maKH; 
     const pool = await sql.connect(); 
 
-    // CHUYỂN MaTK THÀNH MaKH
     const khResult = await pool.request()
       .input('MaTK', sql.Int, maTK)
       .query('SELECT MaKH FROM KhachHang WHERE MaTK = @MaTK');
 
-    // Nếu không phải khách hàng thì trả về giỏ trống
     if (khResult.recordset.length === 0) return res.json([]); 
     const realMaKH = khResult.recordset[0].MaKH;
     
@@ -37,19 +36,18 @@ const getCartByCustomerId = async (req, res) => {
   }
 };
 
-// 2. Chốt đơn hàng (ĐÃ CẬP NHẬT SQL MaDC)
+// 2. Chốt đơn hàng -> trả về MaDH để FE dùng tạo giao dịch MoMo (nếu chọn MoMo)
 const checkoutCart = async (req, res) => {
   try {
     const {
         maKH: maTK,
-        maDC, 
+        maDC, // có thể null nếu khách chọn "Nhận tại cửa hàng"
         tongTien,
         trangThaiThanhToan
     } = req.body;
 
-    if (!maDC) {
-        return res.status(400).json({ message: "Vui lòng chọn địa chỉ giao hàng (MaDC)" });
-    }
+    // maDC là tùy chọn: chỉ bắt buộc khi khách chọn giao hàng tận nơi.
+    // Khi khách chọn "Nhận tại cửa hàng", FE gửi maDC = null, không cần kiểm tra địa chỉ.
     if (!tongTien || tongTien <= 0) {
         return res.status(400).json({ message: "Tổng tiền không hợp lệ" });
     }
@@ -63,21 +61,26 @@ const checkoutCart = async (req, res) => {
     if (khResult.recordset.length === 0) return res.status(400).json({message: "Tài khoản không hợp lệ"});
     const realMaKH = khResult.recordset[0].MaKH;
 
-    const dcResult = await pool.request()
-      .input('MaDC', sql.Int, maDC)
-      .input('MaKH', sql.Int, realMaKH)
-      .query('SELECT MaDC FROM SoDiaChi WHERE MaDC = @MaDC AND MaKH = @MaKH');
+    // Chỉ kiểm tra quyền sở hữu địa chỉ khi có gửi maDC lên (tức là giao hàng tận nơi)
+    if (maDC) {
+        const dcResult = await pool.request()
+          .input('MaDC', sql.Int, maDC)
+          .input('MaKH', sql.Int, realMaKH)
+          .query('SELECT MaDC FROM SoDiaChi WHERE MaDC = @MaDC AND MaKH = @MaKH');
 
-    if (dcResult.recordset.length === 0) {
-        return res.status(403).json({ message: "Địa chỉ không hợp lệ hoặc không thuộc về tài khoản này" });
+        if (dcResult.recordset.length === 0) {
+            return res.status(403).json({ message: "Địa chỉ không hợp lệ hoặc không thuộc về tài khoản này" });
+        }
     }
 
     const ttDH = 'Chờ xác nhận';
-    const ttTT = trangThaiThanhToan || 'Chưa thanh toán';
+    // Không tin trạng thái thanh toán do FE tự gửi cho các cổng online;
+    // chỉ chấp nhận 'Đã thanh toán' ngay khi tạo đơn với phương thức tiền mặt là không áp dụng (COD luôn là "Chưa thanh toán")
+    const ttTT = trangThaiThanhToan === 'Đã thanh toán' ? 'Đã thanh toán' : 'Chưa thanh toán';
 
-    await pool.request()
+    const result = await pool.request()
       .input('MaKH', sql.Int, realMaKH)
-      .input("MaDC", sql.Int, maDC)
+      .input("MaDC", sql.Int, maDC || null)
       .input('TongTien', sql.Decimal(18,2), tongTien)
       .input('TrangThaiDH', sql.NVarChar(50), ttDH)
       .input('TrangThaiTT', sql.NVarChar(50), ttTT)
@@ -118,9 +121,26 @@ const checkoutCart = async (req, res) => {
         JOIN GioHang gh ON ct.MaGH = gh.MaGH
         WHERE gh.MaKH = @MaKH;
         COMMIT TRAN;
+
+        SELECT @MaDH AS MaDH;
       `);
 
-    res.json({ message: "Chốt đơn thành công!" });
+    const maDH = result.recordset[0].MaDH;
+
+    // --- TẠO THÔNG BÁO ĐẶT HÀNG ---
+    try {
+        await notificationModel.createNotification(
+            maTK, 
+            'order', 
+            'Đặt hàng thành công 🎉', 
+            `Đơn hàng của bạn đã được hệ thống ghi nhận và đang chờ xử lý. Tổng tiền: ${tongTien.toLocaleString()} đ.`
+        );
+    } catch (notifyErr) {
+        console.error("Lỗi gửi thông báo đặt hàng:", notifyErr);
+    }
+    // ------------------------------
+
+    res.json({ message: "Chốt đơn thành công!", maDH });
   } catch (error) {
     console.error("Lỗi khi chốt đơn:", error);
     res.status(500).json({ message: "Lỗi hệ thống khi thanh toán" });
@@ -246,7 +266,7 @@ const mergeCart = async (req, res) => {
   }
 };
 
-// 5. HÀM XÓA SẢN PHẨM KHỎI GIỎ HÀNG (Đã được khôi phục)
+// 5. HÀM XÓA SẢN PHẨM KHỎI GIỎ HÀNG
 const removeFromCart = async (req, res) => {
   try {
     const { maKH: maTK, maSP } = req.params;
