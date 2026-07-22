@@ -3,7 +3,40 @@ function VoucherTable({
     onEdit,
     onDelete
 }) {
+    const getStatus = (voucher) => {
 
+        const today = new Date();
+
+        today.setHours(0,0,0,0);
+
+        const start = new Date(voucher.NgayBD);
+
+        const end = new Date(voucher.NgayKT);
+
+        start.setHours(0,0,0,0);
+
+        end.setHours(0,0,0,0);
+
+        if (today < start) {
+            return {
+                text: "Sắp diễn ra",
+                className: "bg-warning text-dark"
+            };
+        }
+
+        if (today > end || voucher.SoLuong <= 0) {
+            return {
+                text: "Đã hết hạn",
+                className: "bg-danger"
+            };
+        }
+
+        return {
+            text: "Đang hoạt động",
+            className: "bg-success"
+        };
+
+    };
     return (
 
         <table className="table table-bordered">
@@ -26,6 +59,8 @@ function VoucherTable({
 
                     <th>Số lượng</th>
 
+                    <th>Trạng thái</th>
+
                     <th width="180">
                         Thao tác
                     </th>
@@ -34,10 +69,14 @@ function VoucherTable({
 
             </thead>
 
-            <tbody>
+           <tbody>
 
-                {
-                    vouchers.map(voucher => (
+            {
+                vouchers.map(voucher => {
+
+                    const status = getStatus(voucher);
+
+                    return (
 
                         <tr key={voucher.MaGG}>
 
@@ -56,9 +95,16 @@ function VoucherTable({
                             <td>{voucher.SoLuong}</td>
 
                             <td>
+                                <span className={`badge ${status.className}`}>
+                                    {status.text}
+                                </span>
+                            </td>
+
+                            <td>
 
                                 <button
                                     className="btn btn-warning btn-sm me-2"
+                                    disabled={status.text === "Đã hết hạn"}
                                     onClick={() => onEdit(voucher)}
                                 >
                                     Sửa
@@ -75,8 +121,10 @@ function VoucherTable({
 
                         </tr>
 
-                    ))
-                }
+                    );
+
+                })
+            }
 
             </tbody>
 

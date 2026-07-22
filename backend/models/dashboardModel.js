@@ -23,8 +23,11 @@ const getDashboard = async () => {
             ) AS TongDonHang,
 
             (
-                SELECT COUNT(*)
+                SELECT COUNT(*) AS TongMaGiamGia
                 FROM MaGiamGia
+                WHERE
+                    SoLuong > 0
+                    AND CAST(GETDATE() AS DATE) BETWEEN NgayBD AND NgayKT
             ) AS TongMaGiamGia,
 
             (

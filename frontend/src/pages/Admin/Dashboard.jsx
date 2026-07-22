@@ -1,97 +1,275 @@
 import { useEffect, useState } from "react";
-import { getDashboard } from "../../services/Admin/dashboardApi";
+
+import {
+    getDashboard,
+} from "../../services/Admin/dashboardApi";
+
+import {
+    getDashboardReport,
+    getRevenueChart,
+    getTopProducts
+} from "../../services/Admin/reportApi";
+
+import DashboardFilter from "../../components/Dashboard/DashboardFilter";
+import RevenueChart from "../../components/Dashboard/RevenueChart";
+import TopProducts from "../../components/Dashboard/TopProducts";
+
+import {
+    FaMoneyBillWave,
+    FaShoppingCart,
+    FaUsers,
+    FaLeaf,
+    FaTicketAlt
+} from "react-icons/fa";
+
+
 
 function Dashboard() {
 
-    const [data, setData] = useState({
-        TongSanPham: 0,
-        TongKhachHang: 0,
-        TongDonHang: 0,
-        TongMaGiamGia: 0,
-        TongDoanhThu: 0
-    });
+    const today = new Date().toISOString().slice(0, 10);
+
+    const firstDay = new Date(
+        new Date().getFullYear(),
+        new Date().getMonth(),
+        1
+    ).toISOString().slice(0, 10);
+
+    const [from, setFrom] = useState(firstDay);
+
+    const [to, setTo] = useState(today);
+
+    const [dashboard, setDashboard] = useState({});
+
+    const [report, setReport] = useState({});
+
+    const [chartData, setChartData] = useState([]);
+
+    const [topProducts,setTopProducts]=useState([]);
 
     useEffect(() => {
 
-        fetchDashboard();
+        loadDashboard();
+
+        loadReport();
 
     }, []);
 
-    async function fetchDashboard() {
+    const loadDashboard = async () => {
 
-        try {
+        const res = await getDashboard();
 
-            const res = await getDashboard();
+        setDashboard(res.data);
 
-            setData(res.data);
+    };
 
-        } catch (err) {
+    const loadReport = async () => {
 
-            console.log(err);
+        const summary = await getDashboardReport(from, to);
 
-        }
+        const chart = await getRevenueChart(from, to);
 
-    }
+        const top=await getTopProducts(from,to);
+
+        setReport(summary.data);
+
+        setChartData(chart.data);
+
+        setTopProducts(top.data);
+
+    };
+    
 
     return (
 
         <div className="container-fluid">
 
-            <h2 className="mb-4">
+            <h2 className="fw-bold mb-4">
+
                 Dashboard
+
             </h2>
 
-            <div className="row">
+            <DashboardFilter
 
-                <div className="col-md mb-3">
-                    <div className="card text-white bg-success h-100">
-                        <div className="card-body">
-                            <h5>Tổng sản phẩm</h5>
-                            <h2>{data.TongSanPham}</h2>
+                from={from}
+
+                to={to}
+
+                onFromChange={setFrom}
+
+                onToChange={setTo}
+
+                onSearch={loadReport}
+
+            />
+
+            <div className="row mb-4">
+
+                <div className="col-xl-2 col-lg-4 col-md-6 mb-3">
+
+                    <div className="card shadow-sm border-0">
+
+                        <div className="card-body d-flex">
+
+                            <FaLeaf
+                                size={40}
+                                className="text-success me-3"
+                            />
+
+                            <div>
+
+                                <h6>Tổng sản phẩm</h6>
+
+                                <h3>
+
+                                    {dashboard.TongSanPham}
+
+                                </h3>
+
+                            </div>
+
                         </div>
+
                     </div>
+
                 </div>
 
-                <div className="col-md mb-3">
-                    <div className="card text-white bg-primary h-100">
-                        <div className="card-body">
-                            <h5>Tổng khách hàng</h5>
-                            <h2>{data.TongKhachHang}</h2>
+                <div className="col-xl-2 col-lg-4 col-md-6 mb-3">
+
+                    <div className="card shadow-sm border-0">
+
+                        <div className="card-body d-flex">
+
+                            <FaUsers
+                                size={40}
+                                className="text-primary me-3"
+                            />
+
+                            <div>
+
+                                <h6>Khách hàng</h6>
+
+                                <h3>
+
+                                    {dashboard.TongKhachHang}
+
+                                </h3>
+
+                            </div>
+
                         </div>
+
                     </div>
+
                 </div>
 
-                <div className="col-md mb-3">
-                    <div className="card text-white bg-warning h-100">
-                        <div className="card-body">
-                            <h5>Tổng đơn hàng</h5>
-                            <h2>{data.TongDonHang}</h2>
+                <div className="col-xl-2 col-lg-4 col-md-6 mb-3">
+
+                    <div className="card shadow-sm border-0">
+
+                        <div className="card-body d-flex">
+
+                            <FaShoppingCart
+                                size={40}
+                                className="text-warning me-3"
+                            />
+
+                            <div>
+
+                                <h6>Đơn hàng</h6>
+
+                                <h3>
+
+                                    {report.TongDonHang}
+
+                                </h3>
+
+                            </div>
+
                         </div>
+
                     </div>
+
                 </div>
 
-                <div className="col-md mb-3">
-                    <div className="card text-white bg-info h-100">
-                        <div className="card-body">
-                            <h5>Tổng mã giảm giá</h5>
-                            <h2>{data.TongMaGiamGia}</h2>
-                        </div>
-                    </div>
-                </div>
+                <div className="col-xl-2 col-lg-4 col-md-6 mb-3">
 
-                <div className="col-md mb-3">
-                    <div className="card text-white bg-danger h-100">
-                        <div className="card-body">
-                            <h5>Tổng doanh thu</h5>
-                            <h2>
-                                {Number(data.TongDoanhThu).toLocaleString()} đ
-                            </h2>
+                    <div className="card shadow-sm border-0">
+
+                        <div className="card-body d-flex">
+
+                            <FaMoneyBillWave
+                                size={40}
+                                className="text-danger me-3"
+                            />
+
+                            <div>
+
+                                <h6>Doanh thu</h6>
+
+                                <h3>
+
+                                    {Number(report.TongDoanhThu || 0).toLocaleString()} đ
+
+                                </h3>
+
+                            </div>
+
                         </div>
+
                     </div>
+
+                </div>
+                <div className="col-xl-2 col-lg-4 col-md-6 mb-3">
+
+                    <div className="card shadow-sm border-0">
+
+                        <div className="card-body d-flex">
+
+                            <FaTicketAlt
+                                size={40}
+                                className="text-info me-3"
+                            />
+
+                            <div>
+
+                                <h6>Voucher hoạt động</h6>
+
+                                <h3>
+
+                                    {dashboard.TongMaGiamGia}
+
+                                </h3>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
                 </div>
 
             </div>
 
+            <RevenueChart
+
+                chartData={chartData}
+
+            />
+
+            <div className="row mt-4">
+
+                <div className="col-lg-6">
+
+                    <TopProducts
+
+                        data={topProducts}
+
+                    />
+
+                </div>
+
+            </div>
         </div>
 
     );
