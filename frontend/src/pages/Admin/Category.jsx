@@ -45,7 +45,9 @@ function Category() {
 
         } catch (error) {
 
-            console.log(error);
+            alert(
+                error.response?.data?.message || "Có lỗi xảy ra."
+            );
 
         }
 
@@ -65,7 +67,9 @@ function Category() {
 
         } catch (error) {
 
-            console.log(error);
+            alert(
+                error.response?.data?.message || "Có lỗi xảy ra."
+            );
 
         }
 

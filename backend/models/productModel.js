@@ -1,5 +1,52 @@
 const { connectDB, sql } = require("../config/db");
 
+const checkProductName = async (TenSP) => {
+
+    const pool = await connectDB();
+
+    const result = await pool.request()
+        .input("TenSP", sql.NVarChar, TenSP)
+        .query(`
+            SELECT 1
+            FROM SanPham
+            WHERE TenSP = @TenSP
+        `);
+
+    return result.recordset.length > 0;
+};
+
+const checkProductNameUpdate = async (MaSP, TenSP) => {
+
+    const pool = await connectDB();
+
+    const result = await pool.request()
+        .input("MaSP", sql.Int, MaSP)
+        .input("TenSP", sql.NVarChar, TenSP)
+        .query(`
+            SELECT 1
+            FROM SanPham
+            WHERE TenSP = @TenSP
+            AND MaSP <> @MaSP
+        `);
+
+    return result.recordset.length > 0;
+};
+
+const checkCategoryExists = async (MaDM) => {
+
+    const pool = await connectDB();
+
+    const result = await pool.request()
+        .input("MaDM", sql.Int, MaDM)
+        .query(`
+            SELECT 1
+            FROM DanhMuc
+            WHERE MaDM = @MaDM
+        `);
+
+    return result.recordset.length > 0;
+};
+
 const getAllProducts = async (page, limit) => {
 
     const pool = await connectDB();
@@ -180,5 +227,8 @@ module.exports = {
     getById,
     createProduct,
     updateProduct,
-    deleteProduct
+    deleteProduct,
+    checkProductName,
+    checkProductNameUpdate,
+    checkCategoryExists
 };

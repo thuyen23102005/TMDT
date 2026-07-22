@@ -75,6 +75,15 @@ const handleImageChange = (e) => {
         return;
     }
 
+    if (file.size > 2 * 1024 * 1024) {
+
+        setErrors({
+            ...errors,
+            image: "Ảnh tối đa 2MB"
+        });
+
+        return;
+    }
     setErrors({
         ...errors,
         image: ""
@@ -96,8 +105,16 @@ const handleChange = (e) => {
     switch (name) {
 
         case "TenSP":
+
             if (!value.trim())
                 error = "Tên sản phẩm không được để trống";
+
+            else if (value.trim().length < 2)
+                error = "Tên sản phẩm phải có ít nhất 2 ký tự";
+
+            else if (value.trim().length > 100)
+                error = "Tên sản phẩm tối đa 100 ký tự";
+
             break;
 
         case "MaDM":
@@ -120,8 +137,22 @@ const handleChange = (e) => {
             break;
 
         case "DonViTinh":
+
             if (!value.trim())
-                error = "Nhập đơn vị tính";
+                error = "Đơn vị tính không được để trống";
+
+            else if (value.trim().length > 30)
+                error = "Đơn vị tính tối đa 30 ký tự";
+
+            break;
+        case "MoTa":
+
+            if (!value.trim())
+                error = "Mô tả không được để trống";
+
+            else if (value.trim().length > 1000)
+                error = "Mô tả tối đa 1000 ký tự";
+
             break;
 
         default:
@@ -144,7 +175,22 @@ const validate = () => {
     let newErrors = {};
 
     if (!formData.TenSP.trim()) {
-        newErrors.TenSP = "Tên sản phẩm không được để trống";
+
+        newErrors.TenSP =
+            "Tên sản phẩm không được để trống";
+
+    }
+    else if (formData.TenSP.trim().length < 2) {
+
+        newErrors.TenSP =
+            "Tên sản phẩm phải có ít nhất 2 ký tự";
+
+    }
+    else if (formData.TenSP.trim().length > 100) {
+
+        newErrors.TenSP =
+            "Tên sản phẩm tối đa 100 ký tự";
+
     }
 
     if (!formData.MaDM) {
@@ -164,6 +210,9 @@ const validate = () => {
 
     if (!formData.DonViTinh.trim()) {
         newErrors.DonViTinh = "Đơn vị tính không được để trống";
+    }
+    else if (formData.DonViTinh.trim().length > 30){
+        newErrors.DonViTinh = "Đơn vị tính tối đa 30 ký tự";
     }
 
     if (!formData.MoTa.trim()) {

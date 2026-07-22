@@ -59,36 +59,40 @@ function Product() {
         }
 
     }
-   const handleSave = async (data) => {
+const handleSave = async (data) => {
 
-        try {
+    try {
 
-            if (editingProduct) {
+        if (editingProduct) {
 
-                await updateProduct(editingProduct.MaSP, data);
+            await updateProduct(editingProduct.MaSP, data);
 
-                alert("Cập nhật thành công");
+            alert("Cập nhật thành công");
 
-            } else {
+        } else {
 
-                await createProduct(data);
+            await createProduct(data);
 
-                alert("Thêm thành công");
-
-            }
-
-            await fetchProducts();
-
-            // Reset form
-            setEditingProduct(null);
-
-        } catch (error) {
-
-            console.log(error);
+            alert("Thêm thành công");
 
         }
 
-    };
+        await fetchProducts(page);
+
+        setEditingProduct(null);
+
+    } catch (error) {
+
+        alert(
+            error.response?.data?.message ||
+            "Có lỗi xảy ra."
+        );
+
+        console.log(error);
+
+    }
+
+};
     const handleDelete = async (id) => {
 
         if (!window.confirm("Bạn có chắc muốn xóa sản phẩm này?")) return;
