@@ -102,8 +102,8 @@ const getTopProducts = async (from, to) => {
 
         AND
 
-            dh.NgayDat BETWEEN @from AND @to
-
+            CAST(dh.NgayDat AS DATE) BETWEEN @from AND @to
+            
         GROUP BY
 
             sp.TenSP
