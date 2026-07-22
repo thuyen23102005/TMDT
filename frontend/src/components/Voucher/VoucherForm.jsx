@@ -14,15 +14,20 @@ function VoucherForm({
         NgayBD: "",
         NgayKT: "",
         DieuKienApDung: "",
-        SoLuong: ""
+        SoLuong: "",
+        SoDiemDoi: ""
     });
+
     const [errors, setErrors] = useState({});
 
     useEffect(() => {
-        
+
         if (editingVoucher) {
 
-            setFormData(editingVoucher);
+            setFormData({
+                ...editingVoucher,
+                SoDiemDoi: editingVoucher.SoDiemDoi ?? ""
+            });
 
         } else {
 
@@ -33,10 +38,13 @@ function VoucherForm({
                 NgayBD: "",
                 NgayKT: "",
                 DieuKienApDung: "",
-                SoLuong: ""
+                SoLuong: "",
+                SoDiemDoi: ""
             });
 
         }
+
+        setErrors({});
 
     }, [editingVoucher]);
 
@@ -57,38 +65,48 @@ function VoucherForm({
             [name]: value
         });
 
-        setErrors(prev => ({
-            ...prev,
+        setErrors({
+            ...errors,
             [name]: ""
-        }));
+        });
 
     };
+
     const validate = () => {
 
         const newErrors = {};
 
-        // Code
         if (!formData.Code.trim()) {
+
             newErrors.Code = "Vui lòng nhập mã giảm giá";
+
         }
         else if (!/^[A-Za-z0-9]+$/.test(formData.Code)) {
+
             newErrors.Code = "Chỉ được nhập chữ và số";
+
         }
         else if (formData.Code.length < 3 || formData.Code.length > 20) {
+
             newErrors.Code = "Độ dài từ 3-20 ký tự";
+
         }
 
-        // Loại giảm
         if (!formData.LoaiGiam) {
+
             newErrors.LoaiGiam = "Vui lòng chọn loại giảm";
+
         }
 
-        // Giá trị giảm
         if (!formData.GiaTriGiam) {
+
             newErrors.GiaTriGiam = "Vui lòng nhập giá trị";
+
         }
         else if (isNaN(formData.GiaTriGiam)) {
+
             newErrors.GiaTriGiam = "Chỉ được nhập số";
+
         }
         else {
 
@@ -98,19 +116,19 @@ function VoucherForm({
                 newErrors.GiaTriGiam = "Giá trị phải lớn hơn 0";
 
             if (
-                formData.LoaiGiam === "Phần trăm"
-                && value > 100
+                formData.LoaiGiam === "Phần trăm" &&
+                value > 100
             ) {
+
                 newErrors.GiaTriGiam = "Không được vượt quá 100%";
+
             }
 
         }
 
-        // Ngày bắt đầu
         if (!formData.NgayBD)
             newErrors.NgayBD = "Chọn ngày bắt đầu";
 
-        // Ngày kết thúc
         if (!formData.NgayKT)
             newErrors.NgayKT = "Chọn ngày kết thúc";
 
@@ -123,8 +141,6 @@ function VoucherForm({
             newErrors.NgayKT = "Ngày kết thúc phải sau ngày bắt đầu";
 
         }
-
-        // Điều kiện áp dụng
 
         if (!formData.DieuKienApDung) {
 
@@ -142,8 +158,6 @@ function VoucherForm({
 
         }
 
-        // Số lượng
-
         if (!formData.SoLuong) {
 
             newErrors.SoLuong = "Nhập số lượng";
@@ -160,40 +174,45 @@ function VoucherForm({
 
         }
 
+        if (formData.SoDiemDoi !== "") {
+
+            if (!Number.isInteger(Number(formData.SoDiemDoi))) {
+
+                newErrors.SoDiemDoi = "Điểm đổi phải là số nguyên";
+
+            }
+            else if (Number(formData.SoDiemDoi) <= 0) {
+
+                newErrors.SoDiemDoi = "Điểm đổi phải lớn hơn 0";
+
+            }
+
+        }
+
         setErrors(newErrors);
 
         return Object.keys(newErrors).length === 0;
 
     };
 
-const handleSubmit = async (e) => {
+    const handleSubmit = (e) => {
 
-    e.preventDefault();
+        e.preventDefault();
 
-    if (!validate()) return;
+        if (!validate()) return;
 
-    let result;
+        if (editingVoucher) {
 
-    if (editingVoucher) {
+            onUpdate(editingVoucher.MaGG, formData);
 
-        result = await onUpdate(editingVoucher.MaGG, formData);
+        }
+        else {
 
-    } else {
+            onAdd(formData);
 
-        result = await onAdd(formData);
+        }
 
-    }
-
-    if (result?.codeError) {
-
-        setErrors(prev => ({
-            ...prev,
-            Code: result.codeError
-        }));
-
-    }
-
-};
+    };
 
     return (
 
@@ -207,126 +226,174 @@ const handleSubmit = async (e) => {
 
                 <form onSubmit={handleSubmit}>
 
-                    <input
-                        name="Code"
-                        className={`form-control mb-1 ${
-                            errors.Code
-                                ? "is-invalid"
-                                : formData.Code
-                                ? "is-valid"
-                                : ""
-                        }`}
-                        placeholder="Code"
-                        value={formData.Code}
-                        onChange={handleChange}
-                    />
+                    <div className="mb-3">
 
-                    <div className="invalid-feedback">
-                        {errors.Code}
-                    </div>
-                    
-                    <select
-                        className={`form-control ${
-                            errors.LoaiGiam
-                                ? "is-invalid"
-                                : formData.LoaiGiam
+                        <label className="form-label">Code</label>
+
+                        <input
+                            className={`form-control ${
+                                errors.Code
+                                    ? "is-invalid"
+                                    : formData.Code
                                     ? "is-valid"
                                     : ""
-                        }`}
-                        name="LoaiGiam"
-                        value={formData.LoaiGiam}
-                        onChange={handleChange}
-                    >
-                        <option value="">Loại giảm</option>
-                        <option value="Phần trăm">Phần trăm</option>
-                        <option value="Tiền">Tiền</option>
-                    </select>
-                    <div className="invalid-feedback">
-                        {errors.LoaiGiam}
+                            }`}
+                            name="Code"
+                            value={formData.Code}
+                            onChange={handleChange}
+                        />
+
+                        <div className="invalid-feedback">
+                            {errors.Code}
+                        </div>
+
                     </div>
 
-                    <input
-                        className={`form-control ${
-                            errors.GiaTriGiam
-                                ? "is-invalid"
-                                : formData.GiaTriGiam
-                                    ? "is-valid"
-                                    : ""
-                        }`}
-                        placeholder={
-                            formData.LoaiGiam==="Phần trăm"
-                                ? "Giá trị (%)"
-                                : "Giá trị (VNĐ)"
-                        }
-                        name="GiaTriGiam"
-                        value={formData.GiaTriGiam}
-                        onChange={handleChange}
-                    />
-                    <div className="invalid-feedback">
-                        {errors.GiaTriGiam}
+                    <div className="mb-3">
+
+                        <label className="form-label">Loại giảm</label>
+
+                        <select
+                            className={`form-control ${
+                                errors.LoaiGiam ? "is-invalid" : ""
+                            }`}
+                            name="LoaiGiam"
+                            value={formData.LoaiGiam}
+                            onChange={handleChange}
+                        >
+                            <option value="">Loại giảm</option>
+                            <option value="Phần trăm">Phần trăm</option>
+                            <option value="Tiền">Tiền</option>
+                        </select>
+
+                        <div className="invalid-feedback">
+                            {errors.LoaiGiam}
+                        </div>
+
                     </div>
-                    
-                    <input
-                        type="date"
-                        className={`form-control ${
-                            errors.NgayBD
-                                ? "is-invalid"
-                                : formData.NgayBD
-                                    ? "is-valid"
-                                    : ""
-                        }`}
-                        name="NgayBD"
-                        value={formData.NgayBD?.slice(0,10)}
-                        onChange={handleChange}
-                    />
-                    <div className="invalid-feedback">
-                        {errors.NgayBD}
+
+                    <div className="mb-3">
+
+                        <label className="form-label">Giá trị giảm</label>
+
+                        <input
+                            className={`form-control ${
+                                errors.GiaTriGiam ? "is-invalid" : ""
+                            }`}
+                            name="GiaTriGiam"
+                            value={formData.GiaTriGiam}
+                            onChange={handleChange}
+                        />
+
+                        <div className="invalid-feedback">
+                            {errors.GiaTriGiam}
+                        </div>
+
                     </div>
-                    <input
-                        type="date"
-                        className={`form-control ${
-                            errors.NgayKT
-                                ? "is-invalid"
-                                : formData.NGayKT
-                                    ? "is-valid"
-                                    : ""
-                        }`}
-                        name="NgayKT"
-                        value={formData.NgayKT?.slice(0,10)}
-                        onChange={handleChange}
-                    />
-                    <div className="invalid-feedback">
-                        {errors.NgayKT}
+
+                    <div className="mb-3">
+
+                        <label className="form-label">Ngày bắt đầu</label>
+
+                        <input
+                            type="date"
+                            className={`form-control ${
+                                errors.NgayBD ? "is-invalid" : ""
+                            }`}
+                            name="NgayBD"
+                            value={formData.NgayBD?.slice(0,10)}
+                            onChange={handleChange}
+                        />
+
+                        <div className="invalid-feedback">
+                            {errors.NgayBD}
+                        </div>
+
                     </div>
-                    <input
-                        className={`form-control ${
-                            errors.DieuKienApDung
-                                ? "is-invalid"
-                                : formData.DieuKienApDung
-                                    ? "is-valid"
-                                    : ""
-                        }`}
-                        placeholder="Điều kiện áp dụng"
-                        name="DieuKienApDung"
-                        value={formData.DieuKienApDung}
-                        onChange={handleChange}
-                    />
-                    <div className="invalid-feedback">
-                        {errors.DieuKienApDung}
+
+                    <div className="mb-3">
+
+                        <label className="form-label">Ngày kết thúc</label>
+
+                        <input
+                            type="date"
+                            className={`form-control ${
+                                errors.NgayKT ? "is-invalid" : ""
+                            }`}
+                            name="NgayKT"
+                            value={formData.NgayKT?.slice(0,10)}
+                            onChange={handleChange}
+                        />
+
+                        <div className="invalid-feedback">
+                            {errors.NgayKT}
+                        </div>
+
                     </div>
-                    <input
-                        className="form-control mb-3"
-                        placeholder="Số lượng"
-                        name="SoLuong"
-                        value={formData.SoLuong}
-                        onChange={handleChange}
-                    />
-                    <div className="invalid-feedback">
-                        {errors.SoLuong}
+
+                    <div className="mb-3">
+
+                        <label className="form-label">Điều kiện áp dụng</label>
+
+                        <input
+                            className={`form-control ${
+                                errors.DieuKienApDung ? "is-invalid" : ""
+                            }`}
+                            name="DieuKienApDung"
+                            value={formData.DieuKienApDung}
+                            onChange={handleChange}
+                        />
+
+                        <div className="invalid-feedback">
+                            {errors.DieuKienApDung}
+                        </div>
+
+                    </div>
+
+                    <div className="mb-3">
+
+                        <label className="form-label">Số lượng</label>
+
+                        <input
+                            className={`form-control ${
+                                errors.SoLuong ? "is-invalid" : ""
+                            }`}
+                            name="SoLuong"
+                            value={formData.SoLuong}
+                            onChange={handleChange}
+                        />
+
+                        <div className="invalid-feedback">
+                            {errors.SoLuong}
+                        </div>
+
+                    </div>
+
+                    <div className="mb-3">
+
+                        <label className="form-label">Điểm đổi</label>
+
+                        <input
+                            type="number"
+                            className={`form-control ${
+                                errors.SoDiemDoi ? "is-invalid" : ""
+                            }`}
+                            name="SoDiemDoi"
+                            value={formData.SoDiemDoi}
+                            onChange={handleChange}
+                            placeholder="Để trống nếu không dùng để đổi điểm"
+                        />
+
+                        <div className="invalid-feedback">
+                            {errors.SoDiemDoi}
+                        </div>
+
                     </div>
 
                     <button className="btn btn-success me-2">
+
                         {editingVoucher ? "Cập nhật" : "Thêm"}
+
                     </button>
 
                     {editingVoucher && (
