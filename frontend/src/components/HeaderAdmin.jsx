@@ -7,7 +7,7 @@ function HeaderAdmin() {
     const handleLogout = () => {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
-        navigate("/login"); 
+        navigate("/"); 
     };
 
     return (
@@ -31,23 +31,32 @@ function HeaderAdmin() {
             </div>
 
             <div className="d-flex align-items-center">
-                
-                <button 
-                    className="btn btn-outline-danger d-flex align-items-center ms-3"
-                    onClick={handleLogout}
-                >
-                    <FaSignOutAlt size={20} className="me-2" />
-                    Đăng xuất
-                </button>
 
                 <div className="dropdown">
-                    <button className="btn btn-light d-flex align-items-center">
+                    <button
+                        className="btn btn-light d-flex align-items-center dropdown-toggle"
+                        type="button"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                    >
                         <FaUserCircle size={28} className="me-2 text-success" />
                         <div className="text-start">
                             <div className="fw-semibold">Admin</div>
                             <small className="text-muted">Quản trị viên</small>
                         </div>
                     </button>
+
+                    <ul className="dropdown-menu dropdown-menu-end shadow">
+                        <li>
+                            <button
+                                className="dropdown-item text-danger d-flex align-items-center"
+                                onClick={handleLogout}
+                            >
+                                <FaSignOutAlt className="me-2" />
+                                Đăng xuất
+                            </button>
+                        </li>
+                    </ul>
                 </div>
             </div>
         </header>

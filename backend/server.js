@@ -1,5 +1,12 @@
+process.on("unhandledRejection", (reason) => {
+    console.error("⚠️ Unhandled Rejection:", reason);
+});
+process.on("uncaughtException", (err) => {
+    console.error("⚠️ Uncaught Exception:", err);
+});
 const express = require("express");
 const cors = require("cors");
+
 require("dotenv").config();
 
 const { connectDB } = require("./config/db");
@@ -30,23 +37,31 @@ const taskRoutes = require("./routes/taskRoutes");
 
 const app = express();
 
-const authRoutes = require("./routes/authRoutes");   
+const authRoutes = require("./routes/authRoutes");
+
+
+const chatbotRoutes = require("./routes/chatbotRoutes");
 
 const reportRoutes = require("./routes/reportRoutes");
-// Middleware
+
+const app = express();
+
+// ===== MIDDLEWARE (luôn đặt cors() và express.json() TRƯỚC mọi route) =====
 app.use(cors());
-
 app.use(express.json());
-
 app.use("/uploads", express.static("uploads"));
 
 // Kết nối Database
 connectDB();
 
-// Routes
+// ===== ROUTES =====
 app.use("/api/categories", categoryRoutes);
 
+
 app.use("/api/auth", authRoutes); 
+
+app.use("/api/auth", authRoutes);
+
 
 app.use('/api/products', productRoutes);
 
@@ -68,7 +83,16 @@ app.use("/api/dashboard", dashboardRoutes);
 
 app.use("/api/report", reportRoutes);
 
+
 app.use("/api/tasks", taskRoutes);
+
+app.use("/api/chatbot", chatbotRoutes);
+
+app.use("/api/momo", require("./routes/momoRoutes"));
+
+app.use("/api/vietqr", require("./routes/vietqrRoutes"));
+
+app.use("/api/sepay", require("./routes/sepayRoutes"));
 
 // Test API
 app.get("/", (req, res) => {

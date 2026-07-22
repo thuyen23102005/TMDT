@@ -62,6 +62,8 @@ const login = async (req, res) => {
                 maTK: user.MaTK,
                 email: user.Email,
                 vaiTro: user.VaiTro.trim(),
+                HoTen: user.HoTen || "",
+                SoDienThoai: user.SoDienThoai || "",
             },
         });
     } catch (error) {
@@ -73,7 +75,41 @@ const login = async (req, res) => {
 
 // ===== TẠO ADMIN =====
 const registerAdmin = async (req, res) => {
-    // code admin của bạn
+    try {
+        const { tenDangNhap, email, matKhau, soDienThoai } = req.body;
+
+        if (!email || !matKhau || !tenDangNhap) {
+            return res.status(400).json({
+                message: "Vui lòng nhập đầy đủ thông tin"
+            });
+        }
+
+        const existingUser = await authModel.findByEmail(email);
+
+        if (existingUser) {
+            return res.status(400).json({
+                message: "Email đã được sử dụng"
+            });
+        }
+
+        const hashedPassword = await bcrypt.hash(matKhau, 10);
+
+        const maTK = await authModel.createAdmin(
+            tenDangNhap,
+            hashedPassword,
+            email,
+            soDienThoai
+        );
+
+        res.status(201).json({
+            message: "Tạo tài khoản Admin thành công",
+            maTK,
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Lỗi máy chủ" });
+    }
 };
 
 
@@ -97,12 +133,7 @@ const changePassword = async (req, res) => {
             });
         }
 
-
-        const isMatch = await bcrypt.compare(
-            matKhauCu,
-            user.MatKhau
-        );
-
+        const isMatch = await bcrypt.compare(matKhauCu, user.MatKhau);
 
         if (!isMatch) {
             return res.status(400).json({
@@ -110,17 +141,9 @@ const changePassword = async (req, res) => {
             });
         }
 
+        const hashedNewPassword = await bcrypt.hash(matKhauMoi, 10);
 
-        const hashedNewPassword = await bcrypt.hash(
-            matKhauMoi,
-            10
-        );
-
-
-        await authModel.updatePassword(
-            maTK,
-            hashedNewPassword
-        );
+        await authModel.updatePassword(maTK, hashedNewPassword);
 
         // --- TẠO THÔNG BÁO ---
         try {
@@ -139,58 +162,69 @@ const changePassword = async (req, res) => {
             message: "Đổi mật khẩu thành công"
         });
 
-
-    } catch(error) {
+    } catch (error) {
         console.error(error);
-        res.status(500).json({
-            message:"Lỗi máy chủ"
-        });
+        res.status(500).json({ message: "Lỗi máy chủ" });
     }
 };
 
 
 // ===== XÁC THỰC MẬT KHẨU =====
-const verifyPassword = async (req,res)=>{
-    try{
-
+const verifyPassword = async (req, res) => {
+    try {
         const maTK = req.user.maTK;
-        const {password}=req.body;
-
+        const { password } = req.body;
 
         const user = await authModel.findById(maTK);
 
-        if(!user){
+        if (!user) {
             return res.status(404).json({
-                message:"Không tìm thấy người dùng"
+                message: "Không tìm thấy người dùng"
             });
         }
 
+        const isMatch = await bcrypt.compare(password, user.MatKhau);
 
-        const isMatch = await bcrypt.compare(
-            password,
-            user.MatKhau
-        );
-
-
-        if(!isMatch){
+        if (!isMatch) {
             return res.status(400).json({
-                valid:false,
-                message:"Mật khẩu không chính xác"
+                valid: false,
+                message: "Mật khẩu không chính xác"
             });
         }
-
 
         res.json({
-            valid:true,
-            message:"Xác thực thành công"
+            valid: true,
+            message: "Xác thực thành công"
         });
 
-
-    }catch(error){
+    } catch (error) {
         console.error(error);
-        res.status(500).json({
-            message:"Lỗi máy chủ"
+        res.status(500).json({ message: "Lỗi máy chủ" });
+    }
+};
+
+// ===== CẬP NHẬT HỒ SƠ =====
+const updateProfile = async (req, res) => {
+    try {
+        const maTK = req.user.maTK;
+        const { hoTen, soDienThoai, gioiTinh, ngaySinh } = req.body;
+
+        if (!hoTen || !soDienThoai) {
+            return res.status(400).json({
+                message: "Vui lòng nhập đầy đủ họ tên và số điện thoại"
+            });
+        }
+
+        await authModel.updateProfile(maTK, { hoTen, soDienThoai, gioiTinh, ngaySinh });
+
+        res.status(200).json({
+            message: "Cập nhật hồ sơ thành công",
+            user: { hoTen, soDienThoai, gioiTinh, ngaySinh }
         });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Lỗi máy chủ" });
     }
 };
 
@@ -199,5 +233,6 @@ module.exports = {
     login,
     registerAdmin,
     changePassword,
-    verifyPassword
+    verifyPassword,
+    updateProfile
 };
