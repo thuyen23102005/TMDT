@@ -66,11 +66,23 @@ const getOrdersByUser = async (maTK) => {
 };
 
 const getOrderStatusById = async (id) => {
+
     const pool = await connectDB();
+
     const result = await pool.request()
+
         .input("MaDH", id)
-        .query(`SELECT TrangThaiDonHang FROM DonHang WHERE MaDH = @MaDH`);
+
+        .query(`
+            SELECT
+                TrangThaiDonHang,
+                TrangThaiThanhToan
+            FROM DonHang
+            WHERE MaDH = @MaDH
+        `);
+
     return result.recordset[0];
+
 };
 
 // Cập nhật riêng trạng thái thanh toán (dùng cho MoMo IPN / check-status / SePay webhook)

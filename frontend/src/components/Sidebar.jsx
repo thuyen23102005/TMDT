@@ -24,12 +24,6 @@ function Sidebar() {
             </h3>
 
             <div className="d-flex flex-column mt-4">
-                
-                {/* Nút quay về trang chủ */}
-                <NavLink to="/" className="btn btn-outline-light text-start mb-4">
-                    ← Về trang chủ
-                </NavLink>
-
                 <NavLink to="/admin" end className={getNavLinkClass}>
                     Dashboard
                 </NavLink>
