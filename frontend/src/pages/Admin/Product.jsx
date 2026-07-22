@@ -103,9 +103,14 @@ const handleSave = async (data) => {
 
             alert("Đã xóa");
 
-            fetchProducts();
+            await fetchProducts(page);
 
         } catch (err) {
+
+            alert(
+                err.response?.data?.message ||
+                "Không thể xóa sản phẩm."
+            );
 
             console.log(err);
 

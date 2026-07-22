@@ -35,4 +35,12 @@ router.post(
 );
 
 
+// Cập nhật hồ sơ cá nhân
+router.put(
+    "/update-profile",
+    verifyToken,
+    authController.updateProfile
+);
+
+
 module.exports = router;

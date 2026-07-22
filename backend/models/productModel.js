@@ -221,6 +221,44 @@ const deleteProduct = async (id) => {
         `);
 
 };
+
+// Tìm sản phẩm liên quan theo từ khóa - dùng cho Chatbot tư vấn
+const searchProducts = async (keyword, limit = 5) => {
+
+    const pool = await connectDB();
+
+    const words = keyword.split(/\s+/).filter(w => w.length > 1);
+
+    if (words.length === 0) return [];
+
+    const request = pool.request().input("limit", sql.Int, limit);
+
+    const conditions = words.map((word, i) => {
+        const paramName = `kw${i}`;
+        request.input(paramName, sql.NVarChar, `%${word}%`);
+        return `(sp.TenSP LIKE @${paramName} OR sp.MoTa LIKE @${paramName} OR dm.TenDM LIKE @${paramName})`;
+    }).join(" OR ");
+
+    const result = await request.query(`
+        SELECT TOP (@limit)
+            sp.MaSP,
+            sp.TenSP,
+            sp.DonGia,
+            sp.MoTa,
+            sp.SoLuongTon,
+            sp.DonViTinh,
+            dm.TenDM
+        FROM SanPham sp
+        INNER JOIN DanhMuc dm
+            ON sp.MaDM = dm.MaDM
+        WHERE sp.TrangThai = 1
+          AND (${conditions})
+        ORDER BY sp.MaSP DESC
+    `);
+
+    return result.recordset;
+};
+
 module.exports = {
     getAllProducts,
     getAllProductsClient,
@@ -228,7 +266,11 @@ module.exports = {
     createProduct,
     updateProduct,
     deleteProduct,
+<<<<<<< HEAD
     checkProductName,
     checkProductNameUpdate,
     checkCategoryExists
+=======
+    searchProducts   
+>>>>>>> fc70fe52261a3ef643babfc787886da6746cdda1
 };

@@ -127,9 +127,20 @@ const getOrdersByUser = async (req, res) => {
     }
 };
 
+const getPaymentStatus = async (req, res) => {
+    try {
+        const data = await orderModel.getPaymentStatusById(req.params.id);
+        res.json(data || { TrangThaiThanhToan: null });
+    } catch (error) {
+        console.error("Lỗi lấy trạng thái thanh toán:", error);
+        res.status(500).json({ message: "Lỗi server" });
+    }
+};
+
 module.exports={
     getAllOrders,
     getOrderDetail,
     updateStatus,
-    getOrdersByUser
+    getOrdersByUser,
+    getPaymentStatus
 }

@@ -34,17 +34,21 @@ function Profile() {
 
     useEffect(() => {
 
+    const loadUser = () => {
         const storedUser = JSON.parse(localStorage.getItem("user"));
-
         setUser(storedUser);
-
         if (storedUser?.avatarUrl) {
             setAvatarUrl(storedUser.avatarUrl);
         }
+    };
 
-        fetchOrders();
+    loadUser();
+    fetchOrders();
 
-    }, [location.pathname]);
+    window.addEventListener("userUpdated", loadUser);
+    return () => window.removeEventListener("userUpdated", loadUser);
+
+}, [location.pathname]);
 
 
     const totalOrders = orders.length;

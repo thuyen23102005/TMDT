@@ -7,7 +7,12 @@ const findByEmail = async (email) => {
     const result = await pool
         .request()
         .input("Email", sql.VarChar, email)
-        .query(`SELECT * FROM TaiKhoan WHERE Email = @Email`);
+        .query(`
+            SELECT tk.*, kh.HoTen
+            FROM TaiKhoan tk
+            LEFT JOIN KhachHang kh ON tk.MaTK = kh.MaTK
+            WHERE tk.Email = @Email
+        `);
 
     return result.recordset[0];
 };
@@ -20,9 +25,10 @@ const findById = async (maTK) => {
         .request()
         .input("MaTK", sql.Int, maTK)
         .query(`
-            SELECT *
-            FROM TaiKhoan
-            WHERE MaTK = @MaTK
+            SELECT tk.*, kh.HoTen
+            FROM TaiKhoan tk
+            LEFT JOIN KhachHang kh ON tk.MaTK = kh.MaTK
+            WHERE tk.MaTK = @MaTK
         `);
 
     return result.recordset[0];
@@ -99,6 +105,37 @@ const updatePassword = async (maTK, hashedPassword) => {
         `);
 };
 
+// Cập nhật hồ sơ cá nhân
+const updateProfile = async (maTK, { hoTen, soDienThoai, gioiTinh, ngaySinh }) => {
+    const pool = await connectDB();
+
+    // Cập nhật số điện thoại ở bảng TaiKhoan
+    await pool
+        .request()
+        .input("MaTK", sql.Int, maTK)
+        .input("SoDienThoai", sql.VarChar, soDienThoai)
+        .query(`
+            UPDATE TaiKhoan
+            SET SoDienThoai = @SoDienThoai
+            WHERE MaTK = @MaTK
+        `);
+
+    // Cập nhật thông tin ở bảng KhachHang
+    await pool
+        .request()
+        .input("MaTK", sql.Int, maTK)
+        .input("HoTen", sql.NVarChar, hoTen)
+        .input("GioiTinh", sql.NVarChar, gioiTinh)
+        .input("NgaySinh", sql.Date, ngaySinh || null)
+        .query(`
+            UPDATE KhachHang
+            SET HoTen = @HoTen,
+                GioiTinh = @GioiTinh,
+                NgaySinh = @NgaySinh
+            WHERE MaTK = @MaTK
+        `);
+};
+
 module.exports = {
     findByEmail,
     findById,
@@ -106,4 +143,5 @@ module.exports = {
     createKhachHang,
     createAdmin,
     updatePassword,
+    updateProfile,
 };
