@@ -1,6 +1,3 @@
-process.on("unhandledRejection", (reason) => {
-    console.error("⚠️ Unhandled Rejection:", reason);
-});
 process.on("uncaughtException", (err) => {
     console.error("⚠️ Uncaught Exception:", err);
 });
@@ -35,10 +32,7 @@ const dashboardRoutes = require("./routes/dashboardRoutes");
 
 const taskRoutes = require("./routes/taskRoutes");
 
-const app = express();
-
 const authRoutes = require("./routes/authRoutes");
-
 
 const chatbotRoutes = require("./routes/chatbotRoutes");
 
