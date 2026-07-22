@@ -33,7 +33,12 @@ const reviewRoutes = require("./routes/reviewRoutes");
 
 const dashboardRoutes = require("./routes/dashboardRoutes");
 
+const taskRoutes = require("./routes/taskRoutes");
+
+const app = express();
+
 const authRoutes = require("./routes/authRoutes");
+
 
 const chatbotRoutes = require("./routes/chatbotRoutes");
 
@@ -51,7 +56,12 @@ connectDB();
 
 // ===== ROUTES =====
 app.use("/api/categories", categoryRoutes);
+
+
+app.use("/api/auth", authRoutes); 
+
 app.use("/api/auth", authRoutes);
+
 
 app.use('/api/products', productRoutes);
 
@@ -73,6 +83,9 @@ app.use("/api/dashboard", dashboardRoutes);
 
 app.use("/api/report", reportRoutes);
 
+
+app.use("/api/tasks", taskRoutes);
+
 app.use("/api/chatbot", chatbotRoutes);
 
 app.use("/api/momo", require("./routes/momoRoutes"));
@@ -80,6 +93,7 @@ app.use("/api/momo", require("./routes/momoRoutes"));
 app.use("/api/vietqr", require("./routes/vietqrRoutes"));
 
 app.use("/api/sepay", require("./routes/sepayRoutes"));
+
 // Test API
 app.get("/", (req, res) => {
     res.json({
