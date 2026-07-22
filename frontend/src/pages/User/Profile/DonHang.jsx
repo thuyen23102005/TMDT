@@ -47,37 +47,83 @@ function DonHang() {
                                 <th>Thao tác</th> {/* Thêm cột Thao tác */}
                             </tr>
                         </thead>
-                        <tbody>
-                            {orders.map(o => (
-                                <tr key={o.MaDH}>
-                                    <td className="fw-bold text-secondary">#{o.MaDH}</td>
-                                    <td>{new Date(o.NgayDat).toLocaleDateString('vi-VN')}</td>
-                                    <td className="text-danger fw-bold">{Number(o.TongTien).toLocaleString()} đ</td>
-                                    <td>
-                                        <span className={`badge ${o.TrangThaiDonHang === 'Đã giao' ? 'bg-success' : o.TrangThaiDonHang === 'Đã hủy' ? 'bg-danger' : 'bg-warning text-dark'}`}>
-                                            {o.TrangThaiDonHang}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span className={`badge ${o.TrangThaiThanhToan === 'Đã thanh toán' ? 'bg-info text-dark' : 'bg-secondary'}`}>
-                                            {o.TrangThaiThanhToan}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        {/* Chỉ hiện nút Hủy khi chưa giao và chưa hủy */}
-                                        {(o.TrangThaiDonHang !== 'Đang giao' && o.TrangThaiDonHang !== 'Đã giao' && o.TrangThaiDonHang !== 'Đã hủy') ? (
-                                            <button 
-                                                className="btn btn-sm btn-outline-danger"
-                                                onClick={() => handleCancelOrder(o.MaDH)}
+                            <tbody>
+                            {orders.map(o => {
+
+                                const canCancel =
+                                    o.TrangThaiThanhToan !== "Đã thanh toán" &&
+                                    o.TrangThaiDonHang !== "Đang giao" &&
+                                    o.TrangThaiDonHang !== "Đã giao" &&
+                                    o.TrangThaiDonHang !== "Đã hủy";
+
+                                return (
+
+                                    <tr key={o.MaDH}>
+
+                                        <td className="fw-bold text-secondary">
+                                            #{o.MaDH}
+                                        </td>
+
+                                        <td>
+                                            {new Date(o.NgayDat).toLocaleDateString("vi-VN")}
+                                        </td>
+
+                                        <td className="text-danger fw-bold">
+                                            {Number(o.TongTien).toLocaleString()} đ
+                                        </td>
+
+                                        <td>
+                                            <span
+                                                className={`badge ${
+                                                    o.TrangThaiDonHang === "Đã giao"
+                                                        ? "bg-success"
+                                                        : o.TrangThaiDonHang === "Đã hủy"
+                                                        ? "bg-danger"
+                                                        : "bg-warning text-dark"
+                                                }`}
                                             >
-                                                Hủy đơn
-                                            </button>
-                                        ) : (
-                                            <span className="text-muted small">Không thể hủy</span>
-                                        )}
-                                    </td>
-                                </tr>
-                            ))}
+                                                {o.TrangThaiDonHang}
+                                            </span>
+                                        </td>
+
+                                        <td>
+                                            <span
+                                                className={`badge ${
+                                                    o.TrangThaiThanhToan === "Đã thanh toán"
+                                                        ? "bg-info text-dark"
+                                                        : "bg-secondary"
+                                                }`}
+                                            >
+                                                {o.TrangThaiThanhToan}
+                                            </span>
+                                        </td>
+
+                                        <td>
+
+                                            {canCancel ? (
+
+                                                <button
+                                                    className="btn btn-sm btn-outline-danger"
+                                                    onClick={() => handleCancelOrder(o.MaDH)}
+                                                >
+                                                    Hủy đơn
+                                                </button>
+
+                                            ) : (
+
+                                                <span className="text-muted small">
+                                                    Không thể hủy
+                                                </span>
+
+                                            )}
+
+                                        </td>
+
+                                    </tr>
+
+                                );
+
+                            })}
                         </tbody>
                     </table>
                 </div>

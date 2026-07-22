@@ -31,7 +31,15 @@ const updateStatus = async (req, res) => {
 
         // 1. Lấy trạng thái hiện tại của đơn hàng từ Database
         const currentOrder = await orderModel.getOrderStatusById(orderId);
-        
+        // Không cho hủy nếu đã thanh toán
+        if (
+            newStatus === "Đã hủy" &&
+            currentOrder.TrangThaiThanhToan === "Đã thanh toán"
+        ) {
+            return res.status(400).json({
+                message: "Đơn hàng đã thanh toán không thể hủy."
+            });
+        }
         if (!currentOrder) {
             return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
         }
