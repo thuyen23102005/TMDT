@@ -4,6 +4,12 @@ const router = express.Router();
 
 const voucherController = require("../controllers/voucherController");
 
+const { verifyToken } = require("../middlewares/authMiddleware");
+
+router.get("/redeemable", verifyToken, voucherController.getRedeemable);
+router.get("/my-vouchers", verifyToken, voucherController.getMyVouchers);
+router.post("/:id/redeem", verifyToken, voucherController.redeem);
+
 router.get("/", voucherController.getAll);
 
 router.get("/active", voucherController.getActive);

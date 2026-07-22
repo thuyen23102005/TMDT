@@ -26,6 +26,8 @@ const reviewRoutes = require("./routes/reviewRoutes");
 
 const dashboardRoutes = require("./routes/dashboardRoutes");
 
+const taskRoutes = require("./routes/taskRoutes");
+
 const app = express();
 
 const authRoutes = require("./routes/authRoutes");   
@@ -43,6 +45,7 @@ connectDB();
 
 // Routes
 app.use("/api/categories", categoryRoutes);
+
 app.use("/api/auth", authRoutes); 
 
 app.use('/api/products', productRoutes);
@@ -64,6 +67,8 @@ app.use("/api/vouchers", voucherRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 
 app.use("/api/report", reportRoutes);
+
+app.use("/api/tasks", taskRoutes);
 
 // Test API
 app.get("/", (req, res) => {

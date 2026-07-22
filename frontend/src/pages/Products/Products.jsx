@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { getAllProducts } from '../../services/Admin/productApi';
 import { getCategories } from '../../services/Admin/categoryApi';
 import './Products.css';
+import TreasureChestWidget from '../../components/TreasureChestWidget/TreasureChestWidget';
 
 const Products = () => {
   const [products, setProducts] = useState([]);
@@ -46,6 +47,73 @@ useEffect(() => {
     fetchData();
 
 }, []);
+// Chuẩn hóa tiếng Việt: bỏ dấu + chữ thường
+const normalizeText = (text) => {
+  return (text ?? '')
+    .toString()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toLowerCase()
+    .trim();
+};
+
+// Tính khoảng cách giữa 2 chuỗi để tìm gần đúng
+const levenshteinDistance = (a, b) => {
+  const matrix = Array.from(
+    { length: b.length + 1 },
+    () => Array(a.length + 1).fill(0)
+  );
+
+  for (let i = 0; i <= b.length; i++) {
+    matrix[i][0] = i;
+  }
+
+  for (let j = 0; j <= a.length; j++) {
+    matrix[0][j] = j;
+  }
+
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      if (b[i - 1] === a[j - 1]) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j] + 1
+        );
+      }
+    }
+  }
+
+  return matrix[b.length][a.length];
+};
+
+// Kiểm tra tên sản phẩm có gần giống từ khóa không
+const fuzzyMatch = (productName, keyword) => {
+  const name = normalizeText(productName);
+  const search = normalizeText(keyword);
+
+  // Không nhập gì thì hiển thị tất cả
+  if (!search) return true;
+
+  // Tìm thấy trực tiếp
+  if (name.includes(search)) return true;
+
+  // Tách tên sản phẩm thành từng từ
+  const words = name.split(/\s+/);
+
+  // Cho phép sai 1-2 ký tự tùy độ dài từ khóa
+  const maxDistance =
+    search.length <= 3 ? 1 :
+    search.length <= 6 ? 2 : 3;
+
+  return words.some((word) => {
+    return levenshteinDistance(word, search) <= maxDistance;
+  });
+};
 
   // Lọc theo tên sản phẩm (TenSP) và tên danh mục (TenDM)
   const filteredProducts = products
@@ -168,6 +236,7 @@ useEffect(() => {
         </main>
 
       </div>
+       <TreasureChestWidget />
     </div>
   );
 };

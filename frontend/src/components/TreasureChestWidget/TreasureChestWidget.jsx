@@ -1,49 +1,73 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './TreasureChestWidget.css';
 
-// ====== DỮ LIỆU NHIỆM VỤ MẪU (thay bằng API thật sau) ======
-const DEFAULT_TASKS = [
-  { id: 1, title: 'Đăng nhập mỗi ngày', desc: 'Ghé thăm cửa hàng hôm nay', points: 10 },
-  { id: 2, title: 'Xem 3 sản phẩm bất kỳ', desc: 'Khám phá thêm nông sản mới', points: 15 },
-  { id: 3, title: 'Thêm sản phẩm vào giỏ hàng', desc: 'Chuẩn bị cho đơn hàng của bạn', points: 20 },
-  { id: 4, title: 'Đặt hàng thành công', desc: 'Hoàn tất một đơn hàng bất kỳ', points: 50 },
-  { id: 5, title: 'Đánh giá sản phẩm', desc: 'Chia sẻ cảm nhận của bạn', points: 25 },
-];
-
 const STORAGE_KEY_POS = 'treasure_widget_pos';
-const STORAGE_KEY_CLAIMED = 'treasure_widget_claimed';
-const STORAGE_KEY_POINTS = 'treasure_widget_points';
+const API_URL = 'http://localhost:5000/api/tasks';
 
 const TreasureChestWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [tasks, setTasks] = useState([]);
+  const [totalPoints, setTotalPoints] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+
   const [position, setPosition] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY_POS);
     return saved ? JSON.parse(saved) : { x: window.innerWidth - 100, y: window.innerHeight - 160 };
   });
-  const [claimed, setClaimed] = useState(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_CLAIMED);
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [totalPoints, setTotalPoints] = useState(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_POINTS);
-    return saved ? Number(saved) : 0;
-  });
 
   const dragInfo = useRef({ dragging: false, moved: false, offsetX: 0, offsetY: 0 });
-  const widgetRef = useRef(null);
 
-  // Lưu vị trí mỗi khi thay đổi
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_POS, JSON.stringify(position));
   }, [position]);
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY_CLAIMED, JSON.stringify(claimed));
-  }, [claimed]);
+  const getToken = () => localStorage.getItem('token');
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY_POINTS, String(totalPoints));
-  }, [totalPoints]);
+  // Chỉ hiển thị widget nếu người dùng đã đăng nhập (giống cách check ở Cart.jsx/ProductDetail.jsx)
+  const isLoggedIn = !!getToken() && !!localStorage.getItem('user');
+  if (!isLoggedIn) return null;
+
+  const fetchTaskStatus = async () => {
+    setIsLoading(true);
+    setErrorMsg('');
+    try {
+      const res = await fetch(`${API_URL}/status`, {
+        headers: { Authorization: `Bearer ${getToken()}` }
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setErrorMsg(data.message || 'Không tải được nhiệm vụ');
+        return;
+      }
+      setTasks(data.tasks);
+      setTotalPoints(data.totalPoints);
+    } catch (err) {
+      setErrorMsg('Không thể kết nối tới máy chủ');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleClaim = async (task) => {
+    try {
+      const res = await fetch(`${API_URL}/${task.MaNV}/claim`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${getToken()}` }
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.message || 'Nhận điểm thất bại');
+        return;
+      }
+      setTotalPoints(data.totalPoints);
+      setTasks((prev) =>
+        prev.map((t) => (t.MaNV === task.MaNV ? { ...t, status: 'claimed' } : t))
+      );
+    } catch (err) {
+      alert('Không thể kết nối tới máy chủ');
+    }
+  };
 
   // ====== KÉO THẢ ======
   const startDrag = (clientX, clientY) => {
@@ -67,25 +91,14 @@ const TreasureChestWidget = () => {
     setPosition({ x: newX, y: newY });
   };
 
-  const endDrag = () => {
-    dragInfo.current.dragging = false;
-  };
+  const endDrag = () => { dragInfo.current.dragging = false; };
 
-  const handleMouseDown = (e) => {
-    e.preventDefault();
-    startDrag(e.clientX, e.clientY);
-  };
-  const handleTouchStart = (e) => {
-    const touch = e.touches[0];
-    startDrag(touch.clientX, touch.clientY);
-  };
+  const handleMouseDown = (e) => { e.preventDefault(); startDrag(e.clientX, e.clientY); };
+  const handleTouchStart = (e) => { const t = e.touches[0]; startDrag(t.clientX, t.clientY); };
 
   useEffect(() => {
     const handleMouseMove = (e) => moveDrag(e.clientX, e.clientY);
-    const handleTouchMove = (e) => {
-      const touch = e.touches[0];
-      moveDrag(touch.clientX, touch.clientY);
-    };
+    const handleTouchMove = (e) => { const t = e.touches[0]; moveDrag(t.clientX, t.clientY); };
     const handleUp = () => endDrag();
 
     window.addEventListener('mousemove', handleMouseMove);
@@ -103,26 +116,17 @@ const TreasureChestWidget = () => {
   }, [position]);
 
   const handleClick = () => {
-    // Chỉ mở popup nếu người dùng không kéo (tránh mở nhầm khi kéo thả)
     if (!dragInfo.current.moved) {
       setIsOpen(true);
+      fetchTaskStatus();
     }
   };
 
-  // ====== NHẬN ĐIỂM NHIỆM VỤ ======
-  const handleClaim = (task) => {
-    if (claimed.includes(task.id)) return;
-    setClaimed((prev) => [...prev, task.id]);
-    setTotalPoints((prev) => prev + task.points);
-  };
-
-  const completedCount = claimed.length;
+  const completedCount = tasks.filter((t) => t.status === 'claimed').length;
 
   return (
     <>
-      {/* NÚT RƯƠNG KHO BÁU - KÉO THẢ ĐƯỢC */}
       <div
-        ref={widgetRef}
         className="treasure-chest-widget"
         style={{ left: position.x, top: position.y }}
         onMouseDown={handleMouseDown}
@@ -136,7 +140,6 @@ const TreasureChestWidget = () => {
         )}
       </div>
 
-      {/* POPUP NHIỆM VỤ TÍCH ĐIỂM */}
       {isOpen && (
         <div className="treasure-modal-overlay" onClick={() => setIsOpen(false)}>
           <div className="treasure-modal" onClick={(e) => e.stopPropagation()}>
@@ -151,29 +154,35 @@ const TreasureChestWidget = () => {
               <span className="treasure-points-value">{totalPoints} điểm</span>
             </div>
 
-            <div className="treasure-task-list">
-              {DEFAULT_TASKS.map((task) => {
-                const isDone = claimed.includes(task.id);
-                return (
-                  <div key={task.id} className={`treasure-task-item ${isDone ? 'done' : ''}`}>
+            {isLoading && <p style={{ textAlign: 'center', padding: 20 }}>⏳ Đang tải nhiệm vụ...</p>}
+            {errorMsg && <p style={{ textAlign: 'center', color: '#d32f2f', padding: 10 }}>{errorMsg}</p>}
+
+            {!isLoading && !errorMsg && (
+              <div className="treasure-task-list">
+                {tasks.map((task) => (
+                  <div key={task.MaNV} className={`treasure-task-item ${task.status === 'claimed' ? 'done' : ''}`}>
                     <div className="treasure-task-info">
-                      <h4>{task.title}</h4>
-                      <p>{task.desc}</p>
+                      <h4>{task.TenNV}</h4>
+                      <p>{task.MoTa}</p>
                     </div>
                     <div className="treasure-task-action">
-                      <span className="treasure-task-points">+{task.points}</span>
+                      <span className="treasure-task-points">+{task.SoDiemThuong}</span>
                       <button
                         className="treasure-task-btn"
-                        disabled={isDone}
+                        disabled={task.status !== 'available'}
                         onClick={() => handleClaim(task)}
                       >
-                        {isDone ? 'Đã nhận' : 'Nhận điểm'}
+                        {task.status === 'claimed'
+                          ? 'Đã nhận'
+                          : task.status === 'available'
+                          ? 'Nhận điểm'
+                          : 'Chưa hoàn thành'}
                       </button>
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            )}
 
           </div>
         </div>
