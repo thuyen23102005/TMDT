@@ -1,6 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import './Checkout.css'; 
+
+// TODO: Thay bằng địa chỉ cửa hàng thật của bạn khi có
+const STORE_ADDRESS = {
+  HoTen: 'Nông Sản Shop',
+  SoDienThoai: '1900 1234',
+  DiaChiChiTiet: '123 Nguyễn Văn Linh, Phường Tân Phong, Quận 7, TP. Hồ Chí Minh'
+};
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -8,18 +15,25 @@ const Checkout = () => {
 
   const [cartItems, setCartItems] = useState(location.state?.cartItems || []);
   const initialShippingType = location.state?.shippingType || 'standard';
-  // Lấy giá trị tiền giảm giá từ giỏ hàng truyền sang (Mặc định là 0 nếu không có)
   const discount = location.state?.discount || 0; 
   
   const [shippingType, setShippingType] = useState(initialShippingType);
   const [paymentMethod, setPaymentMethod] = useState('cash');
-  const [showQR, setShowQR] = useState(false); 
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // LOGIC ĐỊA CHỈ THẬT
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [addresses, setAddresses] = useState([]);
   const [selectedAddress, setSelectedAddress] = useState(null);
+
+  // State cho luồng VietQR
+  const [showVietQR, setShowVietQR] = useState(false);
+  const [vietQrData, setVietQrData] = useState(null); // { qrUrl, content, maDH }
+  const pollingRef = useRef(null);
+
+  // State cho thông báo "Thành công" theo style riêng của web
+  // successType: 'payment' (đã thanh toán qua VietQR) | 'order' (đặt hàng COD/tiền mặt)
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [successType, setSuccessType] = useState('payment');
 
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem('user'));
@@ -28,7 +42,6 @@ const Checkout = () => {
             .then(res => res.json())
             .then(data => {
                 setAddresses(data);
-                // Mặc định chọn địa chỉ có MacDinh = true, nếu không thì lấy cái đầu tiên
                 if (data.length > 0) {
                     const defaultAddr = data.find(a => a.MacDinh) || data[0];
                     setSelectedAddress(defaultAddr);
@@ -36,56 +49,134 @@ const Checkout = () => {
             })
             .catch(err => console.error(err));
     }
+
+    // Dọn interval polling khi rời trang
+    return () => {
+        if (pollingRef.current) clearInterval(pollingRef.current);
+    };
   }, []);
 
   const subTotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
   const shippingFee = shippingType === 'standard' ? 22000 : 0;
-  
-  // TÍNH LẠI TỔNG TIỀN CUỐI CÙNG SAU KHI TRỪ VOUCHER
   const totalAmount = Math.max(0, subTotal + shippingFee - discount);
 
-  const handleProcessOrder = async (trangThaiThanhToan) => {
+  // Bắt đầu polling kiểm tra trạng thái thanh toán mỗi 3 giây (dùng cho VietQR)
+  const startPollingPaymentStatus = (maDH) => {
+    pollingRef.current = setInterval(async () => {
+        try {
+            const res = await fetch(`http://localhost:5000/api/orders/${maDH}/payment-status`);
+            const data = await res.json();
+            if (data.TrangThaiThanhToan === 'Đã thanh toán') {
+                clearInterval(pollingRef.current);
+                setShowVietQR(false);
+                setSuccessType('payment');
+                setShowSuccess(true);
+
+                // Tự động chuyển trang sau khi hiện thông báo 2.2 giây
+                setTimeout(() => {
+                    navigate('/profile/don-hang');
+                }, 2200);
+            }
+        } catch (err) {
+            console.error("Lỗi kiểm tra trạng thái thanh toán:", err);
+        }
+    }, 3000);
+  };
+
+  const handleConfirmClick = async () => {
     const storedUser = JSON.parse(localStorage.getItem('user'));
     if (!storedUser) return navigate('/login');
-    if (!selectedAddress) return alert("Vui lòng thêm địa chỉ giao hàng!");
+    if (shippingType === 'standard' && !selectedAddress) {
+        alert("Vui lòng thêm và chọn địa chỉ giao hàng trước khi thanh toán!");
+        return;
+    }
 
     setIsProcessing(true);
     try {
-        const response = await fetch('http://localhost:5000/api/cart/checkout', {
+        // Bước 1: luôn tạo đơn hàng trước, trạng thái mặc định "Chưa thanh toán"
+        const orderRes = await fetch('http://localhost:5000/api/cart/checkout', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 maKH: storedUser.maTK,
-                maDC: selectedAddress.MaDC,
-                tongTien: totalAmount, // Gửi Tổng tiền đã được trừ giá trị voucher xuống DB
-                trangThaiThanhToan: trangThaiThanhToan
+                maDC: shippingType === 'store' ? null : selectedAddress.MaDC,
+                tongTien: totalAmount,
+                trangThaiThanhToan: 'Chưa thanh toán'
             })
         });
+        const orderData = await orderRes.json();
 
-        if (response.ok) {
-            alert("🎉 Đặt hàng Nông Sản thành công!");
-            navigate('/profile/don-hang'); 
-        } else {
-            alert("Có lỗi xảy ra khi thanh toán!");
+        if (!orderRes.ok) {
+            alert(orderData.message || "Có lỗi xảy ra khi tạo đơn hàng!");
+            setIsProcessing(false);
+            return;
         }
+
+        // Bước 2a: nếu chọn MoMo -> tạo giao dịch thanh toán, redirect sang MoMo
+        if (paymentMethod === 'momo') {
+            const momoRes = await fetch('http://localhost:5000/api/momo/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    amount: totalAmount,
+                    orderInfo: `Thanh toan don hang ${orderData.maDH}`,
+                    maDH: orderData.maDH
+                })
+            });
+            const momoData = await momoRes.json();
+
+            if (momoRes.ok && momoData.payUrl) {
+                sessionStorage.setItem('momoOrder', JSON.stringify({
+                    orderId: momoData.orderId,
+                    requestId: momoData.requestId
+                }));
+                window.location.href = momoData.payUrl;
+            } else {
+                alert(momoData.message || "Không tạo được giao dịch MoMo");
+                setIsProcessing(false);
+            }
+            return;
+        }
+
+        // Bước 2b: nếu chọn VietQR -> lấy QR động, hiện modal, bắt đầu polling
+        if (paymentMethod === 'vietqr') {
+            const qrRes = await fetch('http://localhost:5000/api/vietqr/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    amount: totalAmount,
+                    maDH: orderData.maDH
+                })
+            });
+            const qrData = await qrRes.json();
+
+            if (qrRes.ok && qrData.qrUrl) {
+                setVietQrData({ ...qrData, maDH: orderData.maDH });
+                setShowVietQR(true);
+                startPollingPaymentStatus(orderData.maDH);
+            } else {
+                alert(qrData.message || "Không tạo được mã VietQR");
+            }
+            setIsProcessing(false);
+            return;
+        }
+
+        // Các phương thức khác (tiền mặt)
+        setSuccessType('order');
+        setShowSuccess(true);
+        setTimeout(() => {
+            navigate('/profile/don-hang');
+        }, 2200);
+
     } catch (error) {
         alert("Lỗi kết nối Server.");
-    } finally {
         setIsProcessing(false);
-        setShowQR(false);
     }
   };
 
-  const handleConfirmClick = () => {
-    if (!selectedAddress) {
-        alert("Vui lòng thêm và chọn địa chỉ giao hàng trước khi thanh toán!");
-        return;
-    }
-    if (paymentMethod === 'vnpay' || paymentMethod === 'zalopay') {
-        setShowQR(true); 
-    } else {
-        handleProcessOrder('Chưa thanh toán'); 
-    }
+  const handleCloseVietQR = () => {
+    if (pollingRef.current) clearInterval(pollingRef.current);
+    setShowVietQR(false);
   };
 
   const SectionBlock = ({ title, children }) => (
@@ -109,9 +200,15 @@ const Checkout = () => {
       <div className="checkout-container">
         <h2 className="checkout-title">THANH TOÁN</h2>
 
-        <SectionBlock title="ĐỊA CHỈ GIAO HÀNG">
+        <SectionBlock title={shippingType === 'store' ? 'ĐỊA CHỈ CỬA HÀNG' : 'ĐỊA CHỈ GIAO HÀNG'}>
           <div className="info-row d-flex justify-content-between align-items-center">
-            {selectedAddress ? (
+            {shippingType === 'store' ? (
+                <div>
+                    <span className="text-danger me-2">🏬</span>
+                    <strong>{STORE_ADDRESS.HoTen} ({STORE_ADDRESS.SoDienThoai})</strong>
+                    <span className="ms-2 text-muted">{STORE_ADDRESS.DiaChiChiTiet}</span>
+                </div>
+            ) : selectedAddress ? (
                 <div>
                     <span className="text-danger me-2">📍</span>
                     <strong>{selectedAddress.HoTen} ({selectedAddress.SoDienThoai})</strong> 
@@ -121,7 +218,9 @@ const Checkout = () => {
             ) : (
                 <div className="text-danger fw-bold">Bạn chưa có địa chỉ giao hàng. Vui lòng thêm địa chỉ!</div>
             )}
-            <button onClick={() => setShowAddressModal(true)} className="btn btn-link text-primary text-decoration-none">Thay Đổi</button>
+            {shippingType !== 'store' && (
+                <button onClick={() => setShowAddressModal(true)} className="btn btn-link text-primary text-decoration-none">Thay Đổi</button>
+            )}
           </div>
         </SectionBlock>
 
@@ -141,12 +240,16 @@ const Checkout = () => {
         <SectionBlock title="PHƯƠNG THỨC THANH TOÁN">
           <div>
             <label className="radio-label">
-              <input type="radio" name="payment" value="zalopay" checked={paymentMethod === 'zalopay'} onChange={(e) => setPaymentMethod(e.target.value)} />
-              <img src="https://cdn.haitrieu.com/wp-content/uploads/2022/10/Logo-ZaloPay-Square.png" alt="ZaloPay" className="pay-icon" /> Ví ZaloPay
+              <input type="radio" name="payment" value="momo" checked={paymentMethod === 'momo'} onChange={(e) => setPaymentMethod(e.target.value)} />
+              <img src="http://localhost:5000/uploads/images.png" alt="MoMo" className="pay-icon" /> Ví MoMo
             </label>
             <label className="radio-label">
-              <input type="radio" name="payment" value="vnpay" checked={paymentMethod === 'vnpay'} onChange={(e) => setPaymentMethod(e.target.value)} />
-              <img src="https://cdn.haitrieu.com/wp-content/uploads/2022/10/Logo-VNPAY-QR-1.png" alt="VNPAY" className="pay-icon" /> VNPAY
+              <input type="radio" name="payment" value="vietqr" checked={paymentMethod === 'vietqr'} onChange={(e) => setPaymentMethod(e.target.value)} />
+              <span style={{
+                  display: 'inline-block', background: '#00a651', color: '#fff', fontWeight: 'bold',
+                  fontSize: '11px', padding: '3px 6px', borderRadius: '4px', marginRight: '6px'
+              }}>VietQR</span>
+              Chuyển khoản QR ngân hàng
             </label>
             <label className="radio-label">
               <input type="radio" name="payment" value="cash" checked={paymentMethod === 'cash'} onChange={(e) => setPaymentMethod(e.target.value)} />
@@ -176,7 +279,6 @@ const Checkout = () => {
             <div className="summary-row"><span>Thành tiền</span><span>{subTotal.toLocaleString()} đ</span></div>
             <div className="summary-row"><span>Phí vận chuyển</span><span>{shippingFee === 0 ? 'Miễn phí' : `${shippingFee.toLocaleString()} đ`}</span></div>
             
-            {/* HIỂN THỊ DÒNG VOUCHER NẾU CÓ TRONG GIỎ HÀNG */}
             {discount > 0 && (
                 <div className="summary-row" style={{ color: '#d32f2f' }}>
                     <span>Giảm giá Voucher</span>
@@ -194,7 +296,6 @@ const Checkout = () => {
         </div>
       </div>
 
-      {/* MODAL CHỌN ĐỊA CHỈ */}
       {showAddressModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
             <div style={{ backgroundColor: '#fff', width: '500px', borderRadius: '8px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
@@ -230,23 +331,63 @@ const Checkout = () => {
         </div>
       )}
 
-      {/* POPUP MÃ QR */}
-      {showQR && (
+      {/* MODAL QR VIETQR */}
+      {showVietQR && vietQrData && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 999 }}>
             <div style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '12px', textAlign: 'center', width: '350px', boxShadow: '0 5px 15px rgba(0,0,0,0.3)' }}>
-                <h4 style={{ color: '#2e7d32', marginBottom: '15px' }}>
-                    Quét mã {paymentMethod === 'vnpay' ? 'VNPAY' : 'ZaloPay'}
-                </h4>
-                <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=ThanhToanNongSan_${totalAmount}VND`} alt="QR Code" style={{ marginBottom: '15px', border: '1px solid #ddd', padding: '10px', borderRadius: '8px' }} />
-                <h5 style={{ color: '#d32f2f', fontWeight: 'bold', marginBottom: '20px' }}>Số tiền: {totalAmount.toLocaleString()} đ</h5>
-                
-                <button onClick={() => handleProcessOrder('Đã thanh toán')} className="btn btn-success w-100 mb-2" disabled={isProcessing}>
-                    {isProcessing ? "Đang xác nhận..." : "Tôi đã quét thanh toán"}
-                </button>
-                <button onClick={() => setShowQR(false)} className="btn btn-outline-secondary w-100" disabled={isProcessing}>
+                <h4 style={{ color: '#00a651', marginBottom: '15px' }}>Quét mã VietQR để thanh toán</h4>
+                <img src={vietQrData.qrUrl} alt="VietQR" style={{ marginBottom: '15px', border: '1px solid #ddd', padding: '10px', borderRadius: '8px', width: '250px' }} />
+                <p style={{ fontSize: '13px', color: '#555' }}>Nội dung chuyển khoản (giữ nguyên):</p>
+                <p style={{ fontWeight: 'bold', marginBottom: '15px' }}>{vietQrData.content}</p>
+                <p style={{ fontSize: '13px', color: '#888' }}>Hệ thống sẽ tự động xác nhận sau khi nhận được tiền...</p>
+                <button onClick={handleCloseVietQR} className="btn btn-outline-secondary w-100 mt-2">
                     Hủy bỏ
                 </button>
             </div>
+        </div>
+      )}
+
+      {/* MODAL THÔNG BÁO THANH TOÁN THÀNH CÔNG (thay cho alert() mặc định) */}
+      {showSuccess && (
+        <div style={{
+            position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+            backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center',
+            alignItems: 'center', zIndex: 1001
+        }}>
+            <div style={{
+                backgroundColor: '#fff', padding: '40px 30px', borderRadius: '16px',
+                textAlign: 'center', width: '320px',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.25)',
+                animation: 'popIn 0.35s ease-out'
+            }}>
+                <div style={{
+                    width: '70px', height: '70px', borderRadius: '50%',
+                    backgroundColor: '#00a651', display: 'flex',
+                    alignItems: 'center', justifyContent: 'center',
+                    margin: '0 auto 20px', animation: 'checkPop 0.4s ease-out 0.1s both'
+                }}>
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+                        <path d="M5 13l4 4L19 7" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                </div>
+                <h4 style={{ color: '#00a651', marginBottom: '8px', fontWeight: 700 }}>
+                    {successType === 'payment' ? 'Thanh toán thành công!' : 'Đặt hàng thành công!'}
+                </h4>
+                <p style={{ color: '#888', fontSize: '13px', margin: 0 }}>
+                    Đang chuyển đến trang đơn hàng...
+                </p>
+            </div>
+
+            <style>{`
+                @keyframes popIn {
+                    from { opacity: 0; transform: scale(0.85); }
+                    to { opacity: 1; transform: scale(1); }
+                }
+                @keyframes checkPop {
+                    from { transform: scale(0); }
+                    to { transform: scale(1); }
+                }
+            `}</style>
         </div>
       )}
     </div>

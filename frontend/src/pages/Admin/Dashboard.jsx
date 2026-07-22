@@ -220,7 +220,6 @@ function Dashboard() {
                     </div>
 
                 </div>
-                
                 <div className="col-xl-2 col-lg-4 col-md-6 mb-3">
 
                     <div className="card shadow-sm border-0">

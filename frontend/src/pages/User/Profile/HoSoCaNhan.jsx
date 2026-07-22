@@ -2,31 +2,27 @@ import { useState, useEffect } from "react";
 
 function HoSoCaNhan() {
     const [formData, setFormData] = useState({
-        ho: "",
-        ten: "",
+        hoTen: "",
         soDienThoai: "",
         email: "",
         gioiTinh: "nam",
         ngaySinh: "",
     });
 
-    // Lưu email gốc để so sánh, phát hiện khi nào người dùng thực sự đổi email
     const [originalEmail, setOriginalEmail] = useState("");
-
-    // State cho modal xác nhận mật khẩu
     const [showPasswordModal, setShowPasswordModal] = useState(false);
     const [confirmPassword, setConfirmPassword] = useState("");
     const [passwordError, setPasswordError] = useState("");
     const [isVerifying, setIsVerifying] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [saveMessage, setSaveMessage] = useState("");
 
     useEffect(() => {
-        // Nạp thông tin hiện tại của user (nếu có) để so sánh email cũ/mới
         const storedUser = JSON.parse(localStorage.getItem('user'));
         if (storedUser) {
             setFormData((prev) => ({
                 ...prev,
-                ho: storedUser.Ho || "",
-                ten: storedUser.Ten || "",
+                hoTen: storedUser.HoTen || "",
                 soDienThoai: storedUser.SoDienThoai || "",
                 email: storedUser.email || "",
                 gioiTinh: storedUser.GioiTinh || "nam",
@@ -42,8 +38,8 @@ function HoSoCaNhan() {
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        setSaveMessage("");
 
-        // Nếu email bị thay đổi so với ban đầu -> bắt buộc xác nhận mật khẩu trước
         if (formData.email !== originalEmail) {
             setPasswordError("");
             setConfirmPassword("");
@@ -51,85 +47,122 @@ function HoSoCaNhan() {
             return;
         }
 
-        // Email không đổi -> lưu bình thường
         saveProfile();
     };
 
-    const saveProfile = () => {
-        console.log("Cập nhật hồ sơ:", formData);
-        // TODO: gọi API cập nhật hồ sơ thật ở đây
-        // fetch(`http://localhost:5000/api/users/${user.maTK}`, { method: 'PUT', body: JSON.stringify(formData), ... })
+    const saveProfile = async () => {
+        setIsSaving(true);
+        setSaveMessage("");
+
+        try {
+            const token = localStorage.getItem('token');
+
+            const res = await fetch(`http://localhost:5000/api/auth/update-profile`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    hoTen: formData.hoTen,
+                    soDienThoai: formData.soDienThoai,
+                    gioiTinh: formData.gioiTinh,
+                    ngaySinh: formData.ngaySinh,
+                }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                setSaveMessage(data.message || "Cập nhật thất bại, vui lòng thử lại.");
+                return;
+            }
+
+            // Cập nhật lại localStorage để header "Xin chào ..." và tên hiển thị đổi theo
+            const storedUser = JSON.parse(localStorage.getItem('user')) || {};
+            const updatedUser = {
+                ...storedUser,
+                HoTen: formData.hoTen,
+                SoDienThoai: formData.soDienThoai,
+                GioiTinh: formData.gioiTinh,
+                NgaySinh: formData.ngaySinh,
+            };
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+
+            // Báo cho các component khác (như Profile.jsx) biết localStorage vừa đổi
+            window.dispatchEvent(new Event("userUpdated"));
+
+            setSaveMessage("Cập nhật hồ sơ thành công!");
+        } catch (err) {
+            console.error("Lỗi cập nhật hồ sơ:", err);
+            setSaveMessage("Có lỗi xảy ra, vui lòng thử lại.");
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleConfirmPassword = async () => {
-    if (!confirmPassword) {
-        setPasswordError("Vui lòng nhập mật khẩu.");
-        return;
-    }
-
-    setIsVerifying(true);
-    setPasswordError("");
-
-    try {
-        const token = localStorage.getItem('token'); // token lưu lúc đăng nhập
-
-        const res = await fetch(`http://localhost:5000/api/auth/verify-password`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`,
-            },
-            body: JSON.stringify({ password: confirmPassword }),
-        });
-        const data = await res.json();
-
-        if (!res.ok || !data.valid) {
-            setPasswordError(data.message || "Mật khẩu không chính xác.");
-            setIsVerifying(false);
+        if (!confirmPassword) {
+            setPasswordError("Vui lòng nhập mật khẩu.");
             return;
         }
 
-        saveProfile();
-        setOriginalEmail(formData.email);
-        setShowPasswordModal(false);
-        setConfirmPassword("");
-    } catch (err) {
-        console.error("Lỗi xác thực mật khẩu:", err);
-        setPasswordError("Có lỗi xảy ra, vui lòng thử lại.");
-    } finally {
-        setIsVerifying(false);
-    }
-};
+        setIsVerifying(true);
+        setPasswordError("");
+
+        try {
+            const token = localStorage.getItem('token');
+
+            const res = await fetch(`http://localhost:5000/api/auth/verify-password`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`,
+                },
+                body: JSON.stringify({ password: confirmPassword }),
+            });
+            const data = await res.json();
+
+            if (!res.ok || !data.valid) {
+                setPasswordError(data.message || "Mật khẩu không chính xác.");
+                setIsVerifying(false);
+                return;
+            }
+
+            await saveProfile();
+            setOriginalEmail(formData.email);
+            setShowPasswordModal(false);
+            setConfirmPassword("");
+        } catch (err) {
+            console.error("Lỗi xác thực mật khẩu:", err);
+            setPasswordError("Có lỗi xảy ra, vui lòng thử lại.");
+        } finally {
+            setIsVerifying(false);
+        }
+    };
+
     return (
         <div className="shadow-sm rounded p-4">
             <h5 className="mb-4">Hồ sơ cá nhân</h5>
 
+            {saveMessage && (
+                <div className={`alert ${saveMessage.includes("thành công") ? "alert-success" : "alert-danger"} py-2`}>
+                    {saveMessage}
+                </div>
+            )}
+
             <form onSubmit={handleSubmit}>
-                <div className="row mb-3">
-                    <div className="col-md-6">
-                        <label className="form-label">Họ*</label>
-                        <input
-                            type="text"
-                            name="ho"
-                            className="form-control"
-                            placeholder="Họ"
-                            value={formData.ho}
-                            onChange={handleChange}
-                            required
-                        />
-                    </div>
-                    <div className="col-md-6">
-                        <label className="form-label">Tên*</label>
-                        <input
-                            type="text"
-                            name="ten"
-                            className="form-control"
-                            placeholder="Tên"
-                            value={formData.ten}
-                            onChange={handleChange}
-                            required
-                        />
-                    </div>
+                <div className="mb-3">
+                    <label className="form-label">Họ và tên*</label>
+                    <input
+                        type="text"
+                        name="hoTen"
+                        className="form-control"
+                        placeholder="Nhập họ và tên"
+                        value={formData.hoTen}
+                        onChange={handleChange}
+                        required
+                    />
                 </div>
 
                 <div className="mb-3">
@@ -201,12 +234,11 @@ function HoSoCaNhan() {
                     />
                 </div>
 
-                <button type="submit" className="btn btn-dark">
-                    Lưu thay đổi
+                <button type="submit" className="btn btn-dark" disabled={isSaving}>
+                    {isSaving ? "Đang lưu..." : "Lưu thay đổi"}
                 </button>
             </form>
 
-            {/* Modal xác nhận mật khẩu khi đổi email */}
             {showPasswordModal && (
                 <div
                     className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
