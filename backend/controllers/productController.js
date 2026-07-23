@@ -220,19 +220,6 @@ const updateProduct = async (req, res) => {
             });
         }
 
-        // Kiểm tra trùng tên
-        const exists =
-            await productModel.checkProductNameUpdate(
-                id,
-                product.TenSP.trim()
-            );
-
-        if (exists) {
-            return res.status(400).json({
-                message: "Tên sản phẩm đã tồn tại."
-            });
-        }
-
         await productModel.updateProduct(id, product);
 
         res.json({

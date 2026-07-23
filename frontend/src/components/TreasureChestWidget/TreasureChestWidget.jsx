@@ -13,7 +13,7 @@ const TreasureChestWidget = () => {
 
   const [position, setPosition] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY_POS);
-    return saved ? JSON.parse(saved) : { x: window.innerWidth - 100, y: window.innerHeight - 160 };
+    return saved ? JSON.parse(saved) : { x: window.innerWidth - 100, y: window.innerHeight - 250 };
   });
 
   const dragInfo = useRef({ dragging: false, moved: false, offsetX: 0, offsetY: 0 });

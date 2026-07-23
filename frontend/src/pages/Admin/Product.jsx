@@ -196,7 +196,15 @@ const handleSave = async (data) => {
 
                                 <td>{product.DonViTinh}</td>
 
-                                <td>{product.TrangThai === 1 ? "Đã ẩn" : "Đang bán"}</td>
+                                <td>
+                                    {product.TrangThai === 0 ? (
+                                        <span className="badge bg-secondary">Đã ẩn</span>
+                                    ) : product.SoLuongTon === 0 ? (
+                                        <span className="badge bg-danger">Hết hàng</span>
+                                    ) : (
+                                        <span className="badge bg-success">Đang bán</span>
+                                    )}
+                                </td>
 
                                 <td>
 

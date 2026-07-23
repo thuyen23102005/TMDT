@@ -1,8 +1,10 @@
 const { connectDB, sql } = require("../config/db");
 
-const getAllOrders = async () => {
+const getAllOrders = async (status, fromDate, toDate) => {
     const pool = await connectDB();
-    const result = await pool.request().query(`
+    
+    // Khởi tạo câu truy vấn cơ bản với điều kiện WHERE 1=1 để dễ nối chuỗi
+    let query = `
         SELECT
             dh.MaDH,
             kh.HoTen AS TenKhachHang,
@@ -17,8 +19,31 @@ const getAllOrders = async () => {
         FROM DonHang dh
         INNER JOIN KhachHang kh ON dh.MaKH = kh.MaKH
         LEFT JOIN SoDiaChi dc ON dh.MaDC = dc.MaDC
-        ORDER BY dh.MaDH DESC
-    `);
+        WHERE 1=1
+    `;
+
+    const request = pool.request();
+
+    // Nối thêm điều kiện nếu có truyền vào
+    if (status) {
+        query += ` AND dh.TrangThaiDonHang = @Status`;
+        request.input("Status", sql.NVarChar, status);
+    }
+    
+    if (fromDate) {
+        // Ép kiểu về DATE để chỉ so sánh ngày, bỏ qua giờ phút
+        query += ` AND CAST(dh.NgayDat AS DATE) >= @FromDate`;
+        request.input("FromDate", sql.Date, fromDate);
+    }
+    
+    if (toDate) {
+        query += ` AND CAST(dh.NgayDat AS DATE) <= @ToDate`;
+        request.input("ToDate", sql.Date, toDate);
+    }
+
+    query += ` ORDER BY dh.MaDH DESC`;
+
+    const result = await request.query(query);
     return result.recordset;
 };
 
@@ -39,14 +64,16 @@ const getOrderDetail = async (id) => {
     return result.recordset;
 };
 
-const updateStatus = async (id, status) => {
+const updateStatus = async (id, status, paymentStatus) => {
     const pool = await connectDB();
     await pool.request()
         .input("MaDH", id)
         .input("TrangThaiDonHang", status)
+        .input("TrangThaiThanhToan", paymentStatus)
         .query(`
             UPDATE DonHang
-            SET TrangThaiDonHang = @TrangThaiDonHang
+            SET TrangThaiDonHang = @TrangThaiDonHang,
+                TrangThaiThanhToan = @TrangThaiThanhToan
             WHERE MaDH = @MaDH
         `);
 };

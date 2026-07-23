@@ -2,36 +2,37 @@ import { useEffect, useState } from "react";
 
 function StatusModal({ order, onSave, onClose }) {
     const [status, setStatus] = useState("");
+    const [paymentStatus, setPaymentStatus] = useState("");
 
     useEffect(() => {
         if (order) {
             setStatus(order.TrangThaiDonHang);
+            setPaymentStatus(order.TrangThaiThanhToan);
         }
     }, [order]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        onSave(order.MaDH, { TrangThaiDonHang: status });
+        // Gửi cả 2 trạng thái lên server
+        onSave(order.MaDH, { 
+            TrangThaiDonHang: status, 
+            TrangThaiThanhToan: paymentStatus 
+        });
     };
 
     if (!order) return null;
 
-    // Lấy trạng thái hiện tại của đơn hàng từ props
     const currentStatus = order.TrangThaiDonHang;
 
-    // Cấu hình các trạng thái tiếp theo được phép chọn
     const allowedTransitions = {
         "Chờ xác nhận": ["Chờ xác nhận", "Đã xác nhận", "Đã hủy"],
         "Đã xác nhận": ["Đã xác nhận", "Đang giao", "Đã hủy"],
         "Đang giao": ["Đang giao", "Đã giao", "Đã hủy"],
-        "Đã giao": ["Đã giao"], // Trạng thái cuối
-        "Đã hủy": ["Đã hủy"]    // Trạng thái cuối
+        "Đã giao": ["Đã giao"], 
+        "Đã hủy": ["Đã hủy"]    
     };
 
-    // Lấy danh sách các trạng thái hợp lệ cho đơn hàng này
     const validOptions = allowedTransitions[currentStatus] || [currentStatus];
-
-    // Kiểm tra xem đơn hàng đã ở trạng thái kết thúc chưa
     const isTerminalState = currentStatus === "Đã giao" || currentStatus === "Đã hủy";
 
     return (
@@ -39,7 +40,7 @@ function StatusModal({ order, onSave, onClose }) {
             <div className="modal-dialog">
                 <div className="modal-content">
                     <div className="modal-header">
-                        <h5 className="modal-title">Cập nhật trạng thái đơn hàng</h5>
+                        <h5 className="modal-title">Cập nhật đơn hàng</h5>
                         <button className="btn-close" onClick={onClose}></button>
                     </div>
 
@@ -47,11 +48,11 @@ function StatusModal({ order, onSave, onClose }) {
                         <div className="modal-body">
                             {isTerminalState ? (
                                 <div className="alert alert-warning">
-                                    Đơn hàng này đang ở trạng thái <strong>{currentStatus}</strong> và không thể thay đổi.
+                                    Đơn hàng này đang ở trạng thái <strong>{currentStatus}</strong> và không thể thay đổi trạng thái giao hàng.
                                 </div>
                             ) : (
                                 <div className="mb-3">
-                                    <label className="form-label">Chuyển sang trạng thái:</label>
+                                    <label className="form-label fw-bold">Trạng thái giao hàng:</label>
                                     <select
                                         className="form-select"
                                         value={status}
@@ -65,18 +66,28 @@ function StatusModal({ order, onSave, onClose }) {
                                     </select>
                                 </div>
                             )}
+
+                            {/* THÊM PHẦN CẬP NHẬT TRẠNG THÁI THANH TOÁN CHO MỤC ĐÍCH TEST */}
+                            <div className="mb-3 mt-4 pt-3 border-top">
+                                <label className="form-label fw-bold text-primary">Trạng thái thanh toán (Test):</label>
+                                <select
+                                    className="form-select"
+                                    value={paymentStatus}
+                                    onChange={(e) => setPaymentStatus(e.target.value)}
+                                >
+                                    <option value="Chưa thanh toán">Chưa thanh toán</option>
+                                    <option value="Đã thanh toán">Đã thanh toán</option>
+                                </select>
+                            </div>
                         </div>
 
                         <div className="modal-footer">
                             <button type="button" className="btn btn-secondary" onClick={onClose}>
                                 Đóng
                             </button>
-                            {/* Ẩn nút Lưu nếu là trạng thái kết thúc */}
-                            {!isTerminalState && (
-                                <button type="submit" className="btn btn-primary">
-                                    Lưu thay đổi
-                                </button>
-                            )}
+                            <button type="submit" className="btn btn-primary">
+                                Lưu thay đổi
+                            </button>
                         </div>
                     </form>
                 </div>
