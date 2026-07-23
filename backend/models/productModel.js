@@ -268,6 +268,7 @@ module.exports = {
     deleteProduct,
     checkProductName,
     checkProductNameUpdate,
-    checkCategoryExists
+    checkCategoryExists,
+    searchProducts
 
 };

@@ -11,8 +11,9 @@
     "tôi", "muốn", "mua", "là", "gì", "ạ", "vậy", "à", "nào", "loại",
     "như", "thế", "sao", "ra", "sao", "được", "vậy", "hả", "hử", "này"
 ];
+        const cleanMessage = message.replace(/[.,?!]/g, "");    
 
-        return message
+        return cleanMessage
             .toLowerCase()
             .split(/\s+/)
             .filter(word => word.length > 1 && !stopWords.includes(word))
