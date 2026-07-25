@@ -53,6 +53,8 @@ const validateProduct = (product) => {
 const getAllProductsClient = async (req, res) => {
 
     try {
+        const minPrice = req.query.minPrice ? parseFloat(req.query.minPrice) : null;
+        const maxPrice = req.query.maxPrice ? parseFloat(req.query.maxPrice) : null;
 
         const products = await productModel.getAllProductsClient();
 

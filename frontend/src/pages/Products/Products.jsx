@@ -9,113 +9,64 @@ const Products = () => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  
   const [searchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
-
-useEffect(() => {
-  setSearchTerm(searchParams.get('search') || '');
-}, [searchParams]);
   const [activeCategory, setActiveCategory] = useState(null);
 
+  // States cho Lọc giá
+  const [minPriceInput, setMinPriceInput] = useState('');
+  const [maxPriceInput, setMaxPriceInput] = useState('');
+  const [appliedMin, setAppliedMin] = useState(null);
+  const [appliedMax, setAppliedMax] = useState(null);
+
   useEffect(() => {
+    setSearchTerm(searchParams.get('search') || '');
+  }, [searchParams]);
 
-    const fetchData = async () => {
-
-        try {
-
-            const [productsRes, categoriesRes] = await Promise.all([
-                getAllProducts(),
-                getCategories()
-            ]);
-
-            setProducts(productsRes.data);
-
-            setCategories(categoriesRes.data);
-
-        } catch (error) {
-
-            console.log(error);
-
-        } finally {
-
-            setIsLoading(false);
-
-        }
-
-    };
-
-    fetchData();
-
-}, []);
-// Chuẩn hóa tiếng Việt: bỏ dấu + chữ thường
-const normalizeText = (text) => {
-  return (text ?? '')
-    .toString()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/g, 'd')
-    .replace(/Đ/g, 'D')
-    .toLowerCase()
-    .trim();
-};
-
-// Tính khoảng cách giữa 2 chuỗi để tìm gần đúng
-const levenshteinDistance = (a, b) => {
-  const matrix = Array.from(
-    { length: b.length + 1 },
-    () => Array(a.length + 1).fill(0)
-  );
-
-  for (let i = 0; i <= b.length; i++) {
-    matrix[i][0] = i;
-  }
-
-  for (let j = 0; j <= a.length; j++) {
-    matrix[0][j] = j;
-  }
-
-  for (let i = 1; i <= b.length; i++) {
-    for (let j = 1; j <= a.length; j++) {
-      if (b[i - 1] === a[j - 1]) {
-        matrix[i][j] = matrix[i - 1][j - 1];
-      } else {
-        matrix[i][j] = Math.min(
-          matrix[i - 1][j - 1] + 1,
-          matrix[i][j - 1] + 1,
-          matrix[i - 1][j] + 1
-        );
+  // Lấy danh mục (Chỉ chạy 1 lần khi load trang)
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await getCategories();
+        setCategories(res.data);
+      } catch (error) {
+        console.log("Lỗi tải danh mục:", error);
       }
-    }
-  }
+    };
+    fetchCategories();
+  }, []);
 
-  return matrix[b.length][a.length];
-};
+  // Lấy sản phẩm (Chạy lại mỗi khi appliedMin hoặc appliedMax thay đổi)
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setIsLoading(true);
+      try {
+        // Gọi API với tham số giá
+        const res = await getAllProducts(appliedMin, appliedMax);
+        setProducts(res.data);
+      } catch (error) {
+        console.log("Lỗi tải sản phẩm:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProducts();
+  }, [appliedMin, appliedMax]);
 
-// Kiểm tra tên sản phẩm có gần giống từ khóa không
-const fuzzyMatch = (productName, keyword) => {
-  const name = normalizeText(productName);
-  const search = normalizeText(keyword);
+  // Chuẩn hóa tiếng Việt: bỏ dấu + chữ thường
+  const normalizeText = (text) => {
+    return (text ?? '')
+      .toString()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'd')
+      .replace(/Đ/g, 'D')
+      .toLowerCase()
+      .trim();
+  };
 
-  // Không nhập gì thì hiển thị tất cả
-  if (!search) return true;
-
-  // Tìm thấy trực tiếp
-  if (name.includes(search)) return true;
-
-  // Tách tên sản phẩm thành từng từ
-  const words = name.split(/\s+/);
-
-  // Cho phép sai 1-2 ký tự tùy độ dài từ khóa
-  const maxDistance =
-    search.length <= 3 ? 1 :
-    search.length <= 6 ? 2 : 3;
-
-  return words.some((word) => {
-    return levenshteinDistance(word, search) <= maxDistance;
-  });
-};
-
-  // Lọc theo tên sản phẩm (TenSP) và tên danh mục (TenDM)
+  // Lọc theo tên sản phẩm và tên danh mục ở Frontend
   const filteredProducts = products
     .filter((p) => (p?.TenSP ?? '').toLowerCase().includes(searchTerm.toLowerCase()))
     .filter((p) => !activeCategory || p.TenDM === activeCategory);
@@ -128,6 +79,39 @@ const fuzzyMatch = (productName, keyword) => {
     if (lower.includes('táo')) return '🍎';
     if (lower.includes('chuối')) return '🍌';
     return '🥬';
+  };
+
+  // 1. Format giá hiển thị có dấu chấm và chữ đ (VD: 300.000 đ)
+  const formatPriceInput = (value) => {
+    if (!value) return '';
+    return Number(value).toLocaleString('vi-VN') + ' đ';
+  };
+
+  // 2. Lọc chỉ giữ lại số khi người dùng tự gõ phím
+  const handlePriceChange = (e, setter) => {
+    const rawValue = e.target.value.replace(/\D/g, ''); // Xóa mọi ký tự không phải số
+    setter(rawValue);
+  };
+
+  // 3. Xử lý cộng/trừ 10.000 khi bấm nút hoặc phím mũi tên
+  const handleStep = (value, setter, step) => {
+    const currentVal = value ? parseInt(value) : 0;
+    const newVal = Math.max(0, currentVal + step); // Không cho phép âm
+    setter(newVal.toString());
+  };
+
+  // Hàm xử lý áp dụng lọc giá
+  const handleApplyPriceFilter = () => {
+    setAppliedMin(minPriceInput ? Number(minPriceInput) : null);
+    setAppliedMax(maxPriceInput ? Number(maxPriceInput) : null);
+  };
+
+  // Hàm xóa lọc giá
+  const handleClearPriceFilter = () => {
+    setMinPriceInput('');
+    setMaxPriceInput('');
+    setAppliedMin(null);
+    setAppliedMax(null);
   };
 
   if (isLoading) {
@@ -148,6 +132,7 @@ const fuzzyMatch = (productName, keyword) => {
 
         {/* SIDEBAR */}
         <aside className="products-sidebar">
+          {/* TÌM KIẾM */}
           <div className="sidebar-block">
             <h3 className="sidebar-title">Tìm kiếm</h3>
             <input
@@ -159,6 +144,65 @@ const fuzzyMatch = (productName, keyword) => {
             />
           </div>
 
+          {/* LỌC THEO GIÁ */}
+          <div className="sidebar-block">
+            <h3 className="sidebar-title">Lọc theo giá</h3>
+            <div className="price-filter-container">
+              
+              {/* Ô Nhập Giá Từ */}
+              <div className="custom-price-wrapper">
+                <input
+                  type="text"
+                  placeholder="Từ"
+                  value={formatPriceInput(minPriceInput)}
+                  onChange={(e) => handlePriceChange(e, setMinPriceInput)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'ArrowUp') { e.preventDefault(); handleStep(minPriceInput, setMinPriceInput, 10000); }
+                    if (e.key === 'ArrowDown') { e.preventDefault(); handleStep(minPriceInput, setMinPriceInput, -10000); }
+                  }}
+                  className="price-input"
+                />
+                <div className="price-spinners">
+                  <button type="button" onClick={() => handleStep(minPriceInput, setMinPriceInput, 10000)}>▲</button>
+                  <button type="button" onClick={() => handleStep(minPriceInput, setMinPriceInput, -10000)}>▼</button>
+                </div>
+              </div>
+
+              <span className="price-separator">-</span>
+              
+              {/* Ô Nhập Giá Đến */}
+              <div className="custom-price-wrapper">
+                <input
+                  type="text"
+                  placeholder="Đến"
+                  value={formatPriceInput(maxPriceInput)}
+                  onChange={(e) => handlePriceChange(e, setMaxPriceInput)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'ArrowUp') { e.preventDefault(); handleStep(maxPriceInput, setMaxPriceInput, 10000); }
+                    if (e.key === 'ArrowDown') { e.preventDefault(); handleStep(maxPriceInput, setMaxPriceInput, -10000); }
+                  }}
+                  className="price-input"
+                />
+                <div className="price-spinners">
+                  <button type="button" onClick={() => handleStep(maxPriceInput, setMaxPriceInput, 10000)}>▲</button>
+                  <button type="button" onClick={() => handleStep(maxPriceInput, setMaxPriceInput, -10000)}>▼</button>
+                </div>
+              </div>
+
+            </div>
+            
+            <button className="price-filter-btn"onClick={handleApplyPriceFilter}>
+                Áp dụng
+            </button>
+            {/* Chỉ hiện nút Xóa khi đang có bộ lọc */}
+            {(appliedMin !== null || appliedMax !== null) && (
+              <button className="price-clear-btn" onClick={handleClearPriceFilter}>
+                Xóa bộ lọc
+              </button>
+            )}
+          </div>
+
+          {/* DANH MỤC */}
           <div className="sidebar-block">
             <h3 className="sidebar-title">Danh mục sản phẩm</h3>
             <ul className="sidebar-category-list">
@@ -193,16 +237,12 @@ const fuzzyMatch = (productName, keyword) => {
 
           {filteredProducts.length === 0 ? (
             <div className="products-empty">
-              <p>Không tìm thấy sản phẩm nào.</p>
+              <p>Không tìm thấy sản phẩm nào phù hợp.</p>
             </div>
           ) : (
             <div className="products-grid">
               {filteredProducts.map((product) => (
-                <Link
-                  to={`/product/${product.MaSP}`}
-                  key={product.MaSP}
-                  className="product-card"
-                >
+                <Link to={`/product/${product.MaSP}`} key={product.MaSP} className="product-card">
                   {product.SoLuongTon === 0 && (
                     <span className="product-badge product-badge-out">Hết hàng</span>
                   )}
@@ -234,9 +274,8 @@ const fuzzyMatch = (productName, keyword) => {
             </div>
           )}
         </main>
-
       </div>
-       <TreasureChestWidget />
+      <TreasureChestWidget />
     </div>
   );
 };
