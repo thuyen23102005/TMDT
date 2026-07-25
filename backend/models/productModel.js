@@ -104,6 +104,21 @@ const getAllProductsClient = async () => {
     return result.recordset;
 
 };
+// Thêm điều kiện lọc giá tối thiểu
+    if (minPrice !== null && !isNaN(minPrice)) {
+        query += ` AND sp.DonGia >= @minPrice`;
+        request.input("minPrice", sql.Decimal(18, 2), minPrice);
+    }
+
+    // Thêm điều kiện lọc giá tối đa
+    if (maxPrice !== null && !isNaN(maxPrice)) {
+        query += ` AND sp.DonGia <= @maxPrice`;
+        request.input("maxPrice", sql.Decimal(18, 2), maxPrice);
+    }
+    query += ` ORDER BY sp.MaSP DESC`;
+
+    const result = await request.query(query);
+    return result.recordset;
 const getById = async (id) => {
     const pool = await connectDB();
     const result = await pool.request()

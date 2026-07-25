@@ -100,6 +100,129 @@
   padding-left: 8px;
 }
 
+/* PRICE FILTER WRAPPER */
+.price-filter-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.custom-price-wrapper {
+  position: relative;
+  display: flex;
+  width: 100%;
+}
+
+.custom-price-wrapper .price-input {
+  width: 100%;
+  padding: 8px 24px 8px 8px; /* Chừa khoảng trống bên phải cho 2 nút mũi tên */
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.custom-price-wrapper .price-input:focus {
+  border-color: #4caf50;
+}
+
+/* NÚT TĂNG GIẢM (SPINNERS) */
+.price-spinners {
+  position: absolute;
+  right: 1px;
+  top: 1px;
+  bottom: 1px;
+  display: flex;
+  flex-direction: column;
+  width: 22px;
+  border-left: 1px solid #ddd;
+  background: #f9f9f9;
+  border-radius: 0 3px 3px 0;
+}
+
+.price-spinners button {
+  flex: 1;
+  border: none;
+  background: none;
+  font-size: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  padding: 0;
+  transition: background 0.2s;
+}
+
+.price-spinners button:hover {
+  background: #e8f5e9;
+}
+
+.price-spinners button:first-child {
+  border-bottom: 1px solid #ddd;
+}
+
+.price-separator {
+  color: #777;
+  font-weight: bold;
+}
+
+.price-filter-btn {
+  width: 100%;
+  height: 42px;
+  margin-top: 10px;
+  background: linear-gradient(135deg,#43a047,#2e7d32);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .25s ease;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+.price-filter-btn:hover {
+  background: linear-gradient(135deg,#388e3c,#1b5e20);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(46,125,50,.25);
+}
+
+.price-filter-btn:active {
+  transform: scale(.97);
+}
+
+.price-filter-btn:disabled {
+  background: #bdbdbd;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.price-clear-btn {
+  width: 100%;
+  background-color: transparent;
+  color: #e65100; /* Màu cam đậm */
+  border: 1px solid #e65100;
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 400;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: all 0.2s;
+}
+
+.price-clear-btn:hover {
+  background-color: #e65100;
+  color: white;
+}
+
 /* MAIN */
 .products-main {
   flex: 1;
