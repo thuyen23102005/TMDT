@@ -2,6 +2,7 @@ process.on("uncaughtException", (err) => {
     console.error("⚠️ Uncaught Exception:", err);
 });
 const express = require("express");
+const app = express();
 const cors = require("cors");
 
 require("dotenv").config();

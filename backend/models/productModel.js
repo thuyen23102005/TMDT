@@ -104,7 +104,27 @@ const getAllProductsClient = async () => {
     return result.recordset;
 
 };
-// Thêm điều kiện lọc giá tối thiểu
+
+const filterProductsByPrice = async (minPrice, maxPrice) => {
+    const pool = await connectDB();
+    const request = pool.request();
+    let query = `
+        SELECT
+            sp.MaSP,
+            sp.MaDM,
+            sp.TenSP,
+            sp.DonGia,
+            sp.MoTa,
+            sp.HinhAnh,
+            sp.SoLuongTon,
+            sp.DonViTinh,
+            dm.TenDM
+        FROM SanPham sp
+        INNER JOIN DanhMuc dm ON sp.MaDM = dm.MaDM
+        WHERE sp.TrangThai = 1 AND sp.SoLuongTon > 0
+    `;
+
+    // Thêm điều kiện lọc giá tối thiểu
     if (minPrice !== null && !isNaN(minPrice)) {
         query += ` AND sp.DonGia >= @minPrice`;
         request.input("minPrice", sql.Decimal(18, 2), minPrice);
@@ -115,17 +135,21 @@ const getAllProductsClient = async () => {
         query += ` AND sp.DonGia <= @maxPrice`;
         request.input("maxPrice", sql.Decimal(18, 2), maxPrice);
     }
+    
     query += ` ORDER BY sp.MaSP DESC`;
 
     const result = await request.query(query);
     return result.recordset;
+};
+
 const getById = async (id) => {
     const pool = await connectDB();
     const result = await pool.request()
-        .input('MaSP', id)
+        .input('MaSP', sql.Int, id)
         .query(`SELECT * FROM SanPham WHERE MaSP = @MaSP`);
     return result.recordset[0];
 };
+
 // Thêm sản phẩm
 const createProduct = async (product) => {
 
@@ -262,11 +286,11 @@ module.exports = {
     getAllProducts,
     getAllProductsClient,
     getById,
+    filterProductsByPrice,
     createProduct,
     updateProduct,
     deleteProduct,
     checkProductName,
     checkCategoryExists,
     searchProducts
-
 };
