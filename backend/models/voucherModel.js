@@ -13,7 +13,8 @@ const getAllVoucher = async () => {
             NgayBD,
             NgayKT,
             DieuKienApDung,
-            SoLuong
+            SoLuong,
+            SoDiemDoi
         FROM MaGiamGia
         ORDER BY MaGG DESC
     `);
@@ -34,6 +35,7 @@ const createVoucher = async (voucher) => {
         .input("NgayKT", sql.Date, voucher.NgayKT)
         .input("DieuKienApDung", sql.Decimal(18,2), voucher.DieuKienApDung)
         .input("SoLuong", sql.Int, voucher.SoLuong)
+        .input("SoDiemDoi", sql.Int, voucher.SoDiemDoi || null)
         .query(`
             INSERT INTO MaGiamGia
             (
@@ -43,7 +45,8 @@ const createVoucher = async (voucher) => {
                 NgayBD,
                 NgayKT,
                 DieuKienApDung,
-                SoLuong
+                SoLuong,
+                SoDiemDoi
             )
             VALUES
             (
@@ -53,7 +56,8 @@ const createVoucher = async (voucher) => {
                 @NgayBD,
                 @NgayKT,
                 @DieuKienApDung,
-                @SoLuong
+                @SoLuong,
+                @SoDiemDoi
             )
         `);
 
@@ -73,6 +77,7 @@ const updateVoucher = async (id, voucher) => {
         .input("NgayKT", sql.Date, voucher.NgayKT)
         .input("DieuKienApDung", sql.Decimal(18,2), voucher.DieuKienApDung)
         .input("SoLuong", sql.Int, voucher.SoLuong)
+        .input("SoDiemDoi", sql.Int, voucher.SoDiemDoi || null)
         .query(`
             UPDATE MaGiamGia
             SET
@@ -82,7 +87,8 @@ const updateVoucher = async (id, voucher) => {
                 NgayBD=@NgayBD,
                 NgayKT=@NgayKT,
                 DieuKienApDung=@DieuKienApDung,
-                SoLuong=@SoLuong
+                SoLuong=@SoLuong,
+                SoDiemDoi=@SoDiemDoi
             WHERE MaGG=@MaGG
         `);
 

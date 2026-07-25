@@ -22,9 +22,9 @@ function OrderTable({ orders, onDetail, onUpdate }) {
 
                     <th width="150">Thanh toán</th>
 
-                    <th width="160">Trạng thái</th>
+                    <th width="120">Trạng thái</th>
 
-                    <th width="180">Thao tác</th>
+                    <th width="200">Thao tác</th>
 
                 </tr>
 
@@ -117,21 +117,21 @@ function OrderTable({ orders, onDetail, onUpdate }) {
                                 </td>
 
                                 <td>
+                                    <div className="d-flex justify-content-center gap-2 flex-wrap">
+                                        <button
+                                            className="btn btn-info btn-sm text-nowrap"
+                                            onClick={() => onDetail(order.MaDH)}
+                                        >
+                                            Chi tiết
+                                        </button>
 
-                                    <button
-                                        className="btn btn-info btn-sm me-2"
-                                        onClick={() => onDetail(order.MaDH)}
-                                    >
-                                        Chi tiết
-                                    </button>
-
-                                    <button
-                                        className="btn btn-warning btn-sm"
-                                        onClick={() => onUpdate(order)}
-                                    >
-                                        Cập nhật
-                                    </button>
-
+                                        <button
+                                            className="btn btn-warning btn-sm text-nowrap"
+                                            onClick={() => onUpdate(order)}
+                                        >
+                                            Cập nhật
+                                        </button>
+                                    </div>
                                 </td>
 
                             </tr>

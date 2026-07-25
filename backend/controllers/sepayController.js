@@ -7,13 +7,22 @@ function extractMaDH(content) {
 }
 
 // Nhận webhook từ SePay khi có giao dịch chuyển khoản vào tài khoản
+// Nhận webhook từ SePay khi có giao dịch chuyển khoản vào tài khoản
 const sepayWebhook = async (req, res) => {
     try {
         const authHeader = req.headers['authorization'];
-        const expectedKey = `Apikey ${process.env.SEPAY_API_KEY}`;
-        if (!process.env.SEPAY_API_KEY || authHeader !== expectedKey) {
+        const apiKeyEnv = process.env.SEPAY_API_KEY;
+
+        // --- DEBUG: In ra để kiểm tra ---
+        console.log("=== KIỂM TRA WEBHOOK SEPAY ===");
+        console.log("1. API Key trong file .env:", apiKeyEnv || "UNDEFINED (Chưa nhận được .env)");
+        console.log("2. Header SePay gửi về:", authHeader || "UNDEFINED (Không có header authorization)");
+        console.log("==============================");
+
+        // Kiểm tra an toàn: Nếu không có cấu hình, hoặc header không chứa đúng API Key
+        if (!apiKeyEnv || !authHeader || !authHeader.includes(apiKeyEnv)) {
             console.error("SePay webhook: sai hoặc thiếu API key");
-            return res.status(401).json({ success: false });
+            return res.status(401).json({ success: false, message: "Unauthorized" });
         }
 
         const { content, transferType } = req.body;
@@ -37,5 +46,6 @@ const sepayWebhook = async (req, res) => {
         res.status(500).json({ success: false });
     }
 };
+
 
 module.exports = { sepayWebhook };

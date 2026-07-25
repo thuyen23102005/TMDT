@@ -15,22 +15,6 @@ const checkProductName = async (TenSP) => {
     return result.recordset.length > 0;
 };
 
-const checkProductNameUpdate = async (MaSP, TenSP) => {
-
-    const pool = await connectDB();
-
-    const result = await pool.request()
-        .input("MaSP", sql.Int, MaSP)
-        .input("TenSP", sql.NVarChar, TenSP)
-        .query(`
-            SELECT 1
-            FROM SanPham
-            WHERE TenSP = @TenSP
-            AND MaSP <> @MaSP
-        `);
-
-    return result.recordset.length > 0;
-};
 
 const checkCategoryExists = async (MaDM) => {
 
@@ -113,13 +97,28 @@ const getAllProductsClient = async () => {
         FROM SanPham sp
         INNER JOIN DanhMuc dm
             ON sp.MaDM = dm.MaDM
-        WHERE sp.TrangThai = 1
+        WHERE sp.TrangThai = 1 AND sp.SoLuongTon > 0 
         ORDER BY sp.MaSP DESC
     `);
 
     return result.recordset;
 
 };
+// Thêm điều kiện lọc giá tối thiểu
+    if (minPrice !== null && !isNaN(minPrice)) {
+        query += ` AND sp.DonGia >= @minPrice`;
+        request.input("minPrice", sql.Decimal(18, 2), minPrice);
+    }
+
+    // Thêm điều kiện lọc giá tối đa
+    if (maxPrice !== null && !isNaN(maxPrice)) {
+        query += ` AND sp.DonGia <= @maxPrice`;
+        request.input("maxPrice", sql.Decimal(18, 2), maxPrice);
+    }
+    query += ` ORDER BY sp.MaSP DESC`;
+
+    const result = await request.query(query);
+    return result.recordset;
 const getById = async (id) => {
     const pool = await connectDB();
     const result = await pool.request()
@@ -251,7 +250,7 @@ const searchProducts = async (keyword, limit = 5) => {
         FROM SanPham sp
         INNER JOIN DanhMuc dm
             ON sp.MaDM = dm.MaDM
-        WHERE sp.TrangThai = 1
+        WHERE sp.TrangThai = 1 AND sp.SoLuongTon > 0
           AND (${conditions})
         ORDER BY sp.MaSP DESC
     `);
@@ -267,7 +266,7 @@ module.exports = {
     updateProduct,
     deleteProduct,
     checkProductName,
-    checkProductNameUpdate,
-    checkCategoryExists
+    checkCategoryExists,
+    searchProducts
 
 };

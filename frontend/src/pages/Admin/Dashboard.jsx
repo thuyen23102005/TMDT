@@ -22,8 +22,6 @@ import {
     FaTicketAlt
 } from "react-icons/fa";
 
-
-
 function Dashboard() {
 
     const today = new Date().toISOString().slice(0, 10);
@@ -44,7 +42,7 @@ function Dashboard() {
 
     const [chartData, setChartData] = useState([]);
 
-    const [topProducts,setTopProducts]=useState([]);
+    const [topProducts, setTopProducts] = useState([]);
 
     useEffect(() => {
 
@@ -68,7 +66,7 @@ function Dashboard() {
 
         const chart = await getRevenueChart(from, to);
 
-        const top=await getTopProducts(from,to);
+        const top = await getTopProducts(from, to);
 
         setReport(summary.data);
 
@@ -77,7 +75,6 @@ function Dashboard() {
         setTopProducts(top.data);
 
     };
-    
 
     return (
 
@@ -90,163 +87,103 @@ function Dashboard() {
             </h2>
 
             <DashboardFilter
-
                 from={from}
-
                 to={to}
-
                 onFromChange={setFrom}
-
                 onToChange={setTo}
-
                 onSearch={loadReport}
-
             />
 
             <div className="row mb-4">
 
-                <div className="col-xl-2 col-lg-4 col-md-6 mb-3">
-
-                    <div className="card shadow-sm border-0">
-
-                        <div className="card-body d-flex">
-
+                {/* Thẻ 1: Tổng sản phẩm */}
+                <div className="col-xl col-lg-4 col-md-6 mb-3">
+                    <div className="card shadow-sm border-0 h-100">
+                        <div className="card-body d-flex align-items-center">
                             <FaLeaf
                                 size={40}
                                 className="text-success me-3"
                             />
-
                             <div>
-
-                                <h6>Tổng sản phẩm</h6>
-
-                                <h3>
-
+                                <h6 className="mb-1">Tổng sản phẩm</h6>
+                                <h3 className="mb-0">
                                     {dashboard.TongSanPham}
-
                                 </h3>
-
                             </div>
-
                         </div>
-
                     </div>
-
                 </div>
 
-                <div className="col-xl-2 col-lg-4 col-md-6 mb-3">
-
-                    <div className="card shadow-sm border-0">
-
-                        <div className="card-body d-flex">
-
+                {/* Thẻ 2: Khách hàng */}
+                <div className="col-xl col-lg-4 col-md-6 mb-3">
+                    <div className="card shadow-sm border-0 h-100">
+                        <div className="card-body d-flex align-items-center">
                             <FaUsers
                                 size={40}
                                 className="text-primary me-3"
                             />
-
                             <div>
-
-                                <h6>Khách hàng</h6>
-
-                                <h3>
-
+                                <h6 className="mb-1">Khách hàng</h6>
+                                <h3 className="mb-0">
                                     {dashboard.TongKhachHang}
-
                                 </h3>
-
                             </div>
-
                         </div>
-
                     </div>
-
                 </div>
 
-                <div className="col-xl-2 col-lg-4 col-md-6 mb-3">
-
-                    <div className="card shadow-sm border-0">
-
-                        <div className="card-body d-flex">
-
+                {/* Thẻ 3: Đơn hàng */}
+                <div className="col-xl col-lg-4 col-md-6 mb-3">
+                    <div className="card shadow-sm border-0 h-100">
+                        <div className="card-body d-flex align-items-center">
                             <FaShoppingCart
                                 size={40}
                                 className="text-warning me-3"
                             />
-
                             <div>
-
-                                <h6>Đơn hàng</h6>
-
-                                <h3>
-
+                                <h6 className="mb-1">Đơn hàng</h6>
+                                <h3 className="mb-0">
                                     {report.TongDonHang}
-
                                 </h3>
-
                             </div>
-
                         </div>
-
                     </div>
-
                 </div>
 
-                <div className="col-xl-2 col-lg-4 col-md-6 mb-3">
-
-                    <div className="card shadow-sm border-0">
-
-                        <div className="card-body d-flex">
-
+                {/* Thẻ 4: Doanh thu */}
+                <div className="col-xl col-lg-4 col-md-6 mb-3">
+                    <div className="card shadow-sm border-0 h-100">
+                        <div className="card-body d-flex align-items-center">
                             <FaMoneyBillWave
                                 size={40}
                                 className="text-danger me-3"
                             />
-
                             <div>
-
-                                <h6>Doanh thu</h6>
-
-                                <h3>
-
+                                <h6 className="mb-1">Doanh thu</h6>
+                                <h3 className="mb-0">
                                     {Number(report.TongDoanhThu || 0).toLocaleString()} đ
-
                                 </h3>
-
                             </div>
-
                         </div>
-
                     </div>
-
                 </div>
-                <div className="col-xl-2 col-lg-4 col-md-6 mb-3">
 
-                    <div className="card shadow-sm border-0">
-
-                        <div className="card-body d-flex">
-
+                {/* Thẻ 5: Voucher hoạt động */}
+                <div className="col-xl col-lg-4 col-md-6 mb-3">
+                    <div className="card shadow-sm border-0 h-100">
+                        <div className="card-body d-flex align-items-center">
                             <FaTicketAlt
                                 size={40}
                                 className="text-info me-3"
                             />
-
                             <div>
-
-                                <h6>Voucher hoạt động</h6>
-
-                                <h3>
-
+                                <h6 className="mb-1">Voucher</h6>
+                                <h3 className="mb-0">
                                     {dashboard.TongMaGiamGia}
-
                                 </h3>
-
                             </div>
-
                         </div>
-
                     </div>
-
                 </div>
 
             </div>

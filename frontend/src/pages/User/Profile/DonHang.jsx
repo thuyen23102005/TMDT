@@ -39,12 +39,11 @@ function DonHang() {
                     <table className="table table-hover align-middle">
                         <thead className="table-light">
                             <tr>
-                                <th>Mã đơn</th>
                                 <th>Ngày đặt</th>
                                 <th>Tổng tiền</th>
                                 <th>Trạng thái</th>
                                 <th>Thanh toán</th>
-                                <th>Thao tác</th> {/* Thêm cột Thao tác */}
+                                <th>Thao tác</th> 
                             </tr>
                         </thead>
                             <tbody>
@@ -59,10 +58,6 @@ function DonHang() {
                                 return (
 
                                     <tr key={o.MaDH}>
-
-                                        <td className="fw-bold text-secondary">
-                                            #{o.MaDH}
-                                        </td>
 
                                         <td>
                                             {new Date(o.NgayDat).toLocaleDateString("vi-VN")}

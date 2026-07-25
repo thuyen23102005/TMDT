@@ -53,6 +53,8 @@ const validateProduct = (product) => {
 const getAllProductsClient = async (req, res) => {
 
     try {
+        const minPrice = req.query.minPrice ? parseFloat(req.query.minPrice) : null;
+        const maxPrice = req.query.maxPrice ? parseFloat(req.query.maxPrice) : null;
 
         const products = await productModel.getAllProductsClient();
 
@@ -217,19 +219,6 @@ const updateProduct = async (req, res) => {
         if (!categoryExists) {
             return res.status(400).json({
                 message: "Danh mục không tồn tại."
-            });
-        }
-
-        // Kiểm tra trùng tên
-        const exists =
-            await productModel.checkProductNameUpdate(
-                id,
-                product.TenSP.trim()
-            );
-
-        if (exists) {
-            return res.status(400).json({
-                message: "Tên sản phẩm đã tồn tại."
             });
         }
 

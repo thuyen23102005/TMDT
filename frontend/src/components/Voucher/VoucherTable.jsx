@@ -3,19 +3,17 @@ function VoucherTable({
     onEdit,
     onDelete
 }) {
+
     const getStatus = (voucher) => {
 
         const today = new Date();
-
-        today.setHours(0,0,0,0);
+        today.setHours(0, 0, 0, 0);
 
         const start = new Date(voucher.NgayBD);
-
         const end = new Date(voucher.NgayKT);
 
-        start.setHours(0,0,0,0);
-
-        end.setHours(0,0,0,0);
+        start.setHours(0, 0, 0, 0);
+        end.setHours(0, 0, 0, 0);
 
         if (today < start) {
             return {
@@ -24,7 +22,7 @@ function VoucherTable({
             };
         }
 
-        if (today > end || voucher.SoLuong <= 0) {
+        if (today > end || Number(voucher.SoLuong) <= 0) {
             return {
                 text: "Đã hết hạn",
                 className: "bg-danger"
@@ -35,44 +33,32 @@ function VoucherTable({
             text: "Đang hoạt động",
             className: "bg-success"
         };
-
     };
+
     return (
 
-        <table className="table table-bordered">
+        <table className="table table-bordered table-hover">
 
             <thead className="table-success">
 
                 <tr>
-
                     <th>Code</th>
-
                     <th>Loại</th>
-
                     <th>Giá trị</th>
-
                     <th>Bắt đầu</th>
-
                     <th>Kết thúc</th>
-
                     <th>Điều kiện</th>
-
                     <th>Số lượng</th>
-
+                    <th>Điểm đổi</th>
                     <th>Trạng thái</th>
-
-                    <th width="180">
-                        Thao tác
-                    </th>
-
+                    <th width="180">Thao tác</th>
                 </tr>
 
             </thead>
 
-           <tbody>
+            <tbody>
 
-            {
-                vouchers.map(voucher => {
+                {vouchers.map(voucher => {
 
                     const status = getStatus(voucher);
 
@@ -84,15 +70,27 @@ function VoucherTable({
 
                             <td>{voucher.LoaiGiam}</td>
 
-                            <td>{voucher.GiaTriGiam}</td>
+                            <td>
+                                {voucher.LoaiGiam === "Phần trăm"
+                                    ? `${voucher.GiaTriGiam}%`
+                                    : Number(voucher.GiaTriGiam).toLocaleString() + " đ"}
+                            </td>
 
-                            <td>{voucher.NgayBD?.slice(0,10)}</td>
+                            <td>{voucher.NgayBD?.slice(0, 10)}</td>
 
-                            <td>{voucher.NgayKT?.slice(0,10)}</td>
+                            <td>{voucher.NgayKT?.slice(0, 10)}</td>
 
-                            <td>{voucher.DieuKienApDung}</td>
+                            <td>
+                                {Number(voucher.DieuKienApDung).toLocaleString()} đ
+                            </td>
 
                             <td>{voucher.SoLuong}</td>
+
+                            <td>
+                                {voucher.SoDiemDoi == null
+                                    ? "Không áp dụng"
+                                    : `${voucher.SoDiemDoi} điểm`}
+                            </td>
 
                             <td>
                                 <span className={`badge ${status.className}`}>
@@ -123,8 +121,7 @@ function VoucherTable({
 
                     );
 
-                })
-            }
+                })}
 
             </tbody>
 

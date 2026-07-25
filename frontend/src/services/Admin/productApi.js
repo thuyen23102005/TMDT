@@ -4,8 +4,16 @@ const API = "http://localhost:5000/api/products";
 
 export const getProducts = (page, limit = 5) =>
     axios.get(`${API}?page=${page}&limit=${limit}`);
-export const getAllProducts = () =>
-    axios.get(`${API}/all`);
+
+// Đã cập nhật hàm này để nhận thêm khoảng giá
+export const getAllProducts = (minPrice = null, maxPrice = null) =>
+    axios.get(`${API}/all`, {
+        params: {
+            minPrice: minPrice,
+            maxPrice: maxPrice
+        }
+    });
+
 export const createProduct = (data) =>
     axios.post(API, data, {
         headers: {
