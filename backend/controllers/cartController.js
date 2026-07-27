@@ -59,7 +59,41 @@ const checkoutCart = async (req, res) => {
             return res.status(400).json({ message: "Vui lòng điền đủ thông tin giao hàng" });
         }
         if (!cartItems || cartItems.length === 0) return res.status(400).json({ message: "Giỏ hàng trống" });
+        // =============================
+        // KIỂM TRA TỒN KHO
+        // =============================
 
+        for (const item of cartItems) {
+
+            const stock = await pool.request()
+                .input("MaSP", sql.Int, item.id || item.maSP)
+                .query(`
+                    SELECT
+                        TenSP,
+                        SoLuongTon
+                    FROM SanPham
+                    WHERE MaSP = @MaSP
+                `);
+
+            if (stock.recordset.length === 0) {
+
+                return res.status(400).json({
+                    message: "Sản phẩm không tồn tại."
+                });
+
+            }
+
+            const sp = stock.recordset[0];
+
+            if (item.quantity > sp.SoLuongTon) {
+
+                return res.status(400).json({
+                    message: `${sp.TenSP} chỉ còn ${sp.SoLuongTon} sản phẩm.`
+                });
+
+            }
+
+        }
         const valuesCTDH = cartItems.map(item => 
             `(@MaDH, ${Number(item.id || item.maSP)}, ${Number(item.quantity)}, ${Number(item.price)}, ${Number(item.quantity) * Number(item.price)})`
         ).join(', ');
@@ -137,6 +171,34 @@ const checkoutCart = async (req, res) => {
 
     if (dcResult.recordset.length === 0) {
         return res.status(403).json({ message: "Địa chỉ không hợp lệ hoặc không thuộc về tài khoản này" });
+    }
+    const checkStock = await pool.request()
+    .input("MaKH", sql.Int, realMaKH)
+    .query(`
+        SELECT
+            sp.TenSP,
+            sp.SoLuongTon,
+            ct.SoLuong
+        FROM ChiTietGioHang ct
+        JOIN GioHang gh
+            ON gh.MaGH = ct.MaGH
+        JOIN SanPham sp
+            ON sp.MaSP = ct.MaSP
+        WHERE gh.MaKH = @MaKH
+    `);
+
+    for (const item of checkStock.recordset) {
+
+        if (item.SoLuong > item.SoLuongTon) {
+
+            return res.status(400).json({
+
+                message: `${item.TenSP} chỉ còn ${item.SoLuongTon} sản phẩm.`
+
+            });
+
+        }
+
     }
 
     const resultUser = await pool.request()

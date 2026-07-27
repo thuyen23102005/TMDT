@@ -12,6 +12,9 @@ function Order() {
 
     // States cho bộ lọc
     const [filterStatus, setFilterStatus] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+
+    const itemsPerPage = 8; 
     const [filterFromDate, setFilterFromDate] = useState("");
     const [filterToDate, setFilterToDate] = useState("");
 
@@ -29,6 +32,7 @@ function Order() {
 
             const res = await getOrders(params);
             setOrders(res.data);
+            setCurrentPage(1);
         } catch (error) {
             console.log(error);
         }
@@ -63,7 +67,14 @@ function Order() {
         // Sau khi clear state, gọi lại api toàn bộ
         setTimeout(() => fetchOrders(), 0); 
     };
+    const totalPages = Math.ceil(orders.length / itemsPerPage);
 
+    const startIndex = (currentPage - 1) * itemsPerPage;
+
+    const currentOrders = orders.slice(
+        startIndex,
+        startIndex + itemsPerPage
+    );
     return (
         <div className="container-fluid">
             <h2 className="mb-4">Quản lý đơn hàng</h2>
@@ -119,11 +130,74 @@ function Order() {
 
             {/* BẢNG DỮ LIỆU */}
             <OrderTable
-                orders={orders}
+                orders={currentOrders}
                 onDetail={handleDetail}
                 onUpdate={setEditingOrder}
             />
+            {totalPages > 1 && (
+                <nav className="mt-4">
+                    <ul className="pagination justify-content-center">
 
+                        {/* Trang đầu */}
+                        <li className={`page-item ${currentPage === 1 ? "disabled" : ""}`}>
+                            <button
+                                className="page-link"
+                                onClick={() => setCurrentPage(1)}
+                            >
+                                ««
+                            </button>
+                        </li>
+
+                        {/* Trang trước */}
+                        <li className={`page-item ${currentPage === 1 ? "disabled" : ""}`}>
+                            <button
+                                className="page-link"
+                                onClick={() => setCurrentPage(currentPage - 1)}
+                            >
+                                «
+                            </button>
+                        </li>
+
+                        {/* Danh sách số trang */}
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                            <li
+                                key={page}
+                                className={`page-item ${
+                                    currentPage === page ? "active" : ""
+                                }`}
+                            >
+                                <button
+                                    className="page-link"
+                                    onClick={() => setCurrentPage(page)}
+                                >
+                                    {page}
+                                </button>
+                            </li>
+                        ))}
+
+                        {/* Trang sau */}
+                        <li className={`page-item ${currentPage === totalPages ? "disabled" : ""}`}>
+                            <button
+                                className="page-link"
+                                onClick={() => setCurrentPage(currentPage + 1)}
+                            >
+                                »
+                            </button>
+                        </li>
+
+                        {/* Trang cuối */}
+                        <li className={`page-item ${currentPage === totalPages ? "disabled" : ""}`}>
+                            <button
+                                className="page-link"
+                                onClick={() => setCurrentPage(totalPages)}
+                            >
+                                »»
+                            </button>
+                        </li>
+
+                    </ul>
+                </nav>
+            )}
             {showModal && (
                 <OrderDetailModal
                     details={details}

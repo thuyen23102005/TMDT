@@ -1,130 +1,372 @@
 import { useOutletContext } from "react-router-dom";
+import { useState } from "react";
 
 function DonHang() {
-    // Nhận thêm hàm fetchOrders từ Profile truyền xuống
+
     const { orders, fetchOrders } = useOutletContext();
 
-    // Hàm xử lý khi bấm nút Hủy
-    const handleCancelOrder = async (maDH) => {
-        if (window.confirm("Bạn có chắc chắn muốn hủy đơn hàng này không?")) {
-            try {
-                const response = await fetch(`http://localhost:5000/api/orders/${maDH}/status`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ TrangThaiDonHang: 'Đã hủy' })
-                });
+    const [filter, setFilter] = useState("all");
 
-                if (response.ok) {
-                    alert("Hủy đơn hàng thành công!");
-                    fetchOrders(); // Gọi hàm này để load lại danh sách đơn hàng mới nhất
-                } else {
-                    alert("Có lỗi xảy ra khi hủy đơn.");
+    const [currentPage, setCurrentPage] = useState(1);
+
+    const ordersPerPage = 5;
+
+    const handleCancelOrder = async (maDH) => {
+
+        if (!window.confirm("Bạn có chắc chắn muốn hủy đơn hàng này không?"))
+            return;
+
+        try {
+
+            const response = await fetch(
+                `http://localhost:5000/api/orders/${maDH}/status`,
+                {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        TrangThaiDonHang: "Đã hủy",
+                    }),
                 }
-            } catch (error) {
-                console.error("Lỗi:", error);
-                alert("Lỗi kết nối đến máy chủ.");
+            );
+
+            if (response.ok) {
+
+                alert("Hủy đơn hàng thành công!");
+
+                fetchOrders();
+
+            } else {
+
+                alert("Có lỗi xảy ra khi hủy đơn.");
+
             }
+
+        } catch (error) {
+
+            console.error(error);
+
+            alert("Lỗi kết nối máy chủ.");
+
         }
+
     };
 
+    //============================
+    // LỌC ĐƠN
+    //============================
+
+    const filteredOrders = orders.filter((o) => {
+
+        switch (filter) {
+
+            case "cancelled":
+                return o.TrangThaiDonHang === "Đã hủy";
+
+            case "active":
+                return o.TrangThaiDonHang !== "Đã hủy";
+
+            case "paid":
+                return o.TrangThaiThanhToan === "Đã thanh toán";
+
+            case "unpaid":
+                return o.TrangThaiThanhToan !== "Đã thanh toán";
+
+            default:
+                return true;
+        }
+
+    });
+
+    //============================
+    // PHÂN TRANG
+    //============================
+
+    const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
+
+    const indexOfLastOrder = currentPage * ordersPerPage;
+
+    const indexOfFirstOrder = indexOfLastOrder - ordersPerPage;
+
+    const currentOrders = filteredOrders.slice(
+        indexOfFirstOrder,
+        indexOfLastOrder
+    );
+
     return (
+
         <div className="shadow-sm rounded p-3 bg-white mt-3 border">
-            <h5 className="fw-bold mb-3 text-success">Đơn hàng của bạn</h5>
-            {orders.length === 0 ? (
-                <div className="text-center text-muted py-4">Chưa có đơn hàng nào. Hãy mua sắm thêm nhé!</div>
+
+            <div className="d-flex justify-content-between align-items-center mb-3">
+
+                <h5 className="fw-bold text-success mb-0">
+
+                    Đơn hàng của bạn
+
+                </h5>
+
+                <select
+                    className="form-select w-auto"
+                    value={filter}
+                    onChange={(e) => {
+
+                        setFilter(e.target.value);
+
+                        setCurrentPage(1);
+
+                    }}
+                >
+                    <option value="all">Tất cả</option>
+
+                    <option value="active">
+                        Chưa hủy
+                    </option>
+
+                    <option value="cancelled">
+                        Đã hủy
+                    </option>
+
+                    <option value="paid">
+                        Đã thanh toán
+                    </option>
+
+                    <option value="unpaid">
+                        Chưa thanh toán
+                    </option>
+
+                </select>
+
+            </div>
+
+            {filteredOrders.length === 0 ? (
+
+                <div className="text-center text-muted py-4">
+
+                    Không có đơn hàng.
+
+                </div>
+
             ) : (
-                <div className="table-responsive">
-                    <table className="table table-hover align-middle">
-                        <thead className="table-light">
-                            <tr>
-                                <th>Ngày đặt</th>
-                                <th>Tổng tiền</th>
-                                <th>Trạng thái</th>
-                                <th>Thanh toán</th>
-                                <th>Thao tác</th> 
-                            </tr>
-                        </thead>
+
+                <>
+                    <div className="table-responsive">
+
+                        <table className="table table-hover align-middle">
+
+                            <thead className="table-light">
+
+                                <tr>
+
+                                    <th>Ngày đặt</th>
+
+                                    <th>Tổng tiền</th>
+
+                                    <th>Trạng thái</th>
+
+                                    <th>Thanh toán</th>
+
+                                    <th>Thao tác</th>
+
+                                </tr>
+
+                            </thead>
+
                             <tbody>
-                            {orders.map(o => {
 
-                                const canCancel =
-                                    o.TrangThaiThanhToan !== "Đã thanh toán" &&
-                                    o.TrangThaiDonHang !== "Đang giao" &&
-                                    o.TrangThaiDonHang !== "Đã giao" &&
-                                    o.TrangThaiDonHang !== "Đã hủy";
+                                {currentOrders.map((o) => {
 
-                                return (
+                                    const canCancel =
+                                        o.TrangThaiThanhToan !== "Đã thanh toán" &&
+                                        o.TrangThaiDonHang !== "Đang giao" &&
+                                        o.TrangThaiDonHang !== "Đã giao" &&
+                                        o.TrangThaiDonHang !== "Đã hủy";
 
-                                    <tr key={o.MaDH}>
+                                    return (
 
-                                        <td>
-                                            {new Date(o.NgayDat).toLocaleDateString("vi-VN")}
-                                        </td>
+                                        <tr key={o.MaDH}>
 
-                                        <td className="text-danger fw-bold">
-                                            {Number(o.TongTien).toLocaleString()} đ
-                                        </td>
+                                            <td>
+                                                {new Date(
+                                                    o.NgayDat
+                                                ).toLocaleDateString("vi-VN")}
+                                            </td>
 
-                                        <td>
-                                            <span
-                                                className={`badge ${
-                                                    o.TrangThaiDonHang === "Đã giao"
-                                                        ? "bg-success"
-                                                        : o.TrangThaiDonHang === "Đã hủy"
-                                                        ? "bg-danger"
-                                                        : "bg-warning text-dark"
-                                                }`}
-                                            >
-                                                {o.TrangThaiDonHang}
-                                            </span>
-                                        </td>
+                                            <td className="text-danger fw-bold">
+                                                {Number(
+                                                    o.TongTien
+                                                ).toLocaleString()} đ
+                                            </td>
 
-                                        <td>
-                                            <span
-                                                className={`badge ${
-                                                    o.TrangThaiThanhToan === "Đã thanh toán"
-                                                        ? "bg-info text-dark"
-                                                        : "bg-secondary"
-                                                }`}
-                                            >
-                                                {o.TrangThaiThanhToan}
-                                            </span>
-                                        </td>
+                                            <td>
 
-                                        <td>
-
-                                            {canCancel ? (
-
-                                                <button
-                                                    className="btn btn-sm btn-outline-danger"
-                                                    onClick={() => handleCancelOrder(o.MaDH)}
+                                                <span
+                                                    className={`badge ${
+                                                        o.TrangThaiDonHang ===
+                                                        "Đã giao"
+                                                            ? "bg-success"
+                                                            : o.TrangThaiDonHang ===
+                                                              "Đã hủy"
+                                                            ? "bg-danger"
+                                                            : "bg-warning text-dark"
+                                                    }`}
                                                 >
-                                                    Hủy đơn
-                                                </button>
 
-                                            ) : (
+                                                    {o.TrangThaiDonHang}
 
-                                                <span className="text-muted small">
-                                                    Không thể hủy
                                                 </span>
 
-                                            )}
+                                            </td>
 
-                                        </td>
+                                            <td>
 
-                                    </tr>
+                                                <span
+                                                    className={`badge ${
+                                                        o.TrangThaiThanhToan ===
+                                                        "Đã thanh toán"
+                                                            ? "bg-info text-dark"
+                                                            : "bg-secondary"
+                                                    }`}
+                                                >
 
-                                );
+                                                    {o.TrangThaiThanhToan}
 
-                            })}
-                        </tbody>
-                    </table>
-                </div>
+                                                </span>
+
+                                            </td>
+
+                                            <td>
+
+                                                {canCancel ? (
+
+                                                    <button
+                                                        className="btn btn-outline-danger btn-sm"
+                                                        onClick={() =>
+                                                            handleCancelOrder(
+                                                                o.MaDH
+                                                            )
+                                                        }
+                                                    >
+                                                        Hủy đơn
+                                                    </button>
+
+                                                ) : (
+
+                                                    <span className="text-muted small">
+
+                                                        Không thể hủy
+
+                                                    </span>
+
+                                                )}
+
+                                            </td>
+
+                                        </tr>
+
+                                    );
+
+                                })}
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
+
+                    {/* PHÂN TRANG */}
+
+                    {totalPages > 1 && (
+
+                        <div className="d-flex justify-content-center mt-3">
+
+                            <nav>
+
+                                <ul className="pagination">
+
+                                    <li
+                                        className={`page-item ${
+                                            currentPage === 1
+                                                ? "disabled"
+                                                : ""
+                                        }`}
+                                    >
+                                        <button
+                                            className="page-link"
+                                            onClick={() =>
+                                                setCurrentPage(
+                                                    currentPage - 1
+                                                )
+                                            }
+                                        >
+                                            «
+                                        </button>
+                                    </li>
+
+                                    {Array.from(
+                                        { length: totalPages },
+                                        (_, i) => (
+
+                                            <li
+                                                key={i}
+                                                className={`page-item ${
+                                                    currentPage === i + 1
+                                                        ? "active"
+                                                        : ""
+                                                }`}
+                                            >
+
+                                                <button
+                                                    className="page-link"
+                                                    onClick={() =>
+                                                        setCurrentPage(i + 1)
+                                                    }
+                                                >
+                                                    {i + 1}
+                                                </button>
+
+                                            </li>
+
+                                        )
+                                    )}
+
+                                    <li
+                                        className={`page-item ${
+                                            currentPage === totalPages
+                                                ? "disabled"
+                                                : ""
+                                        }`}
+                                    >
+
+                                        <button
+                                            className="page-link"
+                                            onClick={() =>
+                                                setCurrentPage(
+                                                    currentPage + 1
+                                                )
+                                            }
+                                        >
+                                            »
+                                        </button>
+
+                                    </li>
+
+                                </ul>
+
+                            </nav>
+
+                        </div>
+
+                    )}
+
+                </>
+
             )}
+
         </div>
+
     );
+
 }
 
 export default DonHang;
