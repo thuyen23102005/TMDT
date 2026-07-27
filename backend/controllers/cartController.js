@@ -36,23 +36,92 @@ const getCartByCustomerId = async (req, res) => {
   }
 };
 
-// 2. Chốt đơn hàng -> trả về MaDH để FE dùng tạo giao dịch MoMo (nếu chọn MoMo)
+// 2. Chốt đơn hàng
 const checkoutCart = async (req, res) => {
   try {
     const {
+        isGuest, 
         maKH: maTK,
-        maDC, // có thể null nếu khách chọn "Nhận tại cửa hàng"
+        maDC, 
+        guestInfo,
+        cartItems,
         tongTien,
         trangThaiThanhToan
     } = req.body;
 
-    // maDC là tùy chọn: chỉ bắt buộc khi khách chọn giao hàng tận nơi.
-    // Khi khách chọn "Nhận tại cửa hàng", FE gửi maDC = null, không cần kiểm tra địa chỉ.
-    if (!tongTien || tongTien <= 0) {
-        return res.status(400).json({ message: "Tổng tiền không hợp lệ" });
-    }
-
     const pool = await connectDB();
+    const ttDH = 'Chờ xác nhận';
+    const ttTT = trangThaiThanhToan || 'Chưa thanh toán';
+
+    // ===== NHÁNH 1: DÀNH CHO KHÁCH VÃNG LAI =====
+    if (isGuest) {
+        if (!guestInfo || !guestInfo.hoTen || !guestInfo.soDienThoai || !guestInfo.diaChi) {
+            return res.status(400).json({ message: "Vui lòng điền đủ thông tin giao hàng" });
+        }
+        if (!cartItems || cartItems.length === 0) return res.status(400).json({ message: "Giỏ hàng trống" });
+
+        const valuesCTDH = cartItems.map(item => 
+            `(@MaDH, ${Number(item.id || item.maSP)}, ${Number(item.quantity)}, ${Number(item.price)}, ${Number(item.quantity) * Number(item.price)})`
+        ).join(', ');
+
+        const resultGuest = await pool.request()
+            .input('HoTen', sql.NVarChar(100), guestInfo.hoTen)
+            .input('SoDienThoai', sql.VarChar(20), guestInfo.soDienThoai)
+            .input('DiaChi', sql.NVarChar(255), guestInfo.diaChi)
+            .input('TongTien', sql.Decimal(18,2), tongTien)
+            .input('TrangThaiDH', sql.NVarChar(50), ttDH)
+            .input('TrangThaiTT', sql.NVarChar(50), ttTT)
+            .query(`
+                BEGIN TRAN;
+                BEGIN TRY
+                    DECLARE @DummyMaTK INT; 
+                    DECLARE @DummyMaKH INT; 
+                    DECLARE @NewMaDC INT; 
+                    DECLARE @MaDH INT;
+                    
+                    -- 1. Tìm hoặc tự tạo Tài Khoản ảo cho Guest
+                    SELECT @DummyMaTK = MaTK FROM TaiKhoan WHERE TenDangNhap = 'khachvanglai';
+                    IF @DummyMaTK IS NULL
+                    BEGIN
+                        INSERT INTO TaiKhoan (TenDangNhap, MatKhau, Email, SoDienThoai, VaiTro, TrangThai, NgayTao)
+                        VALUES ('khachvanglai', '123456', 'guest@nongsanshop.com', NULL, 'KhachHang', 1, GETDATE());
+                        SET @DummyMaTK = SCOPE_IDENTITY();
+                    END
+
+                    -- 2. Tìm hoặc tự tạo Khách Hàng ảo gắn với tài khoản trên
+                    SELECT @DummyMaKH = MaKH FROM KhachHang WHERE MaTK = @DummyMaTK;
+                    IF @DummyMaKH IS NULL
+                    BEGIN
+                        INSERT INTO KhachHang (HoTen, MaTK) VALUES ('Khách Vãng Lai', @DummyMaTK);
+                        SET @DummyMaKH = SCOPE_IDENTITY();
+                    END
+                    
+                    -- 3. Lưu thông tin nhận hàng THẬT của khách vào Sổ Địa Chỉ
+                    INSERT INTO SoDiaChi (MaKH, HoTen, SoDienThoai, DiaChiChiTiet, MacDinh) 
+                    VALUES (@DummyMaKH, @HoTen, @SoDienThoai, @DiaChi, 0); 
+                    SET @NewMaDC = SCOPE_IDENTITY();
+                    
+                    -- 4. Tạo Đơn Hàng
+                    INSERT INTO DonHang (MaKH, MaDC, NgayDat, PhiVanChuyen, TongTien, TrangThaiDonHang, TrangThaiThanhToan) 
+                    VALUES (@DummyMaKH, @NewMaDC, GETDATE(), 30000, @TongTien, @TrangThaiDH, @TrangThaiTT); 
+                    SET @MaDH = SCOPE_IDENTITY();
+                    
+                    -- 5. Chi tiết đơn hàng
+                    INSERT INTO ChiTietDonHang (MaDH, MaSP, SoLuong, DonGia, ThanhTien) VALUES ${valuesCTDH};
+                    
+                    COMMIT TRAN;
+                    
+                    SELECT @MaDH AS maDH; 
+                END TRY
+                BEGIN CATCH ROLLBACK TRAN; THROW; END CATCH
+            `);
+
+        return res.json({ message: "Chốt đơn thành công!", maDH: resultGuest.recordset[0].maDH });
+    } 
+
+    // ===== NHÁNH 2: LOGIC CŨ DÀNH CHO USER CÓ TÀI KHOẢN =====
+    if (!maDC) return res.status(400).json({ message: "Vui lòng chọn địa chỉ giao hàng (MaDC)" });
+    if (!tongTien || tongTien <= 0) return res.status(400).json({ message: "Tổng tiền không hợp lệ" });
 
     const khResult = await pool.request()
       .input('MaTK', sql.Int, maTK)
@@ -61,89 +130,37 @@ const checkoutCart = async (req, res) => {
     if (khResult.recordset.length === 0) return res.status(400).json({message: "Tài khoản không hợp lệ"});
     const realMaKH = khResult.recordset[0].MaKH;
 
-    // Chỉ kiểm tra quyền sở hữu địa chỉ khi có gửi maDC lên (tức là giao hàng tận nơi)
-    if (maDC) {
-        const dcResult = await pool.request()
-          .input('MaDC', sql.Int, maDC)
-          .input('MaKH', sql.Int, realMaKH)
-          .query('SELECT MaDC FROM SoDiaChi WHERE MaDC = @MaDC AND MaKH = @MaKH');
+    const dcResult = await pool.request()
+      .input('MaDC', sql.Int, maDC)
+      .input('MaKH', sql.Int, realMaKH)
+      .query('SELECT MaDC FROM SoDiaChi WHERE MaDC = @MaDC AND MaKH = @MaKH');
 
-        if (dcResult.recordset.length === 0) {
-            return res.status(403).json({ message: "Địa chỉ không hợp lệ hoặc không thuộc về tài khoản này" });
-        }
+    if (dcResult.recordset.length === 0) {
+        return res.status(403).json({ message: "Địa chỉ không hợp lệ hoặc không thuộc về tài khoản này" });
     }
 
-    const ttDH = 'Chờ xác nhận';
-    // Không tin trạng thái thanh toán do FE tự gửi cho các cổng online;
-    // chỉ chấp nhận 'Đã thanh toán' ngay khi tạo đơn với phương thức tiền mặt là không áp dụng (COD luôn là "Chưa thanh toán")
-    const ttTT = trangThaiThanhToan === 'Đã thanh toán' ? 'Đã thanh toán' : 'Chưa thanh toán';
-
-    const result = await pool.request()
-      .input('MaKH', sql.Int, realMaKH)
-      .input("MaDC", sql.Int, maDC || null)
-      .input('TongTien', sql.Decimal(18,2), tongTien)
-      .input('TrangThaiDH', sql.NVarChar(50), ttDH)
-      .input('TrangThaiTT', sql.NVarChar(50), ttTT)
+    const resultUser = await pool.request()
+      .input('MaKH', sql.Int, realMaKH).input("MaDC", sql.Int, maDC)
+      .input('TongTien', sql.Decimal(18,2), tongTien).input('TrangThaiDH', sql.NVarChar(50), ttDH).input('TrangThaiTT', sql.NVarChar(50), ttTT)
       .query(`
         BEGIN TRAN;
         DECLARE @MaDH INT;
-        INSERT INTO DonHang
-        (
-            MaKH,
-            MaDC,
-            NgayDat,
-            PhiVanChuyen,
-            TongTien,
-            TrangThaiDonHang,
-            TrangThaiThanhToan
-        )
-        VALUES
-        (
-            @MaKH,
-            @MaDC,
-            GETDATE(),
-            30000,
-            @TongTien,
-            @TrangThaiDH,
-            @TrangThaiTT
-        )
+        
+        INSERT INTO DonHang (MaKH, MaDC, NgayDat, PhiVanChuyen, TongTien, TrangThaiDonHang, TrangThaiThanhToan) VALUES (@MaKH, @MaDC, GETDATE(), 30000, @TongTien, @TrangThaiDH, @TrangThaiTT)
         SET @MaDH = SCOPE_IDENTITY();
         
-        INSERT INTO ChiTietDonHang (MaDH, MaSP, SoLuong, DonGia, ThanhTien)
-        SELECT @MaDH, ct.MaSP, ct.SoLuong, sp.DonGia, (ct.SoLuong * sp.DonGia)
-        FROM ChiTietGioHang ct
-        JOIN GioHang gh ON ct.MaGH = gh.MaGH
-        JOIN SanPham sp ON ct.MaSP = sp.MaSP
-        WHERE gh.MaKH = @MaKH;
+        INSERT INTO ChiTietDonHang (MaDH, MaSP, SoLuong, DonGia, ThanhTien) SELECT @MaDH, ct.MaSP, ct.SoLuong, sp.DonGia, (ct.SoLuong * sp.DonGia) FROM ChiTietGioHang ct JOIN GioHang gh ON ct.MaGH = gh.MaGH JOIN SanPham sp ON ct.MaSP = sp.MaSP WHERE gh.MaKH = @MaKH;
         
-        DELETE ct
-        FROM ChiTietGioHang ct
-        JOIN GioHang gh ON ct.MaGH = gh.MaGH
-        WHERE gh.MaKH = @MaKH;
+        DELETE ct FROM ChiTietGioHang ct JOIN GioHang gh ON ct.MaGH = gh.MaGH WHERE gh.MaKH = @MaKH;
         COMMIT TRAN;
-
-        SELECT @MaDH AS MaDH;
+        
+        SELECT @MaDH AS maDH;
       `);
 
-    const maDH = result.recordset[0].MaDH;
-
-    // --- TẠO THÔNG BÁO ĐẶT HÀNG ---
-    try {
-        await notificationModel.createNotification(
-            maTK, 
-            'order', 
-            'Đặt hàng thành công 🎉', 
-            `Đơn hàng của bạn đã được hệ thống ghi nhận và đang chờ xử lý. Tổng tiền: ${tongTien.toLocaleString()} đ.`
-        );
-    } catch (notifyErr) {
-        console.error("Lỗi gửi thông báo đặt hàng:", notifyErr);
-    }
-    // ------------------------------
-
-    res.json({ message: "Chốt đơn thành công!", maDH });
+    return res.json({ message: "Chốt đơn thành công!", maDH: resultUser.recordset[0].maDH });
   } catch (error) {
     console.error("Lỗi khi chốt đơn:", error);
-    res.status(500).json({ message: "Lỗi hệ thống khi thanh toán" });
+    res.status(500).json({ message: "Lỗi hệ thống khi thanh toán", error: error.message });
   }
 };
 

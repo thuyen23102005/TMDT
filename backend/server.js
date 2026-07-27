@@ -1,10 +1,8 @@
-process.on("unhandledRejection", (reason) => {
-    console.error("⚠️ Unhandled Rejection:", reason);
-});
 process.on("uncaughtException", (err) => {
     console.error("⚠️ Uncaught Exception:", err);
 });
 const express = require("express");
+const app = express();
 const cors = require("cors");
 
 require("dotenv").config();
@@ -35,10 +33,7 @@ const dashboardRoutes = require("./routes/dashboardRoutes");
 
 const taskRoutes = require("./routes/taskRoutes");
 
-const app = express();
-
 const authRoutes = require("./routes/authRoutes");
-
 
 const chatbotRoutes = require("./routes/chatbotRoutes");
 

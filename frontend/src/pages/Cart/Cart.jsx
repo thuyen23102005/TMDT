@@ -141,13 +141,7 @@ const Cart = () => {
   };
 
   const handleCheckoutClick = () => {
-    if (!storedUser) {
-        alert("Vui lòng đăng nhập để tiến hành thanh toán!");
-        navigate('/login');
-    } else {
-        // Truyền cả tiền giảm giá sang trang checkout
-        navigate('/checkout', { state: { cartItems, shippingType, discount } });
-    }
+    navigate('/checkout', { state: { cartItems, shippingType } });
   };
 
   const shippingFee = shippingType === 'standard' ? 22000 : 0;

@@ -9,6 +9,13 @@ const STORE_ADDRESS = {
   DiaChiChiTiet: '123 Nguyễn Văn Linh, Phường Tân Phong, Quận 7, TP. Hồ Chí Minh'
 };
 
+const SectionBlock = ({ title, children }) => (
+    <div className="checkout-block">
+      <h3>{title}</h3>
+      {children}
+    </div>
+  );
+
 const Checkout = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -24,6 +31,9 @@ const Checkout = () => {
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [addresses, setAddresses] = useState([]);
   const [selectedAddress, setSelectedAddress] = useState(null);
+
+  const storedUser = JSON.parse(localStorage.getItem('user'));
+  const [guestInfo, setGuestInfo] = useState({ hoTen: '', soDienThoai: '', diaChi: '' });
 
   // State cho luồng VietQR
   const [showVietQR, setShowVietQR] = useState(false);
@@ -62,6 +72,8 @@ const Checkout = () => {
 
   // Bắt đầu polling kiểm tra trạng thái thanh toán mỗi 3 giây (dùng cho VietQR)
   const startPollingPaymentStatus = (maDH) => {
+    const currentUser = JSON.parse(localStorage.getItem('user'));
+    
     pollingRef.current = setInterval(async () => {
         try {
             const res = await fetch(`http://localhost:5000/api/orders/${maDH}/payment-status`);
@@ -71,10 +83,14 @@ const Checkout = () => {
                 setShowVietQR(false);
                 setSuccessType('payment');
                 setShowSuccess(true);
+                
+                // Nếu là khách, xóa giỏ hàng local
+                if (!currentUser) localStorage.removeItem('cart');
 
                 // Tự động chuyển trang sau khi hiện thông báo 2.2 giây
                 setTimeout(() => {
-                    navigate('/profile/don-hang');
+                    if (!currentUser) navigate('/');
+                    else navigate('/profile/don-hang');
                 }, 2200);
             }
         } catch (err) {
@@ -85,24 +101,41 @@ const Checkout = () => {
 
   const handleConfirmClick = async () => {
     const storedUser = JSON.parse(localStorage.getItem('user'));
-    if (!storedUser) return navigate('/login');
-    if (shippingType === 'standard' && !selectedAddress) {
-        alert("Vui lòng thêm và chọn địa chỉ giao hàng trước khi thanh toán!");
-        return;
+    
+    // Validate cho giao hàng tiêu chuẩn
+    if (shippingType === 'standard') {
+        if (storedUser && !selectedAddress) {
+            alert("Vui lòng thêm và chọn địa chỉ giao hàng trước khi thanh toán!");
+            return;
+        }
+        if (!storedUser && (!guestInfo.hoTen || !guestInfo.soDienThoai || !guestInfo.diaChi)) {
+            alert("Vui lòng điền đầy đủ thông tin giao hàng!");
+            return;
+        }
     }
 
     setIsProcessing(true);
     try {
-        // Bước 1: luôn tạo đơn hàng trước, trạng thái mặc định "Chưa thanh toán"
+        // Tạo payload linh hoạt dựa trên user hoặc guest
+        const payload = storedUser ? {
+            isGuest: false,
+            maKH: storedUser.maTK,
+            maDC: shippingType === 'store' ? null : selectedAddress?.MaDC,
+            tongTien: totalAmount,
+            trangThaiThanhToan: 'Chưa thanh toán'
+        } : {
+            isGuest: true,
+            guestInfo: guestInfo,
+            cartItems: cartItems,
+            tongTien: totalAmount,
+            trangThaiThanhToan: 'Chưa thanh toán'
+        };
+
+        // Bước 1: luôn tạo đơn hàng trước
         const orderRes = await fetch('http://localhost:5000/api/cart/checkout', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                maKH: storedUser.maTK,
-                maDC: shippingType === 'store' ? null : selectedAddress.MaDC,
-                tongTien: totalAmount,
-                trangThaiThanhToan: 'Chưa thanh toán'
-            })
+            body: JSON.stringify(payload)
         });
         const orderData = await orderRes.json();
 
@@ -112,7 +145,7 @@ const Checkout = () => {
             return;
         }
 
-        // Bước 2a: nếu chọn MoMo -> tạo giao dịch thanh toán, redirect sang MoMo
+        // Bước 2a: MoMo
         if (paymentMethod === 'momo') {
             const momoRes = await fetch('http://localhost:5000/api/momo/create', {
                 method: 'POST',
@@ -130,6 +163,8 @@ const Checkout = () => {
                     orderId: momoData.orderId,
                     requestId: momoData.requestId
                 }));
+                // (Khách vãng lai thanh toán xong Momo thì redirect cần xử lý ở Backend/Trang Return)
+                if (!storedUser) localStorage.removeItem('cart');
                 window.location.href = momoData.payUrl;
             } else {
                 alert(momoData.message || "Không tạo được giao dịch MoMo");
@@ -138,7 +173,7 @@ const Checkout = () => {
             return;
         }
 
-        // Bước 2b: nếu chọn VietQR -> lấy QR động, hiện modal, bắt đầu polling
+        // Bước 2b: VietQR
         if (paymentMethod === 'vietqr') {
             const qrRes = await fetch('http://localhost:5000/api/vietqr/create', {
                 method: 'POST',
@@ -161,11 +196,15 @@ const Checkout = () => {
             return;
         }
 
-        // Các phương thức khác (tiền mặt)
+        // Các phương thức khác (Tiền mặt / COD)
         setSuccessType('order');
         setShowSuccess(true);
+
+        if (!storedUser) localStorage.removeItem('cart');
+
         setTimeout(() => {
-            navigate('/profile/don-hang');
+            if (!storedUser) navigate('/');
+            else navigate('/profile/don-hang');
         }, 2200);
 
     } catch (error) {
@@ -178,13 +217,6 @@ const Checkout = () => {
     if (pollingRef.current) clearInterval(pollingRef.current);
     setShowVietQR(false);
   };
-
-  const SectionBlock = ({ title, children }) => (
-    <div className="checkout-block">
-      <h3>{title}</h3>
-      {children}
-    </div>
-  );
 
   if (cartItems.length === 0) {
     return (
@@ -208,17 +240,36 @@ const Checkout = () => {
                     <strong>{STORE_ADDRESS.HoTen} ({STORE_ADDRESS.SoDienThoai})</strong>
                     <span className="ms-2 text-muted">{STORE_ADDRESS.DiaChiChiTiet}</span>
                 </div>
-            ) : selectedAddress ? (
-                <div>
-                    <span className="text-danger me-2">📍</span>
-                    <strong>{selectedAddress.HoTen} ({selectedAddress.SoDienThoai})</strong> 
-                    <span className="ms-2 text-muted">{selectedAddress.DiaChiChiTiet}</span>
-                    {selectedAddress.MacDinh ? <span className="badge border border-danger text-danger ms-2 bg-white">Mặc định</span> : ''}
-                </div>
+            ) : storedUser ? (
+                selectedAddress ? (
+                    <div>
+                        <span className="text-danger me-2">📍</span>
+                        <strong>{selectedAddress.HoTen} ({selectedAddress.SoDienThoai})</strong> 
+                        <span className="ms-2 text-muted">{selectedAddress.DiaChiChiTiet}</span>
+                        {selectedAddress.MacDinh ? <span className="badge border border-danger text-danger ms-2 bg-white">Mặc định</span> : ''}
+                    </div>
+                ) : (
+                    <div className="text-danger fw-bold">Bạn chưa có địa chỉ giao hàng. Vui lòng thêm địa chỉ!</div>
+                )
             ) : (
-                <div className="text-danger fw-bold">Bạn chưa có địa chỉ giao hàng. Vui lòng thêm địa chỉ!</div>
+                // Form khách vãng lai
+                <div className="guest-info-form w-100" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <input type="text" placeholder="Họ và tên người nhận (*)" className="form-control"
+                        style={{ padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
+                        value={guestInfo.hoTen} onChange={(e) => setGuestInfo({...guestInfo, hoTen: e.target.value})} 
+                    />
+                    <input type="text" placeholder="Số điện thoại (*)" className="form-control"
+                        style={{ padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
+                        value={guestInfo.soDienThoai} onChange={(e) => setGuestInfo({...guestInfo, soDienThoai: e.target.value})} 
+                    />
+                    <input type="text" placeholder="Địa chỉ giao hàng chi tiết (*)" className="form-control"
+                        style={{ padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
+                        value={guestInfo.diaChi} onChange={(e) => setGuestInfo({...guestInfo, diaChi: e.target.value})} 
+                    />
+                </div>
             )}
-            {shippingType !== 'store' && (
+            
+            {shippingType !== 'store' && storedUser && (
                 <button onClick={() => setShowAddressModal(true)} className="btn btn-link text-primary text-decoration-none">Thay Đổi</button>
             )}
           </div>
@@ -374,7 +425,7 @@ const Checkout = () => {
                     {successType === 'payment' ? 'Thanh toán thành công!' : 'Đặt hàng thành công!'}
                 </h4>
                 <p style={{ color: '#888', fontSize: '13px', margin: 0 }}>
-                    Đang chuyển đến trang đơn hàng...
+                    Đang chuyển đến trang chủ...
                 </p>
             </div>
 
