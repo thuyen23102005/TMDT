@@ -56,7 +56,10 @@ const getAllProductsClient = async (req, res) => {
         const minPrice = req.query.minPrice ? parseFloat(req.query.minPrice) : null;
         const maxPrice = req.query.maxPrice ? parseFloat(req.query.maxPrice) : null;
 
-        const products = await productModel.getAllProductsClient();
+        // BỎ DÒNG CŨ: const products = await productModel.getAllProductsClient();
+        
+        // THAY BẰNG DÒNG MỚI: Gọi hàm filterProductsByPrice và truyền tham số vào
+        const products = await productModel.filterProductsByPrice(minPrice, maxPrice);
 
         res.json(products);
 
