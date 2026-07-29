@@ -242,34 +242,50 @@ const Products = () => {
           ) : (
             <div className="products-grid">
               {filteredProducts.map((product) => (
-                <Link to={`/product/${product.MaSP}`} key={product.MaSP} className="product-card">
-                  {product.SoLuongTon === 0 && (
-                    <span className="product-badge product-badge-out">Hết hàng</span>
-                  )}
+                  <Link to={`/product/${product.MaSP}`} key={product.MaSP} className="product-card" style={{ position: 'relative' }}>
+                      
+                      {/* Ưu tiên hiện Hết hàng, nếu còn hàng thì mới hiện Badge giảm giá */}
+                      {product.SoLuongTon === 0 ? (
+                          <span className="product-badge product-badge-out" style={{ position: 'absolute', top: '10px', right: '10px' }}>Hết hàng</span>
+                      ) : (
+                          product.TuDongGiamGia && product.GiaGoc > product.DonGia && (
+                              <span className="product-badge" style={{ backgroundColor: '#e53935', color: '#fff', position: 'absolute', top: '10px', right: '10px' }}>
+                                  -{Math.round(((product.GiaGoc - product.DonGia) / product.GiaGoc) * 100)}%
+                              </span>
+                          )
+                      )}
 
-                  <div className="product-card-image">
-                    {product.HinhAnh ? (
-                      <img
-                        src={`http://localhost:5000/uploads/${product.HinhAnh}`}
-                        alt={product.TenSP}
-                        className="product-card-img"
-                        onError={(e) => { e.target.src = 'https://via.placeholder.com/150?text=No+Image'; }}
-                      />
-                    ) : (
-                      <span className="product-card-icon">{getIcon(product.TenSP)}</span>
-                    )}
-                  </div>
+                      <div className="product-card-image">
+                          {product.HinhAnh ? (
+                              <img
+                                  src={`http://localhost:5000/uploads/${product.HinhAnh}`}
+                                  alt={product.TenSP}
+                                  className="product-card-img"
+                                  onError={(e) => { e.target.src = 'https://via.placeholder.com/150?text=No+Image'; }}
+                              />
+                          ) : (
+                              <span className="product-card-icon">{getIcon(product.TenSP)}</span>
+                          )}
+                      </div>
 
-                  <div className="product-card-body">
-                    <span className="product-card-category">{product.TenDM}</span>
-                    <h4 className="product-card-name">{product.TenSP}</h4>
-                    <p className="product-card-price">
-                      {product.DonGia?.toLocaleString()} đ
-                      {product.DonViTinh && <span className="product-card-unit"> / {product.DonViTinh}</span>}
-                    </p>
-                    <span className="product-card-btn">Chọn mua</span>
-                  </div>
-                </Link>
+                      <div className="product-card-body">
+                          <span className="product-card-category">{product.TenDM}</span>
+                          <h4 className="product-card-name">{product.TenSP}</h4>
+                          
+                          <div style={{ display: 'flex', flexDirection: 'column', minHeight: '40px', justifyContent: 'center' }}>
+                              <p className="product-card-price" style={{ margin: 0 }}>
+                                  {product.DonGia?.toLocaleString()} đ
+                                  {product.DonViTinh && <span className="product-card-unit"> / {product.DonViTinh}</span>}
+                              </p>
+                              {product.TuDongGiamGia && product.GiaGoc > product.DonGia && (
+                                  <p style={{ textDecoration: 'line-through', color: '#999', fontSize: '12px', margin: '2px 0 0 0' }}>
+                                      {product.GiaGoc?.toLocaleString()} đ
+                                  </p>
+                              )}
+                          </div>
+                          <span className="product-card-btn">Chọn mua</span>
+                      </div>
+                  </Link>
               ))}
             </div>
           )}
