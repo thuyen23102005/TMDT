@@ -5,6 +5,10 @@ function Notification() {
     const [isLoading, setIsLoading] = useState(true);
     const [now, setNow] = useState(new Date()); 
 
+    // --- STATE DÀNH CHO PHÂN TRANG ---
+    const [currentPage, setCurrentPage] = useState(1);
+    const notificationsPerPage = 6;
+
     const storedUser = JSON.parse(localStorage.getItem("user"));
 
     // Lấy dữ liệu từ API
@@ -25,7 +29,7 @@ function Notification() {
         }
     }, []);
 
-    // Hẹn giờ tự động cập nhật thời gian (now) mỗi 1 phút
+    // Hẹn giờ tự động cập nhật thời gian mỗi 1 phút
     useEffect(() => {
         const timer = setInterval(() => {
             setNow(new Date());
@@ -45,7 +49,7 @@ function Notification() {
                 const updated = notifications.map(notif => ({ ...notif, DaDoc: true }));
                 setNotifications(updated);
 
-                // PHÁT TÍN HIỆU TOÀN CỤC: Yêu cầu Header cập nhật lại chuông ngay lập tức!
+                // PHÁT TÍN HIỆU TOÀN CỤC
                 window.dispatchEvent(new Event('updateNotificationCount'));
             }
         } catch (error) {
@@ -102,6 +106,14 @@ function Notification() {
         }
     };
 
+    // --- LOGIC XỬ LÝ DỮ LIỆU PHÂN TRANG ---
+    const indexOfLastNotification = currentPage * notificationsPerPage;
+    const indexOfFirstNotification = indexOfLastNotification - notificationsPerPage;
+    const currentNotifications = notifications.slice(indexOfFirstNotification, indexOfLastNotification);
+    const totalPages = Math.ceil(notifications.length / notificationsPerPage);
+
+    const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
     if (!storedUser) return <p className="text-center mt-4 text-danger">Vui lòng đăng nhập để xem thông báo.</p>;
     if (isLoading) return <p className="text-center mt-4">Đang tải...</p>;
 
@@ -125,49 +137,77 @@ function Notification() {
                     <p>Bạn chưa có thông báo nào.</p>
                 </div>
             ) : (
-                <div className="list-group list-group-flush">
-                    {notifications.map((notif) => {
-                        const { icon, color, bg } = getIconAndColor(notif.Loai);
-                        return (
-                            <div 
-                                key={notif.MaTB} 
-                                className={`list-group-item d-flex align-items-start py-3 px-3 mb-2 rounded-3 border ${notif.DaDoc ? 'bg-white' : ''}`}
-                                style={{ 
-                                    backgroundColor: notif.DaDoc ? '#fff' : '#f4fbf5',
-                                    transition: 'background-color 0.3s'
-                                }}
-                            >
+                <>
+                    <div className="list-group list-group-flush mb-4">
+                        {currentNotifications.map((notif) => {
+                            const { icon, color, bg } = getIconAndColor(notif.Loai);
+                            return (
                                 <div 
-                                    className="d-flex justify-content-center align-items-center rounded-circle flex-shrink-0"
-                                    style={{ width: '50px', height: '50px', backgroundColor: bg, fontSize: '24px' }}
+                                    key={notif.MaTB} 
+                                    className={`list-group-item d-flex align-items-start py-3 px-3 mb-2 rounded-3 border ${notif.DaDoc ? 'bg-white' : ''}`}
+                                    style={{ 
+                                        backgroundColor: notif.DaDoc ? '#fff' : '#f4fbf5',
+                                        transition: 'background-color 0.3s'
+                                    }}
                                 >
-                                    {icon}
-                                </div>
-                                
-                                <div className="ms-3 flex-grow-1">
-                                    <div className="d-flex justify-content-between align-items-center mb-1">
-                                        <h6 className={`mb-0 ${notif.DaDoc ? 'text-dark' : 'fw-bold text-success'}`}>
-                                            {notif.TieuDe}
-                                        </h6>
-                                        <small className="text-muted" style={{ fontSize: '12px' }}>
-                                            {timeAgo(notif.NgayTao)}
-                                        </small>
-                                    </div>
-                                    <p className="mb-0 text-secondary" style={{ fontSize: '14px' }}>
-                                        {notif.NoiDung}
-                                    </p>
-                                </div>
-
-                                {!notif.DaDoc && (
                                     <div 
-                                        className="rounded-circle bg-danger ms-2 mt-2" 
-                                        style={{ width: '8px', height: '8px' }}
-                                    ></div>
-                                )}
-                            </div>
-                        );
-                    })}
-                </div>
+                                        className="d-flex justify-content-center align-items-center rounded-circle flex-shrink-0"
+                                        style={{ width: '50px', height: '50px', backgroundColor: bg, fontSize: '24px' }}
+                                    >
+                                        {icon}
+                                    </div>
+                                    
+                                    <div className="ms-3 flex-grow-1">
+                                        <div className="d-flex justify-content-between align-items-center mb-1">
+                                            <h6 className={`mb-0 ${notif.DaDoc ? 'text-dark' : 'fw-bold text-success'}`}>
+                                                {notif.TieuDe}
+                                            </h6>
+                                            <small className="text-muted" style={{ fontSize: '12px' }}>
+                                                {timeAgo(notif.NgayTao)}
+                                            </small>
+                                        </div>
+                                        <p className="mb-0 text-secondary" style={{ fontSize: '14px' }}>
+                                            {notif.NoiDung}
+                                        </p>
+                                    </div>
+
+                                    {!notif.DaDoc && (
+                                        <div 
+                                            className="rounded-circle bg-danger ms-2 mt-2" 
+                                            style={{ width: '8px', height: '8px' }}
+                                        ></div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {/* HIỂN THỊ CÁC NÚT PHÂN TRANG */}
+                    {totalPages > 1 && (
+                        <div className="d-flex justify-content-center">
+                            <ul className="pagination">
+                                {/* Nút Previous */}
+                                <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                                    <button className="page-link" onClick={() => paginate(currentPage - 1)}>«</button>
+                                </li>
+                                
+                                {/* Các số trang */}
+                                {[...Array(totalPages)].map((_, index) => (
+                                    <li key={index + 1} className={`page-item ${currentPage === index + 1 ? 'active' : ''}`}>
+                                        <button className="page-link" onClick={() => paginate(index + 1)}>
+                                            {index + 1}
+                                        </button>
+                                    </li>
+                                ))}
+                                
+                                {/* Nút Next */}
+                                <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                                    <button className="page-link" onClick={() => paginate(currentPage + 1)}>»</button>
+                                </li>
+                            </ul>
+                        </div>
+                    )}
+                </>
             )}
         </div>
     );
