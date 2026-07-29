@@ -213,9 +213,31 @@ const Checkout = () => {
     }
   };
 
-  const handleCloseVietQR = () => {
+  // Người dùng bấm "Hủy bỏ" trên modal VietQR:
+  // - Dừng polling kiểm tra thanh toán
+  // - Gọi API hủy đơn hàng vừa tạo (đổi TrangThaiDonHang -> "Đã hủy")
+  //   để tránh đơn hàng bị "treo" ở trạng thái Chờ xác nhận / Chưa thanh toán
+  const handleCloseVietQR = async () => {
     if (pollingRef.current) clearInterval(pollingRef.current);
     setShowVietQR(false);
+
+    const maDH = vietQrData?.maDH;
+    if (maDH) {
+        try {
+            await fetch(`http://localhost:5000/api/orders/${maDH}/status`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    TrangThaiDonHang: 'Đã hủy',
+                    TrangThaiThanhToan: 'Chưa thanh toán'
+                })
+            });
+        } catch (err) {
+            console.error("Lỗi khi hủy đơn hàng chưa thanh toán:", err);
+        }
+    }
+
+    setVietQrData(null);
   };
 
   if (cartItems.length === 0) {

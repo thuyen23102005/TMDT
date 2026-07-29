@@ -154,7 +154,6 @@ const checkoutCart = async (req, res) => {
     } 
 
     // ===== NHÁNH 2: LOGIC CŨ DÀNH CHO USER CÓ TÀI KHOẢN =====
-    if (!maDC) return res.status(400).json({ message: "Vui lòng chọn địa chỉ giao hàng (MaDC)" });
     if (!tongTien || tongTien <= 0) return res.status(400).json({ message: "Tổng tiền không hợp lệ" });
 
     const khResult = await pool.request()
@@ -164,14 +163,33 @@ const checkoutCart = async (req, res) => {
     if (khResult.recordset.length === 0) return res.status(400).json({message: "Tài khoản không hợp lệ"});
     const realMaKH = khResult.recordset[0].MaKH;
 
-    const dcResult = await pool.request()
-      .input('MaDC', sql.Int, maDC)
-      .input('MaKH', sql.Int, realMaKH)
-      .query('SELECT MaDC FROM SoDiaChi WHERE MaDC = @MaDC AND MaKH = @MaKH');
+    // Xác định MaDC thực sự sẽ dùng để tạo đơn hàng.
+    // Nếu FE gửi maDC (giao hàng tận nơi) -> kiểm tra địa chỉ đó thuộc về khách hàng này.
+    // Nếu FE không gửi maDC (chọn "Nhận tại cửa hàng") -> tự tạo 1 địa chỉ đại diện cho việc nhận tại cửa hàng,
+    // để không bắt buộc người dùng phải có/chọn địa chỉ giao hàng.
+    let finalMaDC;
 
-    if (dcResult.recordset.length === 0) {
-        return res.status(403).json({ message: "Địa chỉ không hợp lệ hoặc không thuộc về tài khoản này" });
+    if (!maDC) {
+        const storeAddrResult = await pool.request()
+            .input('MaKH', sql.Int, realMaKH)
+            .query(`
+                INSERT INTO SoDiaChi (MaKH, HoTen, SoDienThoai, DiaChiChiTiet, MacDinh)
+                OUTPUT INSERTED.MaDC
+                VALUES (@MaKH, N'Nhận tại cửa hàng', '1900 1234', N'123 Nguyễn Văn Linh, Phường Tân Phong, Quận 7, TP. Hồ Chí Minh', 0)
+            `);
+        finalMaDC = storeAddrResult.recordset[0].MaDC;
+    } else {
+        const dcResult = await pool.request()
+          .input('MaDC', sql.Int, maDC)
+          .input('MaKH', sql.Int, realMaKH)
+          .query('SELECT MaDC FROM SoDiaChi WHERE MaDC = @MaDC AND MaKH = @MaKH');
+
+        if (dcResult.recordset.length === 0) {
+            return res.status(403).json({ message: "Địa chỉ không hợp lệ hoặc không thuộc về tài khoản này" });
+        }
+        finalMaDC = maDC;
     }
+
     const checkStock = await pool.request()
     .input("MaKH", sql.Int, realMaKH)
     .query(`
@@ -202,7 +220,7 @@ const checkoutCart = async (req, res) => {
     }
 
     const resultUser = await pool.request()
-      .input('MaKH', sql.Int, realMaKH).input("MaDC", sql.Int, maDC)
+      .input('MaKH', sql.Int, realMaKH).input("MaDC", sql.Int, finalMaDC)
       .input('TongTien', sql.Decimal(18,2), tongTien).input('TrangThaiDH', sql.NVarChar(50), ttDH).input('TrangThaiTT', sql.NVarChar(50), ttTT)
       .query(`
         BEGIN TRAN;
