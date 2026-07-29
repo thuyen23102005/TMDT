@@ -1,5 +1,6 @@
 const { connectDB, sql } = require("../config/db");
 const notificationModel = require("../models/notificationModel");
+const calculatePrice = require("../utils/priceCalculator");
 
 // 1. Lấy chi tiết giỏ hàng theo Mã Tài Khoản
 const getCartByCustomerId = async (req, res) => {
@@ -14,13 +15,17 @@ const getCartByCustomerId = async (req, res) => {
     if (khResult.recordset.length === 0) return res.json([]); 
     const realMaKH = khResult.recordset[0].MaKH;
     
+    // Cập nhật truy vấn SQL để lấy thêm các cột cần thiết cho việc tính giảm giá
     const result = await pool.request()
       .input('MaKH', sql.Int, realMaKH)
       .query(`
         SELECT 
             sp.MaSP AS id, 
             sp.TenSP AS name, 
-            sp.DonGia AS price, 
+            sp.DonGia, 
+            sp.GiaGoc,          -- Cần cho tính giảm giá
+            sp.GiamToiDa,       -- Cần cho tính giảm giá
+            sp.TuDongGiamGia,   -- Cần cho tính giảm giá
             ct.SoLuong AS quantity,
             sp.HinhAnh AS HinhAnh
         FROM ChiTietGioHang ct
@@ -29,7 +34,19 @@ const getCartByCustomerId = async (req, res) => {
         WHERE gh.MaKH = @MaKH
       `);
 
-    res.json(result.recordset);
+    // Dùng vòng lặp map để tính lại giá cho từng sản phẩm trong giỏ
+    const cartItems = result.recordset.map(item => {
+        const finalPrice = calculatePrice(item);
+        return {
+            id: item.id,
+            name: item.name,
+            price: finalPrice,
+            quantity: item.quantity,
+            HinhAnh: item.HinhAnh
+        };
+    });
+
+    res.json(cartItems);
   } catch (error) {
     console.error("Lỗi khi lấy giỏ hàng:", error);
     res.status(500).json({ message: "Lỗi server khi tải giỏ hàng" });
@@ -163,12 +180,7 @@ const checkoutCart = async (req, res) => {
     if (khResult.recordset.length === 0) return res.status(400).json({message: "Tài khoản không hợp lệ"});
     const realMaKH = khResult.recordset[0].MaKH;
 
-    // Xác định MaDC thực sự sẽ dùng để tạo đơn hàng.
-    // Nếu FE gửi maDC (giao hàng tận nơi) -> kiểm tra địa chỉ đó thuộc về khách hàng này.
-    // Nếu FE không gửi maDC (chọn "Nhận tại cửa hàng") -> tự tạo 1 địa chỉ đại diện cho việc nhận tại cửa hàng,
-    // để không bắt buộc người dùng phải có/chọn địa chỉ giao hàng.
     let finalMaDC;
-
     if (!maDC) {
         const storeAddrResult = await pool.request()
             .input('MaKH', sql.Int, realMaKH)
@@ -190,51 +202,81 @@ const checkoutCart = async (req, res) => {
         finalMaDC = maDC;
     }
 
-    const checkStock = await pool.request()
+    // 1. TỰ ĐỘNG LẤY GIỎ HÀNG TỪ DB VÀ TÍNH TOÁN LẠI GIÁ
+    const cartItemsQuery = await pool.request()
     .input("MaKH", sql.Int, realMaKH)
     .query(`
         SELECT
+            sp.MaSP,
             sp.TenSP,
+            sp.DonGia,
+            sp.GiaGoc,
+            sp.GiamToiDa,
+            sp.TuDongGiamGia,
             sp.SoLuongTon,
             ct.SoLuong
         FROM ChiTietGioHang ct
-        JOIN GioHang gh
-            ON gh.MaGH = ct.MaGH
-        JOIN SanPham sp
-            ON sp.MaSP = ct.MaSP
+        JOIN GioHang gh ON gh.MaGH = ct.MaGH
+        JOIN SanPham sp ON sp.MaSP = ct.MaSP
         WHERE gh.MaKH = @MaKH
     `);
 
-    for (const item of checkStock.recordset) {
-
-        if (item.SoLuong > item.SoLuongTon) {
-
-            return res.status(400).json({
-
-                message: `${item.TenSP} chỉ còn ${item.SoLuongTon} sản phẩm.`
-
-            });
-
-        }
-
+    if (cartItemsQuery.recordset.length === 0) {
+        return res.status(400).json({ message: "Giỏ hàng đang trống" });
     }
 
+    let calculatedSubTotal = 0; // Biến lưu tổng tiền hàng
+    const calculatedItems = [];
+    
+    for (const item of cartItemsQuery.recordset) {
+        if (item.SoLuong > item.SoLuongTon) {
+            return res.status(400).json({
+                message: `${item.TenSP} chỉ còn ${item.SoLuongTon} sản phẩm.`
+            });
+        }
+        
+        const finalPrice = calculatePrice(item);
+        const thanhTien = item.SoLuong * finalPrice;
+        calculatedSubTotal += thanhTien; // Cộng dồn tiền hàng
+        
+        calculatedItems.push(
+            `(@MaDH, ${item.MaSP}, ${item.SoLuong}, ${finalPrice}, ${thanhTien})`
+        );
+    }
+
+    // 2. Tính phí vận chuyển thực tế (hoặc phần chênh lệch do áp dụng voucher)
+    // Bước này đảm bảo khi DB cộng lại vẫn ra chuẩn 100% con số mà khách hàng thấy
+    const actualShippingFee = tongTien - calculatedSubTotal;
+    const valuesCTDH = calculatedItems.join(', ');
+
     const resultUser = await pool.request()
-      .input('MaKH', sql.Int, realMaKH).input("MaDC", sql.Int, finalMaDC)
-      .input('TongTien', sql.Decimal(18,2), tongTien).input('TrangThaiDH', sql.NVarChar(50), ttDH).input('TrangThaiTT', sql.NVarChar(50), ttTT)
+      .input('MaKH', sql.Int, realMaKH)
+      .input("MaDC", sql.Int, finalMaDC)
+      .input('PhiVanChuyen', sql.Decimal(18,2), actualShippingFee) // Dùng biến mới thay cho số 30000
+      .input('TongTien', sql.Decimal(18,2), tongTien)
+      .input('TrangThaiDH', sql.NVarChar(50), ttDH)
+      .input('TrangThaiTT', sql.NVarChar(50), ttTT)
       .query(`
         BEGIN TRAN;
-        DECLARE @MaDH INT;
-        
-        INSERT INTO DonHang (MaKH, MaDC, NgayDat, PhiVanChuyen, TongTien, TrangThaiDonHang, TrangThaiThanhToan) VALUES (@MaKH, @MaDC, GETDATE(), 30000, @TongTien, @TrangThaiDH, @TrangThaiTT)
-        SET @MaDH = SCOPE_IDENTITY();
-        
-        INSERT INTO ChiTietDonHang (MaDH, MaSP, SoLuong, DonGia, ThanhTien) SELECT @MaDH, ct.MaSP, ct.SoLuong, sp.DonGia, (ct.SoLuong * sp.DonGia) FROM ChiTietGioHang ct JOIN GioHang gh ON ct.MaGH = gh.MaGH JOIN SanPham sp ON ct.MaSP = sp.MaSP WHERE gh.MaKH = @MaKH;
-        
-        DELETE ct FROM ChiTietGioHang ct JOIN GioHang gh ON ct.MaGH = gh.MaGH WHERE gh.MaKH = @MaKH;
-        COMMIT TRAN;
-        
-        SELECT @MaDH AS maDH;
+        BEGIN TRY
+            DECLARE @MaDH INT;
+            
+            -- Đã sửa cứng số 30000 thành @PhiVanChuyen
+            INSERT INTO DonHang (MaKH, MaDC, NgayDat, PhiVanChuyen, TongTien, TrangThaiDonHang, TrangThaiThanhToan) 
+            VALUES (@MaKH, @MaDC, GETDATE(), @PhiVanChuyen, @TongTien, @TrangThaiDH, @TrangThaiTT);
+            SET @MaDH = SCOPE_IDENTITY();
+            
+            INSERT INTO ChiTietDonHang (MaDH, MaSP, SoLuong, DonGia, ThanhTien) VALUES ${valuesCTDH};
+            
+            DELETE ct FROM ChiTietGioHang ct JOIN GioHang gh ON ct.MaGH = gh.MaGH WHERE gh.MaKH = @MaKH;
+            
+            COMMIT TRAN;
+            SELECT @MaDH AS maDH;
+        END TRY
+        BEGIN CATCH 
+            ROLLBACK TRAN; 
+            THROW; 
+        END CATCH
       `);
 
     return res.json({ message: "Chốt đơn thành công!", maDH: resultUser.recordset[0].maDH });
