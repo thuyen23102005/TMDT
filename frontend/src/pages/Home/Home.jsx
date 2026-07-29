@@ -193,34 +193,54 @@ const Home = () => {
         ) : (
           <div className="product-grid">
             {products.map(product => (
-              <div key={product.MaSP} className="product-card">
+                <div key={product.MaSP} className="product-card" style={{ position: 'relative' }}>
+                    
+                    {/* Nhãn phần trăm giảm giá */}
+                    {product.TuDongGiamGia && product.GiaGoc > product.DonGia && (
+                        <div style={{ position: 'absolute', top: '10px', right: '10px', backgroundColor: '#e53935', color: '#fff', padding: '4px 8px', borderRadius: '8px', fontWeight: 'bold', fontSize: '12px', zIndex: 2, boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
+                            -{Math.round(((product.GiaGoc - product.DonGia) / product.GiaGoc) * 100)}%
+                        </div>
+                    )}
 
-                  <div className="product-icon" style={{ padding: 0, overflow: 'hidden', backgroundColor: 'transparent' }}>
-                      <img 
-                        src={`http://localhost:5000/uploads/${product.HinhAnh || product.image || product.hinh_anh}`} 
-                        alt={product.TenSP} 
-                        style={{ width: '100%', height: '150px', objectFit: 'contain' }}
-                        onError={(e) => { e.target.src = 'https://via.placeholder.com/150?text=No+Image' }}
-                      />
-                  </div>
+                    <div className="product-icon" style={{ padding: 0, overflow: 'hidden', backgroundColor: 'transparent' }}>
+                        <img 
+                            src={`http://localhost:5000/uploads/${product.HinhAnh || product.image || product.hinh_anh}`} 
+                            alt={product.TenSP} 
+                            style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '8px 8px 0 0' }}
+                            onError={(e) => { e.target.src = 'https://via.placeholder.com/150?text=No+Image' }}
+                        />
+                    </div>
 
-                  <h4 className="product-name">
-                      {product.TenSP}
-                  </h4>
+                    <div style={{ padding: '12px' }}>
+                        <h4 className="product-name" style={{ fontSize: '16px', margin: '0 0 8px 0', height: '40px', overflow: 'hidden' }}>
+                            {product.TenSP}
+                        </h4>
 
-                  <p className="product-price">
-                      {Number(product.DonGia).toLocaleString()} đ
-                  </p>
+                        {/* Khu vực giá cả */}
+                        <div className="price-section" style={{ minHeight: '45px' }}>
+                            <p className="product-price" style={{ color: '#2e7d32', fontWeight: 'bold', fontSize: '18px', margin: 0 }}>
+                                {Number(product.DonGia).toLocaleString()} đ
+                            </p>
+                            {product.TuDongGiamGia && product.GiaGoc > product.DonGia && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <p style={{ textDecoration: 'line-through', color: '#9e9e9e', fontSize: '13px', margin: 0 }}>
+                                        {Number(product.GiaGoc).toLocaleString()} đ
+                                    </p>
+                                    <span style={{ fontSize: '11px', color: '#e53935', fontStyle: 'italic' }}>⏳ Đang giảm!</span>
+                                </div>
+                            )}
+                        </div>
 
-                  <Link
-                      to={`/product/${product.MaSP}`}
-                      className="btn-details"
-                  >
-                      🔍 Xem chi tiết
-                  </Link>
-
-              </div>
-          ))}
+                        <Link
+                            to={`/product/${product.MaSP}`}
+                            className="btn-details"
+                            style={{ display: 'block', textAlign: 'center', padding: '8px', borderRadius: '6px', backgroundColor: '#f5f5f5', color: '#333', textDecoration: 'none', fontSize: '14px', marginTop: '10px' }}
+                        >
+                            🔍 Xem chi tiết
+                        </Link>
+                    </div>
+                </div>
+            ))}
           </div>
         )}
       </section>

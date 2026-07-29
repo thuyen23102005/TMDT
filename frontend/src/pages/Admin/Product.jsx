@@ -190,7 +190,7 @@ const handleSave = async (data) => {
 
                                 <td>{product.TenDM}</td>
 
-                                <td>{Number(product.DonGia).toLocaleString()} đ</td>
+                                <td>{Number(product.GiaGoc).toLocaleString()} đ</td>
 
                                 <td>{product.SoLuongTon}</td>
 

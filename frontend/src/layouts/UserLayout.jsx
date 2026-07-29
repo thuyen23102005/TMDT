@@ -6,9 +6,16 @@ function UserLayout() {
     return (
         <div className="d-flex flex-column min-vh-100">
             <Header />
-            <main className="container mt-4 flex-grow-1">
+
+            <main
+                style={{
+                    paddingTop: "80px",
+                    flex: 1
+                }}
+            >
                 <Outlet />
             </main>
+
             <Footer />
         </div>
     );

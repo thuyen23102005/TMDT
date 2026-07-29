@@ -11,7 +11,9 @@ function ProductForm({
     const [formData, setFormData] = useState({
         TenSP: "",
         MaDM: "",
-        DonGia: "",
+        GiaGoc: "",          // Đổi từ DonGia thành GiaGoc
+        GiamToiDa: 30,       // Mặc định giảm tối đa 30%
+        TuDongGiamGia: true, // Mặc định bật giảm giá theo giờ
         MoTa: "",
         HinhAnh: "",
         SoLuongTon: "",
@@ -37,7 +39,9 @@ function ProductForm({
             setFormData({
                 TenSP: "",
                 MaDM: "",
-                DonGia: "",
+                GiaGoc: "",          // Đổi từ DonGia thành GiaGoc
+                GiamToiDa: 30,       // Mặc định giảm tối đa 30%
+                TuDongGiamGia: true, // Mặc định bật giảm giá theo giờ
                 MoTa: "",
                 HinhAnh: "",
                 SoLuongTon: "",
@@ -122,7 +126,7 @@ const handleChange = (e) => {
                 error = "Vui lòng chọn danh mục";
             break;
 
-        case "DonGia":
+        case "GiaGoc":
             if (!value)
                 error = "Giá không được để trống";
             else if (!/^\d+(\.\d+)?$/.test(value))
@@ -197,8 +201,8 @@ const validate = () => {
         newErrors.MaDM = "Vui lòng chọn danh mục";
     }
 
-    if (!formData.DonGia || Number(formData.DonGia) <= 0) {
-        newErrors.DonGia = "Giá phải lớn hơn 0";
+    if (!formData.GiaGoc || Number(formData.GiaGoc) <= 0) {
+        newErrors.GiaGoc = "Giá phải lớn hơn 0";
     }
 
     if (
@@ -240,7 +244,9 @@ const validate = () => {
 
         data.append("TenSP", formData.TenSP);
         data.append("MaDM", formData.MaDM);
-        data.append("DonGia", formData.DonGia);
+        data.append("GiaGoc", formData.GiaGoc); // Thay thế data.append("DonGia", ...)
+        data.append("GiamToiDa", formData.GiamToiDa);
+        data.append("TuDongGiamGia", formData.TuDongGiamGia);
         data.append("MoTa", formData.MoTa);
         data.append("SoLuongTon", formData.SoLuongTon);
         data.append("DonViTinh", formData.DonViTinh);
@@ -264,7 +270,9 @@ const resetForm = () => {
     setFormData({
         TenSP: "",
         MaDM: "",
-        DonGia: "",
+        GiaGoc: "",          // Đổi từ DonGia thành GiaGoc
+        GiamToiDa: 30,       // Mặc định giảm tối đa 30%
+        TuDongGiamGia: true, // Mặc định bật giảm giá theo giờ
         MoTa: "",
         HinhAnh: "",
         SoLuongTon: "",
@@ -349,23 +357,36 @@ const resetForm = () => {
                         {errors.MaDM}
                     </div>
 
+                   {/* Ô nhập Giá Gốc */}
                     <input
-                        className={`form-control mb-1 ${
-                            errors.DonGia
-                                ? "is-invalid"
-                                : formData.DonGia
-                                    ? "is-valid"
-                                    : ""
-                        }`}
-                        placeholder="Đơn giá"
-                        name="DonGia"
-                        value={formData.DonGia}
+                        className={`form-control mb-1 ${errors.GiaGoc ? "is-invalid" : formData.GiaGoc ? "is-valid" : ""}`}
+                        placeholder="Giá gốc (VNĐ)"
+                        name="GiaGoc"
+                        value={formData.GiaGoc}
+                        onChange={handleChange}
+                    />
+                    <div className="invalid-feedback">{errors.GiaGoc}</div>
+
+                    {/* Ô nhập Giảm tối đa (%) */}
+                    <input
+                        type="number"
+                        className="form-control mb-1 mt-2"
+                        placeholder="% Giảm tối đa (VD: 30)"
+                        name="GiamToiDa"
+                        value={formData.GiamToiDa}
                         onChange={handleChange}
                     />
 
-                    <div className="invalid-feedback">
-                        {errors.DonGia}
-                    </div>
+                    {/* Chọn chế độ giảm giá */}
+                    <select
+                        className="form-control mb-2 mt-2"
+                        name="TuDongGiamGia"
+                        value={formData.TuDongGiamGia}
+                        onChange={(e) => setFormData({...formData, TuDongGiamGia: e.target.value === 'true'})}
+                    >
+                        <option value={true}>Bật tự động giảm giá theo giờ</option>
+                        <option value={false}>Tắt (Bán đúng giá gốc)</option>
+                    </select>
 
                     <input
                         className={`form-control mb-1 ${

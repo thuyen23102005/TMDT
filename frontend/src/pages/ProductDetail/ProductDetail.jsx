@@ -183,21 +183,59 @@ const ProductDetail = () => {
             
             <div className="pd-rating">
                 <span style={{color: '#ffc107'}}>{"★".repeat(Math.round(avgStar)) + "☆".repeat(5 - Math.round(avgStar))}</span> 
-                ({reviews.length} đánh giá) | <span style={{ color: '#28a745' }}>Đang còn hàng</span>
+                ({reviews.length} đánh giá) | 
+                {product.SoLuongTon > 0 ? (
+                    <span style={{ color: '#28a745', marginLeft: '5px' }}>Đang còn hàng</span>
+                ) : (
+                    <span style={{ color: '#dc3545', marginLeft: '5px', fontWeight: 'bold' }}>Hết hàng</span>
+                )}
             </div>
             
-            <div className="pd-price-box"><span className="pd-price">{Number(product.DonGia).toLocaleString()} đ</span></div>
+            <div className="pd-price-box" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '15px' }}>
+              <span className="pd-price">{Number(product.DonGia).toLocaleString()} đ</span>
+              {product.TuDongGiamGia && product.GiaGoc > product.DonGia && (
+                  <>
+                      <span style={{ textDecoration: 'line-through', color: '#999', fontSize: '18px' }}>
+                          {Number(product.GiaGoc).toLocaleString()} đ
+                      </span>
+                      <span style={{ backgroundColor: '#e53935', color: '#fff', padding: '4px 8px', borderRadius: '4px', fontSize: '14px', fontWeight: 'bold' }}>
+                          -{Math.round(((product.GiaGoc - product.DonGia) / product.GiaGoc) * 100)}%
+                      </span>
+                      <div style={{ width: '100%', color: '#e53935', fontStyle: 'italic', fontSize: '14px', marginTop: '5px' }}>
+                          ⏳ Giá đang giảm!
+                      </div>
+                  </>
+              )}
+          </div>
+
             <div className="pd-variant"><span>Khu vực:</span><button className="btn-outline">Hồ Chí Minh</button></div>
             <div className="pd-variant"><span>Trọng lượng:</span><button className="btn-active">1 kg</button></div>
 
             <div className="pd-actions">
               <div className="qty-box">
-                <button onClick={decreaseQty} className="qty-btn">-</button>
+                {/* Khóa nút tăng giảm số lượng nếu hết hàng */}
+                <button onClick={decreaseQty} className="qty-btn" disabled={product.SoLuongTon === 0}>-</button>
                 <div className="qty-input">{quantity}</div>
-                <button onClick={increaseQty} className="qty-btn">+</button>
+                <button onClick={increaseQty} className="qty-btn" disabled={product.SoLuongTon === 0}>+</button>
               </div>
-              <button onClick={handleAddToCart} className="btn-add-cart">🛒 Thêm vào giỏ</button>
-              <button onClick={handleBuyNow} className="btn-buy-now">Mua ngay</button>
+              
+              {/* Khóa nút Thêm vào giỏ và Mua ngay, đồng thời làm mờ đi nếu hết hàng */}
+              <button 
+                  onClick={handleAddToCart} 
+                  className="btn-add-cart" 
+                  disabled={product.SoLuongTon === 0}
+                  style={product.SoLuongTon === 0 ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+              >
+                  🛒 Thêm vào giỏ
+              </button>
+              <button 
+                  onClick={handleBuyNow} 
+                  className="btn-buy-now" 
+                  disabled={product.SoLuongTon === 0}
+                  style={product.SoLuongTon === 0 ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+              >
+                  Mua ngay
+              </button>
             </div>
           </div>
         </div>
@@ -259,20 +297,29 @@ const ProductDetail = () => {
         <div className="related-box" style={{ marginTop: '30px' }}>
           <SectionHeader title="Các sản phẩm khác" />
           <div className="related-list">
-            {relatedProducts.length > 0 ? (
-              relatedProducts.map((item) => (
-                <div key={item.MaSP} className="related-item">
-                  <div className="related-icon" style={{ padding: 0, overflow: 'hidden', height: '120px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                    <img src={`http://localhost:5000/uploads/${item.HinhAnh || item.image || item.hinh_anh}`} alt={item.TenSP} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} onError={(e) => { e.target.src = 'https://via.placeholder.com/120?text=No+Image' }} />
-                  </div>
-                  <h4 style={{ color: '#2e7d32', margin: '10px 0 10px 0' }}>{item.TenSP}</h4>
-                  <p style={{ color: '#d32f2f', fontWeight: 'bold', margin: '0 0 15px 0' }}>{Number(item.DonGia).toLocaleString()} đ</p>
-                  <Link to={`/product/${item.MaSP}`} className="btn-view-detail">Xem chi tiết</Link>
-                </div>
-              ))
-            ) : (
-              <p style={{ width: '100%', textAlign: 'center', color: '#777' }}>Hiện chưa có sản phẩm khác.</p>
-            )}
+            
+              {relatedProducts.map((item) => (
+                <Link to={`/product/${item.MaSP}`} key={item.MaSP} className="related-item" style={{ position: 'relative', textDecoration: 'none', display: 'block', color: 'inherit' }}>
+                    {item.TuDongGiamGia && item.GiaGoc > item.DonGia && (
+                        <div style={{ position: 'absolute', top: '5px', right: '5px', backgroundColor: '#e53935', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', zIndex: 2 }}>
+                            -{Math.round(((item.GiaGoc - item.DonGia) / item.GiaGoc) * 100)}%
+                        </div>
+                    )}
+                    <div className="related-icon" style={{ padding: 0, overflow: 'hidden', height: '120px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                        <img src={`http://localhost:5000/uploads/${item.HinhAnh || item.image || item.hinh_anh}`} alt={item.TenSP} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} onError={(e) => { e.target.src = 'https://via.placeholder.com/120?text=No+Image' }} />
+                    </div>
+                    <h4 style={{ color: '#2e7d32', margin: '10px 0 5px 0' }}>{item.TenSP}</h4>
+                    
+                    <div style={{ minHeight: '40px' }}>
+                        <p style={{ color: '#d32f2f', fontWeight: 'bold', margin: '0' }}>{Number(item.DonGia).toLocaleString()} đ</p>
+                        {item.TuDongGiamGia && item.GiaGoc > item.DonGia && (
+                            <p style={{ textDecoration: 'line-through', color: '#999', fontSize: '12px', margin: '2px 0 0 0' }}>{Number(item.GiaGoc).toLocaleString()} đ</p>
+                        )}
+                    </div>
+                    
+                    <div className="btn-view-detail" style={{ marginTop: '10px' }}>Xem chi tiết</div>
+                </Link>
+            ))}
           </div>
         </div>
       </div>

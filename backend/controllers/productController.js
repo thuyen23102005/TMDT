@@ -1,49 +1,31 @@
 const productModel = require("../models/productModel");
-
+const calculatePrice = require("../utils/priceCalculator"); 
 // Validate dữ liệu sản phẩm
+// Thay thế hàm validateProduct cũ bằng hàm này
 const validateProduct = (product) => {
-
     const {
         TenSP,
         MaDM,
-        DonGia,
+        GiaGoc, // Đổi từ DonGia thành GiaGoc
         SoLuongTon,
         DonViTinh,
         MoTa
     } = product;
 
-    if (!TenSP || !TenSP.trim())
-        return "Tên sản phẩm không được để trống.";
-
-    if (TenSP.trim().length < 2)
-        return "Tên sản phẩm phải có ít nhất 2 ký tự.";
-
-    if (TenSP.trim().length > 100)
-        return "Tên sản phẩm tối đa 100 ký tự.";
-
-    if (!MaDM)
-        return "Vui lòng chọn danh mục.";
-
-    if (!DonGia || Number(DonGia) <= 0)
-        return "Giá phải lớn hơn 0.";
-
-    if (!Number.isInteger(Number(SoLuongTon)))
-        return "Số lượng tồn phải là số nguyên.";
-
-    if (Number(SoLuongTon) < 0)
-        return "Số lượng tồn không được âm.";
-
-    if (!DonViTinh || !DonViTinh.trim())
-        return "Đơn vị tính không được để trống.";
-
-    if (DonViTinh.trim().length > 30)
-        return "Đơn vị tính tối đa 30 ký tự.";
-
-    if (!MoTa || !MoTa.trim())
-        return "Mô tả không được để trống.";
-
-    if (MoTa.trim().length > 1000)
-        return "Mô tả tối đa 1000 ký tự.";
+    if (!TenSP || !TenSP.trim()) return "Tên sản phẩm không được để trống.";
+    if (TenSP.trim().length < 2) return "Tên sản phẩm phải có ít nhất 2 ký tự.";
+    if (TenSP.trim().length > 100) return "Tên sản phẩm tối đa 100 ký tự.";
+    if (!MaDM) return "Vui lòng chọn danh mục.";
+    
+    // Kiểm tra GiaGoc thay vì DonGia
+    if (!GiaGoc || Number(GiaGoc) <= 0) return "Giá gốc phải lớn hơn 0.";
+    
+    if (!Number.isInteger(Number(SoLuongTon))) return "Số lượng tồn phải là số nguyên.";
+    if (Number(SoLuongTon) < 0) return "Số lượng tồn không được âm.";
+    if (!DonViTinh || !DonViTinh.trim()) return "Đơn vị tính không được để trống.";
+    if (DonViTinh.trim().length > 30) return "Đơn vị tính tối đa 30 ký tự.";
+    if (!MoTa || !MoTa.trim()) return "Mô tả không được để trống.";
+    if (MoTa.trim().length > 1000) return "Mô tả tối đa 1000 ký tự.";
 
     return null;
 };
@@ -57,9 +39,18 @@ const getAllProductsClient = async (req, res) => {
         const maxPrice = req.query.maxPrice ? parseFloat(req.query.maxPrice) : null;
 
         // BỎ DÒNG CŨ: const products = await productModel.getAllProductsClient();
-        
-        // THAY BẰNG DÒNG MỚI: Gọi hàm filterProductsByPrice và truyền tham số vào
-        const products = await productModel.filterProductsByPrice(minPrice, maxPrice);
+        const rawProducts = await productModel.filterProductsByPrice(minPrice, maxPrice);
+
+        // Chạy vòng lặp để cập nhật lại DonGia theo giờ hiện tại
+        const products = rawProducts.map(product => {
+            const finalPrice = calculatePrice(product);
+            return {
+                ...product,
+                DonGia: finalPrice // Ghi đè giá thực tế khách phải trả tại thời điểm này
+                // GiaGoc vẫn được giữ nguyên trong object để Frontend hiển thị gạch chéo
+            };
+        });
+    
 
         res.json(products);
 
@@ -84,8 +75,23 @@ const getAllProducts = async (req, res) => {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 5;
 
+        // Lấy object dữ liệu từ model (bao gồm products, total, page, totalPages)
         const data = await productModel.getAllProducts(page, limit);
 
+        // Duyệt qua mảng products để cập nhật lại DonGia theo thời gian thực
+        if (data && data.products) {
+            data.products = data.products.map(product => {
+                // Áp dụng hàm tính giá cho từng sản phẩm
+                const finalPrice = calculatePrice(product);
+                
+                return {
+                    ...product,
+                    DonGia: finalPrice // Ghi đè giá thực tế tại thời điểm gọi API
+                };
+            });
+        }
+
+        // Trả về dữ liệu đã được cập nhật giá
         res.json(data);
 
     } catch (error) {
@@ -111,7 +117,10 @@ const getProductById = async (req, res) => {
                 message: "Không tìm thấy sản phẩm"
             });
         }
-
+        // 2. THÊM ĐOẠN NÀY: Tính lại giá theo khung giờ hiện tại
+        const finalPrice = calculatePrice(product);
+        product.DonGia = finalPrice; // Ghi đè giá thực tế
+        
         res.json(product);
 
     } catch (error) {
