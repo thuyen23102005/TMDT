@@ -46,8 +46,10 @@ const checkCondition = async (maKH, loaiDieuKien) => {
 
         case "ThemGioHang":
             query = `
-                SELECT COUNT(*) AS soLuong FROM GioHang
-                WHERE MaKH = @MaKH AND CAST(NgayTao AS DATE) = CAST(GETDATE() AS DATE)
+                SELECT COUNT(ct.MaSP) AS soLuong 
+                FROM GioHang gh
+                JOIN ChiTietGioHang ct ON gh.MaGH = ct.MaGH
+                WHERE gh.MaKH = @MaKH
             `;
             break;
 
