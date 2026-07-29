@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './TreasureChestWidget.css';
 
 const STORAGE_KEY_POS = 'treasure_widget_pos';
 const API_URL = 'http://localhost:5000/api/tasks';
 
 const TreasureChestWidget = () => {
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [tasks, setTasks] = useState([]);
   const [totalPoints, setTotalPoints] = useState(0);
@@ -24,9 +26,8 @@ const TreasureChestWidget = () => {
 
   const getToken = () => localStorage.getItem('token');
 
-  // Chỉ hiển thị widget nếu người dùng đã đăng nhập (giống cách check ở Cart.jsx/ProductDetail.jsx)
+  // Kiểm tra đăng nhập
   const isLoggedIn = !!getToken() && !!localStorage.getItem('user');
-  if (!isLoggedIn) return null;
 
   const fetchTaskStatus = async () => {
     setIsLoading(true);
@@ -118,11 +119,14 @@ const TreasureChestWidget = () => {
   const handleClick = () => {
     if (!dragInfo.current.moved) {
       setIsOpen(true);
-      fetchTaskStatus();
+      // Chỉ fetch dữ liệu khi đã đăng nhập
+      if (isLoggedIn) {
+        fetchTaskStatus();
+      }
     }
   };
 
-  const completedCount = tasks.filter((t) => t.status === 'claimed').length;
+  const completedCount = isLoggedIn ? tasks.filter((t) => t.status === 'claimed').length : 0;
 
   return (
     <>
@@ -149,39 +153,61 @@ const TreasureChestWidget = () => {
               <button className="treasure-modal-close" onClick={() => setIsOpen(false)}>✕</button>
             </div>
 
-            <div className="treasure-points-summary">
-              <span className="treasure-points-label">Điểm của bạn</span>
-              <span className="treasure-points-value">{totalPoints} điểm</span>
-            </div>
-
-            {isLoading && <p style={{ textAlign: 'center', padding: 20 }}>⏳ Đang tải nhiệm vụ...</p>}
-            {errorMsg && <p style={{ textAlign: 'center', color: '#d32f2f', padding: 10 }}>{errorMsg}</p>}
-
-            {!isLoading && !errorMsg && (
-              <div className="treasure-task-list">
-                {tasks.map((task) => (
-                  <div key={task.MaNV} className={`treasure-task-item ${task.status === 'claimed' ? 'done' : ''}`}>
-                    <div className="treasure-task-info">
-                      <h4>{task.TenNV}</h4>
-                      <p>{task.MoTa}</p>
-                    </div>
-                    <div className="treasure-task-action">
-                      <span className="treasure-task-points">+{task.SoDiemThuong}</span>
-                      <button
-                        className="treasure-task-btn"
-                        disabled={task.status !== 'available'}
-                        onClick={() => handleClaim(task)}
-                      >
-                        {task.status === 'claimed'
-                          ? 'Đã nhận'
-                          : task.status === 'available'
-                          ? 'Nhận điểm'
-                          : 'Chưa hoàn thành'}
-                      </button>
-                    </div>
-                  </div>
-                ))}
+            {/* Trường hợp CHƯA ĐĂNG NHẬP */}
+            {!isLoggedIn ? (
+              <div style={{ textAlign: 'center', padding: '30px 20px' }}>
+                <p style={{ fontSize: '16px', color: '#555', marginBottom: '20px' }}>
+                  Bạn vui lòng đăng nhập để làm nhiệm vụ tích điểm nhé! 😉
+                </p>
+                <button
+                  className="treasure-task-btn"
+                  style={{ fontSize: '14px', padding: '10px 24px' }}
+                  onClick={() => {
+                    setIsOpen(false);
+                    navigate('/login'); // Thay '/login' theo đường dẫn trang đăng nhập của bạn
+                  }}
+                >
+                  Đăng nhập ngay
+                </button>
               </div>
+            ) : (
+              /* Trường hợp ĐÃ ĐĂNG NHẬP */
+              <>
+                <div className="treasure-points-summary">
+                  <span className="treasure-points-label">Điểm của bạn</span>
+                  <span className="treasure-points-value">{totalPoints} điểm</span>
+                </div>
+
+                {isLoading && <p style={{ textAlign: 'center', padding: 20 }}>⏳ Đang tải nhiệm vụ...</p>}
+                {errorMsg && <p style={{ textAlign: 'center', color: '#d32f2f', padding: 10 }}>{errorMsg}</p>}
+
+                {!isLoading && !errorMsg && (
+                  <div className="treasure-task-list">
+                    {tasks.map((task) => (
+                      <div key={task.MaNV} className={`treasure-task-item ${task.status === 'claimed' ? 'done' : ''}`}>
+                        <div className="treasure-task-info">
+                          <h4>{task.TenNV}</h4>
+                          <p>{task.MoTa}</p>
+                        </div>
+                        <div className="treasure-task-action">
+                          <span className="treasure-task-points">+{task.SoDiemThuong}</span>
+                          <button
+                            className="treasure-task-btn"
+                            disabled={task.status !== 'available'}
+                            onClick={() => handleClaim(task)}
+                          >
+                            {task.status === 'claimed'
+                              ? 'Đã nhận'
+                              : task.status === 'available'
+                              ? 'Nhận điểm'
+                              : 'Chưa hoàn thành'}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
 
           </div>

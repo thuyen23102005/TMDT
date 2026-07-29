@@ -69,7 +69,7 @@ function StatusModal({ order, onSave, onClose }) {
 
                             {/* THÊM PHẦN CẬP NHẬT TRẠNG THÁI THANH TOÁN CHO MỤC ĐÍCH TEST */}
                             <div className="mb-3 mt-4 pt-3 border-top">
-                                <label className="form-label fw-bold text-primary">Trạng thái thanh toán (Test):</label>
+                                <label className="form-label fw-bold text-primary">Trạng thái thanh toán:</label>
                                 <select
                                     className="form-select"
                                     value={paymentStatus}
