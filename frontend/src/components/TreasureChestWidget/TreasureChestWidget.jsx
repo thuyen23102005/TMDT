@@ -10,12 +10,24 @@ const TreasureChestWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [tasks, setTasks] = useState([]);
   const [totalPoints, setTotalPoints] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);  
   const [errorMsg, setErrorMsg] = useState('');
 
   const [position, setPosition] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY_POS);
-    return saved ? JSON.parse(saved) : { x: window.innerWidth - 100, y: window.innerHeight - 250 };
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        // Kiểm tra nếu tọa độ đã lưu vượt quá kích thước màn hình hiện tại thì reset về mặc định
+        if (parsed.x < window.innerWidth && parsed.y < window.innerHeight) {
+          return parsed;
+        }
+      } catch (e) {
+        // Nếu parse lỗi thì bỏ qua
+      }
+    }
+    // Mặc định luôn nằm gọn ở góc dưới bên phải màn hình (cách lề phải 90px, lề dưới 150px)
+    return { x: window.innerWidth - 90, y: window.innerHeight - 150 };
   });
 
   const dragInfo = useRef({ dragging: false, moved: false, offsetX: 0, offsetY: 0 });

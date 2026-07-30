@@ -19,9 +19,7 @@ const ProductDetail = () => {
   const [rating, setRating] = useState(5);
   const [reviewText, setReviewText] = useState('');
   
-  // Lấy thông tin user
   const storedUser = JSON.parse(localStorage.getItem("user"));
-  // Xác định key lưu trữ dựa vào user
   const favKey = storedUser ? `favorites_${storedUser.maTK}` : 'favorites';
 
   useEffect(() => {
@@ -39,7 +37,6 @@ const ProductDetail = () => {
       setIsLoading(false);
       setQuantity(1); 
 
-      // Đọc đúng key của tài khoản hiện tại
       const favIds = JSON.parse(localStorage.getItem(favKey) || '[]');
       setIsFavorite(favIds.includes(productData.MaSP));
     })
@@ -51,7 +48,7 @@ const ProductDetail = () => {
             .then(data => setCanReview(data.canReview))
             .catch(err => console.error(err));
     }
-  }, [id, favKey]); // Thêm favKey vào dependency
+  }, [id, favKey]);
 
   const increaseQty = () => setQuantity(prev => prev + 1);
   const decreaseQty = () => setQuantity(prev => (prev > 1 ? prev - 1 : 1));
@@ -105,7 +102,6 @@ const ProductDetail = () => {
     navigate('/cart');
   };
 
-  // CẬP NHẬT: Xử lý click yêu thích dùng key riêng
   const toggleFavorite = () => {
     let favIds = JSON.parse(localStorage.getItem(favKey) || '[]');
     if (isFavorite) {
@@ -213,13 +209,11 @@ const ProductDetail = () => {
 
             <div className="pd-actions">
               <div className="qty-box">
-                {/* Khóa nút tăng giảm số lượng nếu hết hàng */}
                 <button onClick={decreaseQty} className="qty-btn" disabled={product.SoLuongTon === 0}>-</button>
                 <div className="qty-input">{quantity}</div>
                 <button onClick={increaseQty} className="qty-btn" disabled={product.SoLuongTon === 0}>+</button>
               </div>
               
-              {/* Khóa nút Thêm vào giỏ và Mua ngay, đồng thời làm mờ đi nếu hết hàng */}
               <button 
                   onClick={handleAddToCart} 
                   className="btn-add-cart" 
@@ -247,7 +241,8 @@ const ProductDetail = () => {
           </div>
           <div className="col-side">
             <div className="side-box">
-              <SectionHeader title="Thông margin phẩm" />
+              {/* Đã sửa từ "Thông margin phẩm" thành "Thông tin sản phẩm" */}
+              <SectionHeader title="Thông tin sản phẩm" />
               <div style={{ padding: '15px' }}>
                 <div className="side-row"><span style={{ width: '40%', fontWeight: 'bold' }}>Trọng lượng:</span><span>1 kg</span></div>
                 <div className="side-row"><span style={{ width: '40%', fontWeight: 'bold' }}>Khu vực:</span><span>Hà Nội, Hồ Chí Minh</span></div>
@@ -297,7 +292,6 @@ const ProductDetail = () => {
         <div className="related-box" style={{ marginTop: '30px' }}>
           <SectionHeader title="Các sản phẩm khác" />
           <div className="related-list">
-            
               {relatedProducts.map((item) => (
                 <Link to={`/product/${item.MaSP}`} key={item.MaSP} className="related-item" style={{ position: 'relative', textDecoration: 'none', display: 'block', color: 'inherit' }}>
                     {item.TuDongGiamGia && item.GiaGoc > item.DonGia && (
