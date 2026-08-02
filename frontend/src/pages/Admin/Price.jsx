@@ -6,110 +6,60 @@ import PriceModal from "../../components/Price/PriceModal";
 function Price() {
 
     const [prices, setPrices] = useState([]);
-    const [editingProduct, setEditingProduct] = useState(null);
-    const [loading, setLoading] = useState(false);
+    const [selected, setSelected] = useState(null);
+    const [show, setShow] = useState(false);
 
-    const fetchPrices = async () => {
-
+    const loadData = async () => {
         try {
-
-            setLoading(true);
-
             const res = await getPrices();
-
             setPrices(res.data);
-
         } catch (err) {
-
             console.log(err);
-
-            alert("Không thể tải danh sách giá sản phẩm.");
-
-        } finally {
-
-            setLoading(false);
-
         }
-
     };
 
     useEffect(() => {
-
-        fetchPrices();
-
+        loadData();
     }, []);
 
-    return (
+    const handleEdit = (item) => {
+        setSelected(item);
+        setShow(true);
+    };
 
+    return (
         <div className="container-fluid">
 
-            <div className="d-flex justify-content-between align-items-center mb-4">
+            <div className="card shadow">
 
-                <div>
-
-                    <h2 className="fw-bold mb-1">
+                <div className="card-header bg-success text-white">
+                    <h4 className="mb-0">
                         Quản lý giá sản phẩm
-                    </h2>
-
-                    <small className="text-muted">
-                        Quản lý giá gốc và mức giảm tối đa của sản phẩm
-                    </small>
-
+                    </h4>
                 </div>
-
-            </div>
-
-            <div className="card shadow-sm">
 
                 <div className="card-body">
 
-                    {
-                        loading ? (
-
-                            <div className="text-center py-5">
-
-                                <div className="spinner-border text-success"></div>
-
-                            </div>
-
-                        ) : (
-
-                            <PriceTable
-                                prices={prices}
-                                onEdit={setEditingProduct}
-                            />
-
-                        )
-                    }
+                    <PriceTable
+                        data={prices}
+                        onEdit={handleEdit}
+                    />
 
                 </div>
 
             </div>
 
             {
-                editingProduct && (
-
-                    <PriceModal
-
-                        product={editingProduct}
-
-                        onClose={() => setEditingProduct(null)}
-
-                        reload={() => {
-
-                            fetchPrices();
-
-                            setEditingProduct(null);
-
-                        }}
-
-                    />
-
-                )
+                show &&
+                <PriceModal
+                    show={show}
+                    handleClose={() => setShow(false)}
+                    product={selected}
+                    reload={loadData}
+                />
             }
 
         </div>
-
     );
 
 }

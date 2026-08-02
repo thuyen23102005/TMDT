@@ -313,26 +313,18 @@ const updatePrice = async (id, data) => {
 
     const pool = await connectDB();
 
-    const donGia = calculatePrice({
-        GiaGoc: data.GiaGoc,
-        GiamToiDa: data.GiamToiDa,
-        TuDongGiamGia: data.TuDongGiamGia
-    });
-
     await pool.request()
         .input("MaSP", sql.Int, id)
         .input("GiaGoc", sql.Decimal(18,2), data.GiaGoc)
-        .input("DonGia", sql.Decimal(18,2), donGia)
         .input("GiamToiDa", sql.Int, data.GiamToiDa)
         .input("TuDongGiamGia", sql.Bit, data.TuDongGiamGia)
         .query(`
             UPDATE SanPham
             SET
                 GiaGoc = @GiaGoc,
-                DonGia = @DonGia,
                 GiamToiDa = @GiamToiDa,
                 TuDongGiamGia = @TuDongGiamGia
-            WHERE MaSP = @MaSP
+            WHERE MaSP=@MaSP
         `);
 
 };

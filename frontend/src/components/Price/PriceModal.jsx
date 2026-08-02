@@ -3,7 +3,7 @@ import { updatePrice } from "../../services/Admin/priceApi";
 
 function PriceModal({
     product,
-    onClose,
+    handleClose,
     reload
 }) {
 
@@ -34,22 +34,16 @@ function PriceModal({
         e.preventDefault();
 
         if (Number(formData.GiaGoc) <= 0) {
-
             alert("Giá gốc phải lớn hơn 0.");
-
             return;
-
         }
 
         if (
             Number(formData.GiamToiDa) < 0 ||
             Number(formData.GiamToiDa) > 100
         ) {
-
             alert("Giảm tối đa phải từ 0 đến 100%.");
-
             return;
-
         }
 
         try {
@@ -57,18 +51,16 @@ function PriceModal({
             setLoading(true);
 
             await updatePrice(product.MaSP, {
-
                 GiaGoc: Number(formData.GiaGoc),
-
                 GiamToiDa: Number(formData.GiamToiDa),
-
                 TuDongGiamGia: formData.TuDongGiamGia
-
             });
+
+            await reload();
 
             alert("Cập nhật giá thành công!");
 
-            reload();
+            handleClose();
 
         } catch (err) {
 
@@ -90,7 +82,7 @@ function PriceModal({
             className="modal fade show"
             style={{
                 display: "block",
-                background: "rgba(0,0,0,.5)"
+                backgroundColor: "rgba(0,0,0,.5)"
             }}
         >
 
@@ -101,14 +93,13 @@ function PriceModal({
                     <div className="modal-header">
 
                         <h5 className="modal-title">
-
                             Cập nhật giá sản phẩm
-
                         </h5>
 
                         <button
+                            type="button"
                             className="btn-close"
-                            onClick={onClose}
+                            onClick={handleClose}
                         />
 
                     </div>
@@ -120,9 +111,7 @@ function PriceModal({
                             <div className="mb-3">
 
                                 <label className="form-label">
-
                                     Tên sản phẩm
-
                                 </label>
 
                                 <input
@@ -136,9 +125,7 @@ function PriceModal({
                             <div className="mb-3">
 
                                 <label className="form-label">
-
-                                    Giá hiện tại
-
+                                    Giá bán hiện tại
                                 </label>
 
                                 <input
@@ -154,9 +141,7 @@ function PriceModal({
                             <div className="mb-3">
 
                                 <label className="form-label">
-
                                     Giá gốc
-
                                 </label>
 
                                 <input
@@ -172,9 +157,7 @@ function PriceModal({
                             <div className="mb-3">
 
                                 <label className="form-label">
-
                                     Giảm tối đa (%)
-
                                 </label>
 
                                 <input
@@ -198,9 +181,7 @@ function PriceModal({
                                 />
 
                                 <label className="form-check-label">
-
                                     Bật tự động giảm giá
-
                                 </label>
 
                             </div>
@@ -212,24 +193,19 @@ function PriceModal({
                             <button
                                 type="button"
                                 className="btn btn-secondary"
-                                onClick={onClose}
+                                onClick={handleClose}
                             >
-
                                 Đóng
-
                             </button>
 
                             <button
+                                type="submit"
                                 className="btn btn-success"
                                 disabled={loading}
                             >
-
-                                {
-                                    loading
-                                        ? "Đang lưu..."
-                                        : "Lưu thay đổi"
-                                }
-
+                                {loading
+                                    ? "Đang lưu..."
+                                    : "Lưu thay đổi"}
                             </button>
 
                         </div>
