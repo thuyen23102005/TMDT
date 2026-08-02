@@ -1,5 +1,5 @@
 const { connectDB, sql } = require("../config/db");
-
+const calculatePrice = require("../utils/priceCalculator");
 const checkProductName = async (TenSP) => {
 
     const pool = await connectDB();
@@ -289,7 +289,53 @@ const searchProducts = async (keyword, limit = 5) => {
 
     return result.recordset;
 };
+const getAllPrices = async () => {
 
+    const pool = await connectDB();
+
+    const result = await pool.request().query(`
+        SELECT
+            MaSP,
+            TenSP,
+            GiaGoc,
+            DonGia,
+            GiamToiDa,
+            TuDongGiamGia
+        FROM SanPham
+        WHERE TrangThai = 1
+        ORDER BY MaSP DESC
+    `);
+
+    return result.recordset;
+};
+
+const updatePrice = async (id, data) => {
+
+    const pool = await connectDB();
+
+    const donGia = calculatePrice({
+        GiaGoc: data.GiaGoc,
+        GiamToiDa: data.GiamToiDa,
+        TuDongGiamGia: data.TuDongGiamGia
+    });
+
+    await pool.request()
+        .input("MaSP", sql.Int, id)
+        .input("GiaGoc", sql.Decimal(18,2), data.GiaGoc)
+        .input("DonGia", sql.Decimal(18,2), donGia)
+        .input("GiamToiDa", sql.Int, data.GiamToiDa)
+        .input("TuDongGiamGia", sql.Bit, data.TuDongGiamGia)
+        .query(`
+            UPDATE SanPham
+            SET
+                GiaGoc = @GiaGoc,
+                DonGia = @DonGia,
+                GiamToiDa = @GiamToiDa,
+                TuDongGiamGia = @TuDongGiamGia
+            WHERE MaSP = @MaSP
+        `);
+
+};
 module.exports = {
     getAllProducts,
     getAllProductsClient,
@@ -300,5 +346,7 @@ module.exports = {
     deleteProduct,
     checkProductName,
     checkCategoryExists,
-    searchProducts
+    searchProducts,
+    getAllPrices,
+    updatePrice
 };

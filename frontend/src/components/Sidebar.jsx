@@ -35,6 +35,9 @@ function Sidebar() {
                 <NavLink to="/admin/products" className={getNavLinkClass}>
                     Quản lý sản phẩm
                 </NavLink>
+                <NavLink to="/admin/prices" className={getNavLinkClass}>
+                    Quản lý giá
+                </NavLink>
 
                 <NavLink to="/admin/orders" className={getNavLinkClass}>
                     Quản lý đơn hàng
