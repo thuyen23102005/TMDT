@@ -9,7 +9,7 @@ function SoDiaChi() {
     // Gọi API lấy danh sách
     const fetchAddresses = () => {
         if (user) {
-            fetch(`http://localhost:5000/api/addresses/${user.maTK}`)
+            fetch(`${import.meta.env.VITE_API_URL}/api/addresses/${user.maTK}`)
                 .then(res => res.json())
                 .then(data => setAddresses(data))
                 .catch(err => console.error(err));
@@ -24,7 +24,7 @@ function SoDiaChi() {
     const handleAddSubmit = async (e) => {
         e.preventDefault();
         try {
-            await fetch('http://localhost:5000/api/addresses', {
+            await fetch(`${import.meta.env.VITE_API_URL}/api/addresses`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ...formData, maTK: user.maTK })
@@ -41,7 +41,7 @@ function SoDiaChi() {
     // Gọi API set mặc định
     const handleSetDefault = async (maDC) => {
         try {
-            await fetch('http://localhost:5000/api/addresses/set-default', {
+            await fetch(`${import.meta.env.VITE_API_URL}/api/addresses/set-default`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ maTK: user.maTK, maDC })

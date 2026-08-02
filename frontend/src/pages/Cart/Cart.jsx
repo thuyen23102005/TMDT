@@ -18,7 +18,7 @@ const Cart = () => {
 
   useEffect(() => {
     if (storedUser) {
-      fetch(`http://localhost:5000/api/cart/${storedUser.maTK}`)
+      fetch(`${import.meta.env.VITE_API_URL}/api/cart/${storedUser.maTK}`)
         .then((res) => res.json())
         .then((data) => {
           const formattedData = data.map(item => ({
@@ -60,7 +60,7 @@ const Cart = () => {
     // 4. Gọi API cập nhật xuống Database
     if (storedUser) {
       try {
-        await fetch('http://localhost:5000/api/cart/add', {
+        await fetch(`${import.meta.env.VITE_API_URL}/api/cart/add`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -85,7 +85,7 @@ const Cart = () => {
 
       if (storedUser) {
         try {
-          await fetch(`http://localhost:5000/api/cart/remove/${storedUser.maTK}/${id}`, {
+          await fetch(`${import.meta.env.VITE_API_URL}/api/cart/remove/${storedUser.maTK}/${id}`, {
             method: 'DELETE'
           });
         } catch (error) {
@@ -103,7 +103,7 @@ const Cart = () => {
     if (!promoCode.trim()) return alert("Vui lòng nhập mã giảm giá!");
     
     try {
-        const res = await fetch('http://localhost:5000/api/vouchers/active');
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/vouchers/active`);
         const activeVouchers = await res.json();
         
         // Tìm mã giảm giá trùng khớp (không phân biệt hoa thường)
@@ -185,7 +185,7 @@ const Cart = () => {
                     <td className="cart-col-product">
                       <div className="product-icon" style={{ padding: 0, width: '60px', height: '60px', flexShrink: 0, overflow: 'hidden', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: 'transparent' }}>
                         <img 
-                          src={`http://localhost:5000/uploads/${item.HinhAnh || item.image || item.hinh_anh}`} 
+                          src={`${import.meta.env.VITE_API_URL}/uploads/${item.HinhAnh || item.image || item.hinh_anh}`} 
                           alt={item.name} 
                           style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
                           onError={(e) => { e.target.src = 'https://via.placeholder.com/60?text=No+Img' }}

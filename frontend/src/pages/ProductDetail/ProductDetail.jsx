@@ -19,17 +19,15 @@ const ProductDetail = () => {
   const [rating, setRating] = useState(5);
   const [reviewText, setReviewText] = useState('');
   
-  // Lấy thông tin user
   const storedUser = JSON.parse(localStorage.getItem("user"));
-  // Xác định key lưu trữ dựa vào user
   const favKey = storedUser ? `favorites_${storedUser.maTK}` : 'favorites';
 
   useEffect(() => {
     setIsLoading(true);
     Promise.all([
-      fetch(`http://localhost:5000/api/products/${id}`).then(res => res.json()),
-      fetch(`http://localhost:5000/api/products/all`).then(res => res.json()),
-      fetch(`http://localhost:5000/api/reviews/product/${id}`).then(res => res.json())
+      fetch(`${import.meta.env.VITE_API_URL}/api/products/${id}`).then(res => res.json()),
+      fetch(`${import.meta.env.VITE_API_URL}/api/products/all`).then(res => res.json()),
+      fetch(`${import.meta.env.VITE_API_URL}/api/reviews/product/${id}`).then(res => res.json())
     ])
     .then(([productData, allProductsData, reviewsData]) => {
       setProduct(productData);
@@ -39,19 +37,18 @@ const ProductDetail = () => {
       setIsLoading(false);
       setQuantity(1); 
 
-      // Đọc đúng key của tài khoản hiện tại
       const favIds = JSON.parse(localStorage.getItem(favKey) || '[]');
       setIsFavorite(favIds.includes(productData.MaSP));
     })
     .catch(err => { console.error(err); setIsLoading(false); });
 
     if (storedUser) {
-        fetch(`http://localhost:5000/api/reviews/check/${storedUser.maTK}/${id}`)
+        fetch(`${import.meta.env.VITE_API_URL}/api/reviews/check/${storedUser.maTK}/${id}`)
             .then(res => res.json())
             .then(data => setCanReview(data.canReview))
             .catch(err => console.error(err));
     }
-  }, [id, favKey]); // Thêm favKey vào dependency
+  }, [id, favKey]);
 
   const increaseQty = () => setQuantity(prev => prev + 1);
   const decreaseQty = () => setQuantity(prev => (prev > 1 ? prev - 1 : 1));
@@ -59,7 +56,7 @@ const ProductDetail = () => {
   const handleAddToCart = async () => {
     if (storedUser) {
       try {
-        const response = await fetch('http://localhost:5000/api/cart/add', {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/cart/add`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -105,7 +102,6 @@ const ProductDetail = () => {
     navigate('/cart');
   };
 
-  // CẬP NHẬT: Xử lý click yêu thích dùng key riêng
   const toggleFavorite = () => {
     let favIds = JSON.parse(localStorage.getItem(favKey) || '[]');
     if (isFavorite) {
@@ -120,7 +116,7 @@ const ProductDetail = () => {
   const submitReview = async () => {
     if (!reviewText.trim()) return alert("Vui lòng nhập nội dung đánh giá!");
     try {
-        const res = await fetch('http://localhost:5000/api/reviews', {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/reviews`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ maTK: storedUser.maTK, maSP: id, soSao: rating, noiDung: reviewText })
@@ -129,7 +125,7 @@ const ProductDetail = () => {
             alert("Cảm ơn bạn đã đánh giá sản phẩm!");
             setReviewText('');
             setRating(5);
-            const newReviews = await fetch(`http://localhost:5000/api/reviews/product/${id}`).then(r => r.json());
+            const newReviews = await fetch(`${import.meta.env.VITE_API_URL}/api/reviews/product/${id}`).then(r => r.json());
             setReviews(newReviews);
         } else {
             const err = await res.json();
@@ -158,7 +154,7 @@ const ProductDetail = () => {
       <div className="pd-container">
         <div className="pd-card">
           <div className="pd-image" style={{ padding: 0, overflow: 'hidden', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
-            <img src={`http://localhost:5000/uploads/${product.HinhAnh || product.image || product.hinh_anh}`} alt={product.TenSP} style={{ maxWidth: '100%', maxHeight: '350px', objectFit: 'contain' }} onError={(e) => { e.target.src = 'https://via.placeholder.com/350?text=No+Image' }} />
+            <img src={`${import.meta.env.VITE_API_URL}/uploads/${product.HinhAnh || product.image || product.hinh_anh}`} alt={product.TenSP} style={{ maxWidth: '100%', maxHeight: '350px', objectFit: 'contain' }} onError={(e) => { e.target.src = 'https://via.placeholder.com/350?text=No+Image' }} />
           </div>
 
           <div className="pd-info">
@@ -213,13 +209,11 @@ const ProductDetail = () => {
 
             <div className="pd-actions">
               <div className="qty-box">
-                {/* Khóa nút tăng giảm số lượng nếu hết hàng */}
                 <button onClick={decreaseQty} className="qty-btn" disabled={product.SoLuongTon === 0}>-</button>
                 <div className="qty-input">{quantity}</div>
                 <button onClick={increaseQty} className="qty-btn" disabled={product.SoLuongTon === 0}>+</button>
               </div>
               
-              {/* Khóa nút Thêm vào giỏ và Mua ngay, đồng thời làm mờ đi nếu hết hàng */}
               <button 
                   onClick={handleAddToCart} 
                   className="btn-add-cart" 
@@ -247,7 +241,8 @@ const ProductDetail = () => {
           </div>
           <div className="col-side">
             <div className="side-box">
-              <SectionHeader title="Thông margin phẩm" />
+              {/* Đã sửa từ "Thông margin phẩm" thành "Thông tin sản phẩm" */}
+              <SectionHeader title="Thông tin sản phẩm" />
               <div style={{ padding: '15px' }}>
                 <div className="side-row"><span style={{ width: '40%', fontWeight: 'bold' }}>Trọng lượng:</span><span>1 kg</span></div>
                 <div className="side-row"><span style={{ width: '40%', fontWeight: 'bold' }}>Khu vực:</span><span>Hà Nội, Hồ Chí Minh</span></div>
@@ -297,7 +292,6 @@ const ProductDetail = () => {
         <div className="related-box" style={{ marginTop: '30px' }}>
           <SectionHeader title="Các sản phẩm khác" />
           <div className="related-list">
-            
               {relatedProducts.map((item) => (
                 <Link to={`/product/${item.MaSP}`} key={item.MaSP} className="related-item" style={{ position: 'relative', textDecoration: 'none', display: 'block', color: 'inherit' }}>
                     {item.TuDongGiamGia && item.GiaGoc > item.DonGia && (
@@ -306,7 +300,7 @@ const ProductDetail = () => {
                         </div>
                     )}
                     <div className="related-icon" style={{ padding: 0, overflow: 'hidden', height: '120px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                        <img src={`http://localhost:5000/uploads/${item.HinhAnh || item.image || item.hinh_anh}`} alt={item.TenSP} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} onError={(e) => { e.target.src = 'https://via.placeholder.com/120?text=No+Image' }} />
+                        <img src={`${import.meta.env.VITE_API_URL}/uploads/${item.HinhAnh || item.image || item.hinh_anh}`} alt={item.TenSP} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} onError={(e) => { e.target.src = 'https://via.placeholder.com/120?text=No+Image' }} />
                     </div>
                     <h4 style={{ color: '#2e7d32', margin: '10px 0 5px 0' }}>{item.TenSP}</h4>
                     

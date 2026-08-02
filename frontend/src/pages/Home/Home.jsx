@@ -69,7 +69,7 @@ const Home = () => {
 
   const productSlides = products.slice(0, 3).map(p => ({
     key: `product-${p.MaSP}`,
-    image: `http://localhost:5000/uploads/${p.HinhAnh || p.image || p.hinh_anh}`,
+    image: `${import.meta.env.VITE_API_URL}/uploads/${p.HinhAnh || p.image || p.hinh_anh}`,
     title: p.TenSP,
     subtitle: `Chỉ từ ${Number(p.DonGia).toLocaleString()} đ — tươi mới mỗi ngày`,
     cta: 'Xem chi tiết',
@@ -204,7 +204,7 @@ const Home = () => {
 
                     <div className="product-icon" style={{ padding: 0, overflow: 'hidden', backgroundColor: 'transparent' }}>
                         <img 
-                            src={`http://localhost:5000/uploads/${product.HinhAnh || product.image || product.hinh_anh}`} 
+                            src={`${import.meta.env.VITE_API_URL}/uploads/${product.HinhAnh || product.image || product.hinh_anh}`} 
                             alt={product.TenSP} 
                             style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '8px 8px 0 0' }}
                             onError={(e) => { e.target.src = 'https://via.placeholder.com/150?text=No+Image' }}

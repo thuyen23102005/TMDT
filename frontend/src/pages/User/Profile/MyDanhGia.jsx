@@ -7,7 +7,7 @@ function MyDanhGia() {
 
     useEffect(() => {
         if (user) {
-            fetch(`http://localhost:5000/api/reviews/user/${user.maTK}`)
+            fetch(`${import.meta.env.VITE_API_URL}/api/reviews/user/${user.maTK}`)
                 .then(res => res.json())
                 .then(data => setMyReviews(data))
                 .catch(err => console.error(err));
@@ -25,7 +25,7 @@ function MyDanhGia() {
                     {myReviews.map(rv => (
                         <div key={rv.MaDG} className="d-flex mb-4 pb-3 border-bottom">
                             <img 
-                                src={`http://localhost:5000/uploads/${rv.HinhAnh}`} 
+                                src={`${import.meta.env.VITE_API_URL}/uploads/${rv.HinhAnh}`} 
                                 alt={rv.TenSP} 
                                 style={{ width: '80px', height: '80px', objectFit: 'contain', border: '1px solid #eee', borderRadius: '4px', marginRight: '15px' }}
                                 onError={(e) => { e.target.src = 'https://via.placeholder.com/80' }}

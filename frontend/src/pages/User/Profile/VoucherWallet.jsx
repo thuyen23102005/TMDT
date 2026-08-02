@@ -5,7 +5,7 @@ function VoucherWallet() {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        fetch('http://localhost:5000/api/vouchers/active')
+        fetch(`${import.meta.env.VITE_API_URL}/api/vouchers/active`)
             .then(res => res.json())
             .then(data => {
                 setVouchers(data);

@@ -177,7 +177,7 @@ const handleSave = async (data) => {
                                 
                                 <td>
                             <img
-                                src={`http://localhost:5000/uploads/${product.HinhAnh}`}
+                                src={`${import.meta.env.VITE_API_URL}/uploads/${product.HinhAnh}`}
                                 alt={product.TenSP}
                                 width="70"
                                 height="70"
