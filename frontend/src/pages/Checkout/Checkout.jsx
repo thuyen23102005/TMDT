@@ -48,7 +48,7 @@ const Checkout = () => {
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem('user'));
     if (storedUser) {
-        fetch(`http://localhost:5000/api/addresses/${storedUser.maTK}`)
+        fetch(`${import.meta.env.VITE_API_URL}/api/addresses/${storedUser.maTK}`)
             .then(res => res.json())
             .then(data => {
                 setAddresses(data);
@@ -76,7 +76,7 @@ const Checkout = () => {
     
     pollingRef.current = setInterval(async () => {
         try {
-            const res = await fetch(`http://localhost:5000/api/orders/${maDH}/payment-status`);
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/${maDH}/payment-status`);
             const data = await res.json();
             if (data.TrangThaiThanhToan === 'Đã thanh toán') {
                 clearInterval(pollingRef.current);
@@ -132,7 +132,7 @@ const Checkout = () => {
         };
 
         // Bước 1: luôn tạo đơn hàng trước
-        const orderRes = await fetch('http://localhost:5000/api/cart/checkout', {
+        const orderRes = await fetch(`${import.meta.env.VITE_API_URL}/api/cart/checkout`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -147,7 +147,7 @@ const Checkout = () => {
 
         // Bước 2a: MoMo
         if (paymentMethod === 'momo') {
-            const momoRes = await fetch('http://localhost:5000/api/momo/create', {
+            const momoRes = await fetch(`${import.meta.env.VITE_API_URL}/api/momo/create`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -175,7 +175,7 @@ const Checkout = () => {
 
         // Bước 2b: VietQR
         if (paymentMethod === 'vietqr') {
-            const qrRes = await fetch('http://localhost:5000/api/vietqr/create', {
+            const qrRes = await fetch(`${import.meta.env.VITE_API_URL}/api/vietqr/create`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -224,7 +224,7 @@ const Checkout = () => {
     const maDH = vietQrData?.maDH;
     if (maDH) {
         try {
-            await fetch(`http://localhost:5000/api/orders/${maDH}/status`, {
+            await fetch(`${import.meta.env.VITE_API_URL}/api/orders/${maDH}/status`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -314,7 +314,7 @@ const Checkout = () => {
           <div>
             <label className="radio-label">
               <input type="radio" name="payment" value="momo" checked={paymentMethod === 'momo'} onChange={(e) => setPaymentMethod(e.target.value)} />
-              <img src="http://localhost:5000/uploads/images.png" alt="MoMo" className="pay-icon" /> Ví MoMo
+              <img src={`${import.meta.env.VITE_API_URL}/uploads/images.png`} alt="MoMo" className="pay-icon" /> Ví MoMo
             </label>
             <label className="radio-label">
               <input type="radio" name="payment" value="vietqr" checked={paymentMethod === 'vietqr'} onChange={(e) => setPaymentMethod(e.target.value)} />

@@ -14,7 +14,7 @@ function Notification() {
     // Lấy dữ liệu từ API
     useEffect(() => {
         if (storedUser) {
-            fetch(`http://localhost:5000/api/notifications/${storedUser.maTK}`)
+            fetch(`${import.meta.env.VITE_API_URL}/api/notifications/${storedUser.maTK}`)
                 .then(res => res.json())
                 .then(data => {
                     setNotifications(data);
@@ -41,7 +41,7 @@ function Notification() {
     const handleMarkAllAsRead = async () => {
         if (!storedUser) return;
         try {
-            const res = await fetch(`http://localhost:5000/api/notifications/read-all/${storedUser.maTK}`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/notifications/read-all/${storedUser.maTK}`, {
                 method: 'PUT'
             });
             if (res.ok) {

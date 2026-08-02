@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import './TreasureChestWidget.css';
 
 const STORAGE_KEY_POS = 'treasure_widget_pos';
-const API_URL = 'http://localhost:5000/api/tasks';
+const API_URL = `${import.meta.env.VITE_API_URL}/api/tasks`;
 
 const TreasureChestWidget = () => {
   const navigate = useNavigate();

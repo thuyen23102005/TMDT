@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './UuDaiThanhVien.css';
 
-const API_URL = 'http://localhost:5000/api/vouchers';
+const API_URL = `${import.meta.env.VITE_API_URL}/api/vouchers`;
 
 function UuDaiThanhVien() {
     const [vouchers, setVouchers] = useState([]);

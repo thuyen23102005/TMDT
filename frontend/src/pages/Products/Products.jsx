@@ -239,7 +239,7 @@ const Products = () => {
                         <div className="product-card-image">
                             {product.HinhAnh ? (
                                 <img
-                                    src={`http://localhost:5000/uploads/${product.HinhAnh}`}
+                                    src={`${import.meta.env.VITE_API_URL}/uploads/${product.HinhAnh}`}
                                     alt={product.TenSP}
                                     className="product-card-img"
                                     onError={(e) => { e.target.src = 'https://via.placeholder.com/150?text=No+Image'; }}
@@ -271,12 +271,11 @@ const Products = () => {
               </div>
             )}
           </main>
-          {/* Widget luôn hiển thị ở cuối trang */}
-      <TreasureChestWidget />
         </div>
       )}
 
-      
+      {/* Widget luôn hiển thị ở cuối trang */}
+      <TreasureChestWidget />   
     </div>
   );
 };

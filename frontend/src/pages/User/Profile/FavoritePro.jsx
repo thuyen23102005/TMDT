@@ -20,7 +20,7 @@ function FavoritePro() {
             return;
         }
 
-        fetch('http://localhost:5000/api/products/all')
+        fetch(`${import.meta.env.VITE_API_URL}/api/products/all`)
             .then(res => res.json())
             .then(data => {
                 const favProducts = data.filter(p => favIds.includes(p.MaSP));
@@ -86,7 +86,7 @@ function FavoritePro() {
                                 </span>
                                 
                                 <img 
-                                    src={`http://localhost:5000/uploads/${item.HinhAnh || item.image || item.hinh_anh}`} 
+                                    src={`${import.meta.env.VITE_API_URL}/uploads/${item.HinhAnh || item.image || item.hinh_anh}`} 
                                     className="card-img-top p-3" 
                                     alt={item.TenSP} 
                                     style={{ height: '200px', objectFit: 'contain' }}

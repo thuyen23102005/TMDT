@@ -44,7 +44,7 @@ function Login() {
         try {
             setLoading(true);
 
-            const res = await fetch("http://localhost:5000/api/auth/login", {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(formData),
@@ -68,7 +68,7 @@ function Login() {
             // 2. ĐỒNG BỘ GIỎ HÀNG (Chạy ngầm)
             const localCart = JSON.parse(localStorage.getItem('cart') || '[]');
             if (localCart.length > 0) {
-                fetch("http://localhost:5000/api/cart/merge", {
+                fetch(`${import.meta.env.VITE_API_URL}/api/cart/merge`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ 

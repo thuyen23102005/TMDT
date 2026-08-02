@@ -35,7 +35,7 @@ function Header() {
     }, [user]);
 
     const fetchUnreadCount = (maTK) => {
-        fetch(`http://localhost:5000/api/notifications/${maTK}`)
+        fetch(`${import.meta.env.VITE_API_URL}/api/notifications/${maTK}`)
             .then(res => res.json())
             .then(data => {
                 if (Array.isArray(data)) {

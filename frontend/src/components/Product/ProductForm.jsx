@@ -31,7 +31,7 @@ function ProductForm({
             setSelectedFile(null);
 
             setPreview(
-                `http://localhost:5000/uploads/${editingProduct.HinhAnh}`
+                `${import.meta.env.VITE_API_URL}/uploads/${editingProduct.HinhAnh}`
             );
 
         } else {
@@ -446,7 +446,7 @@ const resetForm = () => {
                             </p>
 
                             <img
-                                src={`http://localhost:5000/uploads/${formData.HinhAnh}`}
+                                src={`${import.meta.env.VITE_API_URL}/uploads/${formData.HinhAnh}`}
                                 width="120"
                                 style={{ borderRadius: 8 }}
                             />

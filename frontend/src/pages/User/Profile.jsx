@@ -25,7 +25,7 @@ function Profile() {
     const fetchOrders = () => {
         const storedUser = JSON.parse(localStorage.getItem("user"));
         if (storedUser) {
-            fetch(`http://localhost:5000/api/orders/user/${storedUser.maTK}`)
+            fetch(`${import.meta.env.VITE_API_URL}/api/orders/user/${storedUser.maTK}`)
                 .then(res => res.json())
                 .then(data => setOrders(data))
                 .catch(err => console.log(err));

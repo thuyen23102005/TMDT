@@ -25,9 +25,9 @@ const ProductDetail = () => {
   useEffect(() => {
     setIsLoading(true);
     Promise.all([
-      fetch(`http://localhost:5000/api/products/${id}`).then(res => res.json()),
-      fetch(`http://localhost:5000/api/products/all`).then(res => res.json()),
-      fetch(`http://localhost:5000/api/reviews/product/${id}`).then(res => res.json())
+      fetch(`${import.meta.env.VITE_API_URL}/api/products/${id}`).then(res => res.json()),
+      fetch(`${import.meta.env.VITE_API_URL}/api/products/all`).then(res => res.json()),
+      fetch(`${import.meta.env.VITE_API_URL}/api/reviews/product/${id}`).then(res => res.json())
     ])
     .then(([productData, allProductsData, reviewsData]) => {
       setProduct(productData);
@@ -43,7 +43,7 @@ const ProductDetail = () => {
     .catch(err => { console.error(err); setIsLoading(false); });
 
     if (storedUser) {
-        fetch(`http://localhost:5000/api/reviews/check/${storedUser.maTK}/${id}`)
+        fetch(`${import.meta.env.VITE_API_URL}/api/reviews/check/${storedUser.maTK}/${id}`)
             .then(res => res.json())
             .then(data => setCanReview(data.canReview))
             .catch(err => console.error(err));
@@ -56,7 +56,7 @@ const ProductDetail = () => {
   const handleAddToCart = async () => {
     if (storedUser) {
       try {
-        const response = await fetch('http://localhost:5000/api/cart/add', {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/cart/add`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -116,7 +116,7 @@ const ProductDetail = () => {
   const submitReview = async () => {
     if (!reviewText.trim()) return alert("Vui lòng nhập nội dung đánh giá!");
     try {
-        const res = await fetch('http://localhost:5000/api/reviews', {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/reviews`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ maTK: storedUser.maTK, maSP: id, soSao: rating, noiDung: reviewText })
@@ -125,7 +125,7 @@ const ProductDetail = () => {
             alert("Cảm ơn bạn đã đánh giá sản phẩm!");
             setReviewText('');
             setRating(5);
-            const newReviews = await fetch(`http://localhost:5000/api/reviews/product/${id}`).then(r => r.json());
+            const newReviews = await fetch(`${import.meta.env.VITE_API_URL}/api/reviews/product/${id}`).then(r => r.json());
             setReviews(newReviews);
         } else {
             const err = await res.json();
@@ -154,7 +154,7 @@ const ProductDetail = () => {
       <div className="pd-container">
         <div className="pd-card">
           <div className="pd-image" style={{ padding: 0, overflow: 'hidden', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
-            <img src={`http://localhost:5000/uploads/${product.HinhAnh || product.image || product.hinh_anh}`} alt={product.TenSP} style={{ maxWidth: '100%', maxHeight: '350px', objectFit: 'contain' }} onError={(e) => { e.target.src = 'https://via.placeholder.com/350?text=No+Image' }} />
+            <img src={`${import.meta.env.VITE_API_URL}/uploads/${product.HinhAnh || product.image || product.hinh_anh}`} alt={product.TenSP} style={{ maxWidth: '100%', maxHeight: '350px', objectFit: 'contain' }} onError={(e) => { e.target.src = 'https://via.placeholder.com/350?text=No+Image' }} />
           </div>
 
           <div className="pd-info">
@@ -300,7 +300,7 @@ const ProductDetail = () => {
                         </div>
                     )}
                     <div className="related-icon" style={{ padding: 0, overflow: 'hidden', height: '120px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                        <img src={`http://localhost:5000/uploads/${item.HinhAnh || item.image || item.hinh_anh}`} alt={item.TenSP} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} onError={(e) => { e.target.src = 'https://via.placeholder.com/120?text=No+Image' }} />
+                        <img src={`${import.meta.env.VITE_API_URL}/uploads/${item.HinhAnh || item.image || item.hinh_anh}`} alt={item.TenSP} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} onError={(e) => { e.target.src = 'https://via.placeholder.com/120?text=No+Image' }} />
                     </div>
                     <h4 style={{ color: '#2e7d32', margin: '10px 0 5px 0' }}>{item.TenSP}</h4>
                     

@@ -57,7 +57,7 @@ function HoSoCaNhan() {
         try {
             const token = localStorage.getItem('token');
 
-            const res = await fetch(`http://localhost:5000/api/auth/update-profile`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/update-profile`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
@@ -113,7 +113,7 @@ function HoSoCaNhan() {
         try {
             const token = localStorage.getItem('token');
 
-            const res = await fetch(`http://localhost:5000/api/auth/verify-password`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/verify-password`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

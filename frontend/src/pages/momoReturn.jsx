@@ -12,7 +12,7 @@ const MomoReturn = () => {
       return;
     }
 
-    fetch('http://localhost:5000/api/momo/check-status', {
+    fetch(`${import.meta.env.VITE_API_URL}/api/momo/check-status`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(stored)
