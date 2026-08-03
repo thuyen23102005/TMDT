@@ -282,7 +282,7 @@ const searchProducts = async (keyword, limit = 5) => {
         FROM SanPham sp
         INNER JOIN DanhMuc dm
             ON sp.MaDM = dm.MaDM
-        WHERE sp.TrangThai = 1 AND sp.SoLuongTon > 0
+        WHERE sp.TrangThai = 1 
           AND (${conditions})
         ORDER BY sp.MaSP DESC
     `);
