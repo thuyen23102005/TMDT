@@ -275,12 +275,59 @@ const deleteProduct = async (req, res) => {
     }
 
 };
+const getAllPrices = async (req, res) => {
+    try {
 
+        const rawProducts = await productModel.getAllPrices();
+
+        const products = rawProducts.map(product => ({
+            ...product,
+            DonGia: calculatePrice(product)
+        }));
+
+        res.json(products);
+
+    } catch (err) {
+
+        console.log(err);
+
+        res.status(500).json({
+            message: "Lỗi server"
+        });
+
+    }
+};
+const updatePrice=async(req,res)=>{
+
+    try{
+
+        await productModel.updatePrice(
+            req.params.id,
+            req.body
+        );
+
+        res.json({
+            message:"Cập nhật giá thành công"
+        });
+
+    }catch(err){
+
+        console.log(err);
+
+        res.status(500).json({
+            message:"Lỗi server"
+        });
+
+    }
+
+}
 module.exports = {
     getAllProducts,
     getAllProductsClient,
     getProductById,
     createProduct,
     updateProduct,
-    deleteProduct
+    deleteProduct,
+    getAllPrices,
+    updatePrice
 };

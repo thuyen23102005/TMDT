@@ -7,14 +7,14 @@ import PromotionSection from "./PromotionSection";
 
 
 const categories = [
-  'Rau Củ Quả',
-  'Trái Cây Tươi',
-  'Nông Sản Khô',
-  'Thực Phẩm Chế Biến',
-  'Đặc Sản Vùng Miền',
-  'Hạt Giống',
-  'Sản Phẩm Hữu Cơ',
-  'Combo Tiết Kiệm'
+  { name: 'Rau Củ Quả', icon: '🥦' },
+  { name: 'Trái Cây Tươi', icon: '🍇' },
+  { name: 'Nông Sản Khô', icon: '🌾' },
+  { name: 'Thực Phẩm Chế Biến', icon: '🥫' },
+  { name: 'Đặc Sản Vùng Miền', icon: '🎋' },
+  { name: 'Hạt Giống', icon: '🌱' },
+  { name: 'Sản Phẩm Hữu Cơ', icon: '🍃' },
+  { name: 'Combo Tiết Kiệm', icon: '🎁' },
 ];
 
 const fallbackSlides = [
@@ -70,7 +70,7 @@ const Home = () => {
   const productSlides = products.slice(0, 3).map(p => ({
     key: `product-${p.MaSP}`,
     image: `${import.meta.env.VITE_API_URL}/uploads/${p.HinhAnh || p.image || p.hinh_anh}`,
-    title: p.TenSP,
+    title: p.TenSP.normalize("NFC"),
     subtitle: `Chỉ từ ${Number(p.DonGia).toLocaleString()} đ — tươi mới mỗi ngày`,
     cta: 'Xem chi tiết',
     to: `/product/${p.MaSP}`
@@ -105,11 +105,16 @@ const Home = () => {
       {/* KHU VỰC BANNER: SIDEBAR DANH MỤC + CAROUSEL */}
       <div className="hc-layout">
 
-        <div className="hc-sidebar">
+        <div className="hc-sidebar hc-sidebar-pro">
+          <div className="hc-sidebar-heading">
+            <span className="hc-sidebar-heading-icon">☰</span>
+            Danh mục sản phẩm
+          </div>
           {categories.map((cat) => (
-            <Link key={cat} to="/products" className="hc-sidebar-item">
-              <span>{cat}</span>
-              <span>›</span>
+            <Link key={cat.name} to="/products" className="hc-sidebar-item hc-sidebar-item-pro">
+              <span className="hc-sidebar-item-icon">{cat.icon}</span>
+              <span className="hc-sidebar-item-text">{cat.name}</span>
+              <span className="hc-sidebar-item-arrow">›</span>
             </Link>
           ))}
         </div>
@@ -245,6 +250,80 @@ const Home = () => {
         )}
       </section>
       <TreasureChestWidget />
+
+      <style>{`
+        .hc-sidebar-pro {
+            background: #fff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
+            border: 1px solid #eef1ee;
+        }
+
+        .hc-sidebar-heading {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 16px;
+            background: linear-gradient(135deg, #2e7d32, #1b5e20);
+            color: #fff;
+            font-weight: 700;
+            font-size: 14px;
+            letter-spacing: 0.2px;
+        }
+
+        .hc-sidebar-heading-icon {
+            font-size: 15px;
+        }
+
+        .hc-sidebar-item-pro {
+            display: flex !important;
+            align-items: center;
+            gap: 10px;
+            padding: 11px 16px;
+            font-size: 13.5px;
+            color: #3a3a3a;
+            text-decoration: none;
+            border-bottom: 1px solid #f2f4f2;
+            transition: background 0.15s ease, padding-left 0.15s ease, color 0.15s ease;
+            position: relative;
+        }
+
+        .hc-sidebar-item-pro:last-child {
+            border-bottom: none;
+        }
+
+        .hc-sidebar-item-pro:hover {
+            background: #f1f8f1;
+            padding-left: 20px;
+            color: #2e7d32;
+        }
+
+        .hc-sidebar-item-icon {
+            font-size: 16px;
+            flex-shrink: 0;
+            width: 22px;
+            text-align: center;
+        }
+
+        .hc-sidebar-item-text {
+            flex: 1;
+            font-weight: 500;
+        }
+
+        .hc-sidebar-item-arrow {
+            opacity: 0;
+            transform: translateX(-4px);
+            transition: opacity 0.15s ease, transform 0.15s ease;
+            color: #2e7d32;
+            font-weight: 700;
+        }
+
+        .hc-sidebar-item-pro:hover .hc-sidebar-item-arrow {
+            opacity: 1;
+            transform: translateX(0);
+        }
+      `}</style>
     </div>
   );
 };
