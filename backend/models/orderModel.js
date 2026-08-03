@@ -53,6 +53,8 @@ const getOrderDetail = async (id) => {
         .input("MaDH", id)
         .query(`
             SELECT
+                sp.MaSP,        
+                sp.HinhAnh,   
                 sp.TenSP,
                 ct.SoLuong,
                 ct.DonGia,
