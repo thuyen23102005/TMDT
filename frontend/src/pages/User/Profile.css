@@ -1,0 +1,157 @@
+/* ==========================================
+   LAYOUT CƠ BẢN VÀ CỐ ĐỊNH FOOTER
+   ========================================== */
+.profile-container {
+  display: flex;
+  flex: 1;
+  min-height: calc(100vh - 160px);
+  padding-top: 20px;
+  padding-bottom: 40px;
+}
+
+.profile-content-col {
+  min-height: 550px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Đảm bảo thẻ bọc Outlet dãn rộng đủ nhưng không đè vào Widget cố định */
+.profile-outlet-wrapper {
+  width: 100%;
+  flex: 1;
+}
+
+/* ==========================================
+   CARD TÀI KHOẢN VÀ AVATAR
+   ========================================== */
+.profile-user-card {
+  background: linear-gradient(135deg, #2e7d32, #66bb6a);
+  color: #fff;
+}
+
+.avatar-rank-frame {
+  width: 96px;
+  height: 96px;
+  padding: 4px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+}
+
+.avatar-inner {
+  color: #2e7d32;
+  font-size: 32px;
+  cursor: pointer;
+  border: 2px solid #fff;
+  background-position: center;
+  background-size: cover;
+}
+
+.avatar-overlay {
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+}
+
+.rank-badge {
+  bottom: -2px;
+  right: -12px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: bold;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
+  z-index: 2;
+}
+
+/* ==========================================
+   SIDEBAR MENU DẠNG LINK
+   ========================================== */
+.profile-menu-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  text-decoration: none;
+  color: #212529;
+  font-weight: 400;
+  background-color: transparent;
+  transition: all 0.2s ease-in-out;
+}
+
+.profile-menu-link.active {
+  color: #2e7d32;
+  font-weight: 700;
+  background-color: rgba(46, 125, 50, 0.08);
+}
+
+/* ==========================================
+   BANNER XIN CHÀO & TÍCH ĐIỂM
+   ========================================== */
+.profile-greeting-banner {
+  background: #2e7d32;
+  color: #fff;
+  width: 100%;
+}
+
+.rank-icon-box {
+  width: 60px;
+  height: 60px;
+  background-color: rgba(0, 0, 0, 0.03);
+  font-size: 32px;
+}
+
+.rank-needed-badge {
+  color: #ff9800;
+  font-weight: bold;
+}
+
+.rank-progress-bar {
+  height: 14px;
+  border-radius: 20px;
+  background-color: #f0f0f0;
+}
+
+.rank-progress-fill {
+  border-radius: 20px;
+  transition: width 1s ease-in-out;
+}
+
+.btn-toggle-benefits {
+  background-color: #fff;
+  border: 1px solid #e0e0e0;
+  color: #2e7d32;
+  border-radius: 20px;
+}
+
+.btn-toggle-benefits:hover {
+  background-color: #f8f9fa;
+}
+
+/* ==========================================
+   TAB ƯU ĐÃI THÀNH VIÊN
+   ========================================== */
+.rank-benefit-title {
+  color: #e65100;
+}
+
+.rank-tab-item {
+  flex: 1;
+  text-align: center;
+  padding: 10px 5px;
+  cursor: pointer;
+  font-weight: 500;
+  color: #888;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s;
+}
+
+.rank-tab-item.active {
+  font-weight: bold;
+  color: #e65100;
+  border-bottom-color: #e65100;
+}
+
+.benefit-icon {
+  font-size: 28px;
+}

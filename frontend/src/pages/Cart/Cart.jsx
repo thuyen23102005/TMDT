@@ -36,28 +36,25 @@ const Cart = () => {
     }
   }, []);
 
-  // ĐÃ SỬA HÀM NÀY: Gọi API lưu số lượng mới xuống DB
   const updateQuantity = async (id, delta) => {
-    // 1. Tìm sản phẩm hiện tại để kiểm tra
     const item = cartItems.find(i => i.id === id);
     if (!item) return;
 
-    // 2. Tính số lượng mới (không cho phép giảm xuống dưới 1)
     const newQuantity = Math.max(1, Number(item.quantity) + delta);
     
-    // Nếu đang là 1 mà bấm dấu trừ thì bỏ qua không làm gì cả
     if (newQuantity === item.quantity) return;
 
-    // 3. Cập nhật UI ngay lập tức cho mượt
     setCartItems(prev => {
       const updatedCart = prev.map(i => 
         i.id === id ? { ...i, quantity: newQuantity } : i
       );
-      if (!storedUser) localStorage.setItem('cart', JSON.stringify(updatedCart));
+      if (!storedUser) {
+          localStorage.setItem('cart', JSON.stringify(updatedCart));
+          window.dispatchEvent(new Event('cartUpdated')); // Phát tín hiệu cập nhật
+      }
       return updatedCart;
     });
 
-    // 4. Gọi API cập nhật xuống Database
     if (storedUser) {
       try {
         await fetch(`${import.meta.env.VITE_API_URL}/api/cart/add`, {
@@ -66,9 +63,10 @@ const Cart = () => {
           body: JSON.stringify({
             maKH: storedUser.maTK,
             maSP: id,
-            soLuong: delta // Truyền thẳng +1 hoặc -1 để DB tự động cộng/trừ tương ứng
+            soLuong: delta 
           })
         });
+        window.dispatchEvent(new Event('cartUpdated')); // Phát tín hiệu cập nhật
       } catch (error) {
         console.error("Lỗi cập nhật số lượng trên Server:", error);
       }
@@ -79,7 +77,11 @@ const Cart = () => {
     if(window.confirm("Bạn có chắc muốn bỏ sản phẩm này?")) {
       setCartItems(prev => {
         const updatedCart = prev.filter(item => item.id !== id);
-        if (!storedUser) localStorage.setItem('cart', JSON.stringify(updatedCart));
+        if (!storedUser) {
+            localStorage.setItem('cart', JSON.stringify(updatedCart));
+            // TÍN HIỆU CẬP NHẬT HEADER KHI CHƯA ĐĂNG NHẬP
+            window.dispatchEvent(new Event('cartUpdated'));
+        }
         return updatedCart;
       });
 
@@ -88,6 +90,8 @@ const Cart = () => {
           await fetch(`${import.meta.env.VITE_API_URL}/api/cart/remove/${storedUser.maTK}/${id}`, {
             method: 'DELETE'
           });
+          // TÍN HIỆU CẬP NHẬT HEADER KHI ĐÃ ĐĂNG NHẬP
+          window.dispatchEvent(new Event('cartUpdated'));
         } catch (error) {
           console.error("Lỗi xóa sản phẩm trên server:", error);
         }
@@ -106,7 +110,6 @@ const Cart = () => {
         const res = await fetch(`${import.meta.env.VITE_API_URL}/api/vouchers/active`);
         const activeVouchers = await res.json();
         
-        // Tìm mã giảm giá trùng khớp (không phân biệt hoa thường)
         const voucher = activeVouchers.find(v => v.Code.toUpperCase() === promoCode.trim().toUpperCase());
         
         if (!voucher) {
@@ -145,7 +148,6 @@ const Cart = () => {
   };
 
   const shippingFee = shippingType === 'standard' ? 22000 : 0;
-  // Tính tổng tiền cuối cùng (không cho phép âm)
   const totalAmount = Math.max(0, subTotal + shippingFee - discount);
 
   if (isLoading) return <h2 style={{ textAlign: 'center', marginTop: '50px', color: '#4caf50' }}>Đang tải...</h2>;

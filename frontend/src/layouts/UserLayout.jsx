@@ -4,13 +4,15 @@ import Footer from "../components/Footer";
 
 function UserLayout() {
     return (
-        <div className="d-flex flex-column min-vh-100">
+        <div className="d-flex flex-column min-vh-100 bg-light">
             <Header />
 
             <main
                 style={{
                     paddingTop: "80px",
-                    flex: 1
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column"
                 }}
             >
                 <Outlet />

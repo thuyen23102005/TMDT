@@ -5,6 +5,8 @@ function Header() {
     const [keyword, setKeyword] = useState("");
     const [user, setUser] = useState(null);
     const [unreadCount, setUnreadCount] = useState(0); 
+    const [cartCount, setCartCount] = useState(0); // STATE MỚI CHO GIỎ HÀNG
+
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -13,8 +15,10 @@ function Header() {
             const parsedUser = JSON.parse(storedUser);
             setUser(parsedUser);
             fetchUnreadCount(parsedUser.maTK);
+            fetchCartCount(parsedUser.maTK); // Gọi hàm đếm giỏ hàng khi load
         }
 
+        // Lắng nghe cập nhật thông báo
         const handleNotificationUpdate = () => {
             const currentUser = JSON.parse(localStorage.getItem("user"));
             if (currentUser) {
@@ -22,14 +26,29 @@ function Header() {
             }
         };
 
+        // Lắng nghe cập nhật giỏ hàng (khi thêm món mới)
+        const handleCartUpdate = () => {
+            const currentUser = JSON.parse(localStorage.getItem("user"));
+            if (currentUser) {
+                fetchCartCount(currentUser.maTK);
+            }
+        };
+
         window.addEventListener('updateNotificationCount', handleNotificationUpdate);
-        return () => window.removeEventListener('updateNotificationCount', handleNotificationUpdate);
+        window.addEventListener('cartUpdated', handleCartUpdate); // Lắng nghe sự kiện giỏ hàng
+
+        return () => {
+            window.removeEventListener('updateNotificationCount', handleNotificationUpdate);
+            window.removeEventListener('cartUpdated', handleCartUpdate);
+        };
     }, []);
 
     useEffect(() => {
         if (!user) return;
+        // Tự động làm mới dữ liệu mỗi 30s
         const timer = setInterval(() => {
             fetchUnreadCount(user.maTK);
+            fetchCartCount(user.maTK);
         }, 30000); 
         return () => clearInterval(timer);
     }, [user]);
@@ -46,6 +65,21 @@ function Header() {
             .catch(err => console.error("Lỗi đếm thông báo Header:", err));
     };
 
+    // HÀM LẤY SỐ LƯỢNG GIỎ HÀNG TỪ API
+    const fetchCartCount = (maTK) => {
+        // Thay đổi endpoint nếu API giỏ hàng của bạn có URL khác nhé
+        fetch(`${import.meta.env.VITE_API_URL}/api/cart/${maTK}`)
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) {
+                    setCartCount(data.length); // Đếm số mặt hàng trong giỏ
+                } else if (data && Array.isArray(data.items)) {
+                    setCartCount(data.items.length);
+                }
+            })
+            .catch(err => console.error("Lỗi đếm giỏ hàng Header:", err));
+    };
+
     const handleSearch = (e) => {
         e.preventDefault();
         if (keyword.trim()) {
@@ -58,6 +92,7 @@ function Header() {
         localStorage.removeItem("user");
         setUser(null);
         setUnreadCount(0); 
+        setCartCount(0); // Reset giỏ hàng
         navigate("/");
     };
 
@@ -98,6 +133,7 @@ function Header() {
                     Sản phẩm
                 </Link>
 
+                {/* --- NÚT GIỎ HÀNG ĐÃ ĐƯỢC THÊM BADGE --- */}
                 <Link
                     to="/cart"
                     className="text-decoration-none fw-medium px-3 py-2"
@@ -107,14 +143,40 @@ function Header() {
                         borderRadius: "20px",
                         fontSize: "14px",
                         boxShadow: "0 2px 6px rgba(245, 124, 0, 0.3)",
+                        transition: "transform 0.2s",
+                        position: "relative", // Bắt buộc phải có để định vị cục chấm đỏ
+                        display: "inline-block"
                     }}
+                    onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-2px)"}
+                    onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}
                 >
                     🛒 Giỏ hàng
+                    
+                    {/* CHẤM ĐỎ GIỎ HÀNG */}
+                    {cartCount > 0 && (
+                        <span 
+                            style={{ 
+                                position: "absolute",
+                                top: "-5px", 
+                                right: "-5px", 
+                                backgroundColor: "#d32f2f",
+                                color: "white",
+                                fontSize: "11px", 
+                                fontWeight: "bold",
+                                padding: "3px 6px",
+                                borderRadius: "50%",
+                                border: "2px solid #fff",
+                                lineHeight: "1"
+                            }}
+                        >
+                            {cartCount > 99 ? '99+' : cartCount}
+                        </span>
+                    )}
                 </Link>
 
                 {user ? (
                     <>
-                        {/* CHUÔNG ĐƯỢC ÉP CSS TRONG SUỐT HOÀN TOÀN */}
+                        {/* CHUÔNG THÔNG BÁO */}
                         <Link 
                             to="/profile/thong-bao" 
                             title="Thông báo"
@@ -126,7 +188,7 @@ function Header() {
                                 width: "40px", 
                                 height: "40px", 
                                 textDecoration: "none",
-                                backgroundColor: "transparent", /* ÉP BUỘC TRONG SUỐT */
+                                backgroundColor: "transparent",
                                 background: "none",
                                 border: "none",
                                 outline: "none",
@@ -135,7 +197,6 @@ function Header() {
                         >
                             <span style={{ fontSize: "22px", background: "transparent", lineHeight: "1" }}>🔔</span>
                             
-                            {/* CHẤM ĐỎ */}
                             {unreadCount > 0 && (
                                 <span 
                                     style={{ 
