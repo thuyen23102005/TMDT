@@ -2,8 +2,8 @@ const { connectDB, sql } = require("../config/db");
 const notificationModel = require("../models/notificationModel");
 const redisClient = require("../config/redis");
 const calculatePrice = require("../utils/priceCalculator");
+const { sendEmail } = require("../utils/emailService");
 
-// 1. Lấy chi tiết giỏ hàng theo Mã Tài Khoản
 const getCartByCustomerId = async (req, res) => {
   try {
     const maTK = req.params.maKH; 
@@ -16,7 +16,6 @@ const getCartByCustomerId = async (req, res) => {
     if (khResult.recordset.length === 0) return res.json([]); 
     const realMaKH = khResult.recordset[0].MaKH;
     
-    // 1. Lấy mảng sản phẩm từ Redis
     const redisKey = `cart:${realMaKH}`;
     const cartData = await redisClient.get(redisKey);
     
@@ -24,7 +23,6 @@ const getCartByCustomerId = async (req, res) => {
     const cart = JSON.parse(cartData);
     if (cart.length === 0) return res.json([]);
 
-    // 2. Lấy chi tiết sản phẩm từ SQL dựa trên danh sách ID trong Redis
     const productIds = cart.map(item => item.maSP).join(',');
     
     const result = await pool.request().query(`
@@ -40,9 +38,7 @@ const getCartByCustomerId = async (req, res) => {
         WHERE MaSP IN (${productIds})
     `);
 
-    // 3. Map số lượng từ Redis sang kết quả SQL và tính lại giá
     const cartItems = result.recordset.map(product => {
-        // Tìm số lượng tương ứng trong mảng Redis
         const redisItem = cart.find(item => item.maSP === product.id);
         const finalPrice = calculatePrice(product);
 
@@ -62,7 +58,6 @@ const getCartByCustomerId = async (req, res) => {
   }
 };
 
-// 2. Chốt đơn hàng
 const checkoutCart = async (req, res) => {
   try {
     const {
@@ -79,7 +74,7 @@ const checkoutCart = async (req, res) => {
     const ttDH = 'Chờ xác nhận';
     const ttTT = trangThaiThanhToan || 'Chưa thanh toán';
 
-    // ===== NHÁNH 1: DÀNH CHO KHÁCH VÃNG LAI =====
+    // ===== NHÁNH 1: KHÁCH VÃNG LAI =====
     if (isGuest) {
         if (!guestInfo || !guestInfo.hoTen || !guestInfo.soDienThoai || !guestInfo.diaChi) {
             return res.status(400).json({ message: "Vui lòng điền đủ thông tin giao hàng" });
@@ -99,7 +94,6 @@ const checkoutCart = async (req, res) => {
             `(@MaDH, ${Number(item.id || item.maSP)}, ${Number(item.quantity)}, ${Number(item.price)}, ${Number(item.quantity) * Number(item.price)})`
         ).join(', ');
 
-        // Tính lại phí vận chuyển thực tế để gỡ code cứng 30k
         let calculatedSubTotal = cartItems.reduce((sum, item) => sum + (Number(item.quantity) * Number(item.price)), 0);
         let actualShippingFee = tongTien - calculatedSubTotal;
 
@@ -129,10 +123,36 @@ const checkoutCart = async (req, res) => {
                 BEGIN CATCH ROLLBACK TRAN; THROW; END CATCH
             `);
 
-        return res.json({ message: "Chốt đơn thành công!", maDH: resultGuest.recordset[0].maDH });
+        const createdMaDH = resultGuest.recordset[0].maDH;
+
+        // EMAIL KHÁCH VÃNG LAI CÓ ĐÍNH KÈM NÚT XEM CHI TIẾT
+        if (guestInfo.email) {
+            const orderTrackingLink = `http://localhost:5173/order-detail/${createdMaDH}`;
+            const htmlContent = `
+                <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f4f9f5; border-radius: 10px; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #2e7d32; text-align: center;">Cảm ơn bạn đã đặt hàng tại Nông Sản Shop! 🌱</h2>
+                    <p>Xin chào <strong>${guestInfo.hoTen}</strong>,</p>
+                    <p>Đơn hàng <strong>#${createdMaDH}</strong> của bạn đã được khởi tạo thành công và đang chờ cửa hàng xác nhận.</p>
+                    <p style="font-size: 16px; font-weight: bold; color: #d32f2f;">Tổng tiền thanh toán: ${Number(tongTien).toLocaleString()} đ</p>
+                    <p>Địa chỉ giao hàng: ${guestInfo.diaChi}</p>
+
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="${orderTrackingLink}" target="_blank" style="background-color: #2e7d32; color: #ffffff; padding: 12px 25px; text-decoration: none; border-radius: 25px; font-weight: bold; font-size: 15px; display: inline-block;">
+                            🔍 Xem chi tiết đơn hàng #${createdMaDH}
+                        </a>
+                    </div>
+
+                    <hr style="border: none; border-top: 1px solid #ccc; margin: 20px 0;" />
+                    <p style="font-size: 13px; color: #777; text-align: center;">Cửa hàng sẽ sớm liên hệ xác nhận và giao hàng cho bạn!</p>
+                </div>
+            `;
+            sendEmail(guestInfo.email, `[Nông Sản Shop] Xác nhận đơn hàng #${createdMaDH} thành công`, htmlContent);
+        }
+
+        return res.json({ message: "Chốt đơn thành công!", maDH: createdMaDH });
     } 
 
-    // ===== NHÁNH 2: LOGIC USER CÓ TÀI KHOẢN (SỬ DỤNG REDIS) =====
+    // ===== NHÁNH 2: LOGIC USER CÓ TÀI KHOẢN =====
     if (!tongTien || tongTien <= 0) return res.status(400).json({ message: "Tổng tiền không hợp lệ" });
 
     const khResult = await pool.request()
@@ -160,7 +180,6 @@ const checkoutCart = async (req, res) => {
         finalMaDC = maDC;
     }
 
-    // 1. TỰ ĐỘNG LẤY GIỎ HÀNG TỪ REDIS VÀ TÍNH TOÁN LẠI GIÁ
     const redisKey = `cart:${realMaKH}`;
     const cartData = await redisClient.get(redisKey);
     if (!cartData) return res.status(400).json({ message: "Giỏ hàng đang trống" });
@@ -168,7 +187,6 @@ const checkoutCart = async (req, res) => {
     const cart = JSON.parse(cartData);
     if (cart.length === 0) return res.status(400).json({ message: "Giỏ hàng đang trống" });
 
-    // Lấy chi tiết thông tin SP từ Database để đảm bảo an toàn
     const productIds = cart.map(item => item.maSP).join(',');
     const productsQuery = await pool.request().query(`
         SELECT MaSP, TenSP, DonGia, GiaGoc, GiamToiDa, TuDongGiamGia, SoLuongTon
@@ -179,7 +197,6 @@ const checkoutCart = async (req, res) => {
     const calculatedItems = [];
     
     for (const item of cart) {
-        // Tìm thông tin SP tương ứng
         const dbProduct = productsQuery.recordset.find(p => p.MaSP === item.maSP);
         if (!dbProduct) return res.status(400).json({ message: "Có sản phẩm không tồn tại trong hệ thống" });
 
@@ -217,31 +234,65 @@ const checkoutCart = async (req, res) => {
             
             INSERT INTO ChiTietDonHang (MaDH, MaSP, SoLuong, DonGia, ThanhTien) VALUES ${valuesCTDH};
             
-            -- ĐÃ XÓA LỆNH DELETE GIOHANG TỪ SQL Ở ĐÂY VÌ ĐANG DÙNG REDIS
-            
             COMMIT TRAN;
             SELECT @MaDH AS maDH;
         END TRY
         BEGIN CATCH ROLLBACK TRAN; THROW; END CATCH
       `);
 
-    // Xóa giỏ hàng trong Redis sau khi chốt đơn xong
+    const createdMaDH = resultUser.recordset[0].maDH;
+
     await redisClient.del(redisKey);
 
-    return res.json({ message: "Chốt đơn thành công!", maDH: resultUser.recordset[0].maDH });
+    // EMAIL USER CÓ ĐÍNH KÈM NÚT XEM CHI TIẾT
+    try {
+        const userRes = await pool.request()
+            .input("MaTK", sql.Int, maTK)
+            .query(`
+                SELECT tk.Email, kh.HoTen 
+                FROM TaiKhoan tk
+                JOIN KhachHang kh ON tk.MaTK = kh.MaTK
+                WHERE tk.MaTK = @MaTK
+            `);
+
+        if (userRes.recordset.length > 0 && userRes.recordset[0].Email) {
+            const { Email, HoTen } = userRes.recordset[0];
+            const orderTrackingLink = `http://localhost:5173/order-detail/${createdMaDH}`;
+            const htmlContent = `
+                <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f4f9f5; border-radius: 10px; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #2e7d32; text-align: center;">Cảm ơn bạn đã đặt hàng tại Nông Sản Shop! 🌱</h2>
+                    <p>Xin chào <strong>${HoTen || 'Quý khách'}</strong>,</p>
+                    <p>Đơn hàng <strong>#${createdMaDH}</strong> của bạn đã được khởi tạo thành công và đang chờ cửa hàng xác nhận.</p>
+                    <p style="font-size: 16px; font-weight: bold; color: #d32f2f;">Tổng tiền thanh toán: ${Number(tongTien).toLocaleString()} đ</p>
+
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="${orderTrackingLink}" target="_blank" style="background-color: #2e7d32; color: #ffffff; padding: 12px 25px; text-decoration: none; border-radius: 25px; font-weight: bold; font-size: 15px; display: inline-block;">
+                            🔍 Xem chi tiết đơn hàng #${createdMaDH}
+                        </a>
+                    </div>
+
+                    <hr style="border: none; border-top: 1px solid #ccc; margin: 20px 0;" />
+                    <p style="font-size: 13px; color: #777; text-align: center;">Chúng tôi sẽ gửi thêm email cập nhật khi đơn hàng được chuyển sang trạng thái mới!</p>
+                </div>
+            `;
+            sendEmail(Email, `[Nông Sản Shop] Xác nhận đơn hàng #${createdMaDH} thành công`, htmlContent);
+        }
+    } catch (emailErr) {
+        console.error("Lỗi khi gửi email chốt đơn cho user:", emailErr);
+    }
+
+    return res.json({ message: "Chốt đơn thành công!", maDH: createdMaDH });
   } catch (error) {
     console.error("Lỗi khi chốt đơn:", error);
     res.status(500).json({ message: "Lỗi hệ thống khi thanh toán", error: error.message });
   }
 };
 
-// 3. Thêm một sản phẩm vào giỏ
 const addToCart = async (req, res) => {
   try {
     const { maKH: maTK, maSP, soLuong } = req.body;
     const pool = await sql.connect();
 
-    // 1. Lấy mã Khách Hàng thật từ mã Tài Khoản
     const khResult = await pool.request()
       .input('MaTK', sql.Int, maTK)
       .query('SELECT MaKH FROM KhachHang WHERE MaTK = @MaTK');
@@ -251,24 +302,19 @@ const addToCart = async (req, res) => {
     }
     const realMaKH = khResult.recordset[0].MaKH;
 
-    // 2. Thao tác với Redis thay vì SQL
     const redisKey = `cart:${realMaKH}`;
     let cartData = await redisClient.get(redisKey);
     let cart = cartData ? JSON.parse(cartData) : [];
 
-    // Kiểm tra sản phẩm đã có trong giỏ chưa
     const existingItemIndex = cart.findIndex(item => item.maSP === Number(maSP));
     
     if (existingItemIndex !== -1) {
-        // Cập nhật số lượng
         cart[existingItemIndex].soLuong += (Number(soLuong) || 1);
         if (cart[existingItemIndex].soLuong <= 0) cart[existingItemIndex].soLuong = 1;
     } else {
-        // Thêm mới
         cart.push({ maSP: Number(maSP), soLuong: Number(soLuong) || 1 });
     }
 
-    // 3. Lưu lại vào Redis và set thời gian tự hủy (TTL) là 3 ngày (259200 giây)
     await redisClient.setEx(redisKey, 259200, JSON.stringify(cart));
 
     res.status(200).json({ message: "Đã thêm vào giỏ hàng (Redis)" });
@@ -278,7 +324,6 @@ const addToCart = async (req, res) => {
   }
 };
 
-// 4. Đồng bộ (Gộp) giỏ hàng LocalStorage vào Redis
 const mergeCart = async (req, res) => {
   try {
     const { maKH: maTK, localCart } = req.body;
@@ -302,7 +347,6 @@ const mergeCart = async (req, res) => {
     let cartData = await redisClient.get(redisKey);
     let cart = cartData ? JSON.parse(cartData) : [];
 
-    // Gộp từng sản phẩm từ localCart vào cart trên Redis
     for (let localItem of localCart) {
       const realSP = Number(localItem.maSP || localItem.id); 
       const qty = Number(localItem.quantity) || 1;
@@ -325,7 +369,6 @@ const mergeCart = async (req, res) => {
   }
 };
 
-// 5. HÀM XÓA SẢN PHẨM KHỎI GIỎ HÀNG
 const removeFromCart = async (req, res) => {
   try {
     const { maKH: maTK, maSP } = req.params;
@@ -340,20 +383,16 @@ const removeFromCart = async (req, res) => {
     }
     const realMaKH = khResult.recordset[0].MaKH;
 
-    // Lấy giỏ hàng từ Redis
     const redisKey = `cart:${realMaKH}`;
     let cartData = await redisClient.get(redisKey);
     
     if (cartData) {
         let cart = JSON.parse(cartData);
-        // Lọc bỏ sản phẩm cần xóa
         cart = cart.filter(item => item.maSP !== Number(maSP));
         
         if (cart.length > 0) {
-            // Nếu giỏ hàng còn đồ, cập nhật lại Redis (set lại TTL 3 ngày)
             await redisClient.setEx(redisKey, 259200, JSON.stringify(cart));
         } else {
-            // Nếu xóa xong mà giỏ hàng trống, xóa luôn key khỏi Redis cho nhẹ máy
             await redisClient.del(redisKey);
         }
     }

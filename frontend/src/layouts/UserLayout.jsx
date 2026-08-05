@@ -9,7 +9,7 @@ function UserLayout() {
 
             <main
                 style={{
-                    paddingTop: "80px",
+                    paddingTop: "24px",
                     flex: 1,
                     display: "flex",
                     flexDirection: "column"

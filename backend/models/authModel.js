@@ -106,17 +106,19 @@ const updatePassword = async (maTK, hashedPassword) => {
 };
 
 // Cập nhật hồ sơ cá nhân
-const updateProfile = async (maTK, { hoTen, soDienThoai, gioiTinh, ngaySinh }) => {
+const updateProfile = async (maTK, { hoTen, soDienThoai, email, gioiTinh, ngaySinh }) => {
     const pool = await connectDB();
 
-    // Cập nhật số điện thoại ở bảng TaiKhoan
+    // ĐÃ SỬA: Cập nhật số điện thoại VÀ EMAIL ở bảng TaiKhoan
     await pool
         .request()
         .input("MaTK", sql.Int, maTK)
         .input("SoDienThoai", sql.VarChar, soDienThoai)
+        .input("Email", sql.VarChar, email) // Thêm biến Email
         .query(`
             UPDATE TaiKhoan
-            SET SoDienThoai = @SoDienThoai
+            SET SoDienThoai = @SoDienThoai,
+                Email = @Email
             WHERE MaTK = @MaTK
         `);
 

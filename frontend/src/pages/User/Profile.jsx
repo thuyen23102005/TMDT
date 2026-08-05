@@ -143,7 +143,7 @@ function Profile() {
     const showRewardSection = location.pathname === "/profile" || location.pathname === "/profile/" || location.pathname.includes("/profile/uu-dai");
 
     return (
-        <div className="row g-4 pb-5 profile-container">
+        <div className="row g-4 pt-0 pb-5 profile-container">
             <div className="col-md-3">
                 <div className="rounded-4 p-4 text-center mb-3 profile-user-card">
                     {/* KHUNG AVATAR CÓ VIỀN RANK */}
