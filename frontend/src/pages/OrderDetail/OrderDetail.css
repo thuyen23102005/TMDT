@@ -1,0 +1,191 @@
+.order-detail-wrapper {
+  max-width: 800px;
+  margin: 40px auto;
+  padding: 24px;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.order-detail-header {
+  border-bottom: 2px solid #2e7d32;
+  padding-bottom: 15px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.order-detail-title {
+  margin: 0;
+  color: #2e7d32;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.order-status-badge {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.order-status-badge.cancelled {
+  background-color: #ffebee;
+  color: #d32f2f;
+}
+
+.order-status-badge.normal {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+/* THÔNG TIN GIAO HÀNG */
+.shipping-info-box {
+  background-color: #f9f9f9;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 25px;
+}
+
+.shipping-info-title {
+  margin: 0 0 10px 0;
+  color: #333333;
+  font-size: 16px;
+}
+
+.shipping-info-row {
+  margin: 6px 0;
+  color: #444444;
+}
+
+.payment-status-success {
+  color: #2e7d32;
+  font-weight: bold;
+}
+
+.payment-status-pending {
+  color: #d32f2f;
+  font-weight: bold;
+}
+
+/* BẢNG SẢN PHẨM */
+.section-title {
+  margin-bottom: 15px;
+  color: #333333;
+  font-size: 16px;
+}
+
+.order-items-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+.order-items-table th {
+  background-color: #f5f5f5;
+  padding: 12px 10px;
+  border-bottom: 1px solid #dddddd;
+  color: #333333;
+}
+
+.order-items-table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid #eeeeee;
+}
+
+.product-col {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.product-img {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.product-name {
+  color: #333333;
+  font-weight: 600;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+/* TỔNG TIỀN VÀ NÚT THAO TÁC */
+.order-summary-footer {
+  border-top: 2px dashed #eeeeee;
+  padding-top: 15px;
+}
+
+.shipping-fee-text {
+  margin: 5px 0;
+  color: #666666;
+}
+
+.total-amount-text {
+  margin: 10px 0;
+  color: #d32f2f;
+  font-size: 20px;
+}
+
+.action-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 25px;
+}
+
+.back-link {
+  color: #2e7d32;
+  text-decoration: none;
+  font-weight: bold;
+  transition: color 0.2s;
+}
+
+.back-link:hover {
+  color: #1b5e20;
+}
+
+.btn-cancel-order {
+  background-color: #ffffff;
+  color: #d32f2f;
+  border: 1.5px solid #d32f2f;
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-cancel-order:hover {
+  background-color: #d32f2f;
+  color: #ffffff;
+}
+
+.btn-cancel-order:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* STATE THÔNG BÁO */
+.state-message {
+  text-align: center;
+  margin-top: 50px;
+}
+
+.state-message.loading {
+  color: #2e7d32;
+}
+
+.state-message.error {
+  color: #d32f2f;
+}

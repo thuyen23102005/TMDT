@@ -15,6 +15,7 @@ import ProductDetail from "../pages/ProductDetail/ProductDetail";
 import Cart from "../pages/Cart/Cart";
 import Checkout from "../pages/Checkout/Checkout";
 import Products from "../pages/Products/Products";
+import OrderDetail from "../pages/OrderDetail/OrderDetail";
 
 import UserLayout from "../layouts/UserLayout";
 import Login from "../pages/User/Login";
@@ -43,6 +44,7 @@ function AppRoutes() {
                     <Route path="/cart" element={<Cart />} />
                     <Route path="/checkout" element={<Checkout />} />
                     <Route path="/product/:id" element={<ProductDetail />} />
+                    <Route path="/order-detail/:id" element={<OrderDetail />} />
                 </Route>
 
                 {/* Website khách - tài khoản */}

@@ -207,19 +207,27 @@ const verifyPassword = async (req, res) => {
 const updateProfile = async (req, res) => {
     try {
         const maTK = req.user.maTK;
-        const { hoTen, soDienThoai, gioiTinh, ngaySinh } = req.body;
+        // ĐÃ SỬA: Lấy thêm trường email từ req.body
+        const { hoTen, soDienThoai, email, gioiTinh, ngaySinh } = req.body; 
 
-        if (!hoTen || !soDienThoai) {
+        if (!hoTen || !soDienThoai || !email) {
             return res.status(400).json({
-                message: "Vui lòng nhập đầy đủ họ tên và số điện thoại"
+                message: "Vui lòng nhập đầy đủ họ tên, số điện thoại và email"
             });
         }
 
-        await authModel.updateProfile(maTK, { hoTen, soDienThoai, gioiTinh, ngaySinh });
+        // KHOAN ĐÃ: Kiểm tra xem email mới có bị trùng với tài khoản người khác không
+        const existingUser = await authModel.findByEmail(email);
+        if (existingUser && existingUser.MaTK !== maTK) {
+             return res.status(400).json({ message: "Email này đã được tài khoản khác sử dụng" });
+        }
+
+        // Truyền thêm email sang model
+        await authModel.updateProfile(maTK, { hoTen, soDienThoai, email, gioiTinh, ngaySinh });
 
         res.status(200).json({
             message: "Cập nhật hồ sơ thành công",
-            user: { hoTen, soDienThoai, gioiTinh, ngaySinh }
+            user: { hoTen, soDienThoai, email, gioiTinh, ngaySinh }
         });
 
     } catch (error) {

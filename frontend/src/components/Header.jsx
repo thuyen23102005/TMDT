@@ -5,7 +5,7 @@ function Header() {
     const [keyword, setKeyword] = useState("");
     const [user, setUser] = useState(null);
     const [unreadCount, setUnreadCount] = useState(0); 
-    const [cartCount, setCartCount] = useState(0); // STATE MỚI CHO GIỎ HÀNG
+    const [cartCount, setCartCount] = useState(0); 
 
     const navigate = useNavigate();
 
@@ -15,10 +15,12 @@ function Header() {
             const parsedUser = JSON.parse(storedUser);
             setUser(parsedUser);
             fetchUnreadCount(parsedUser.maTK);
-            fetchCartCount(parsedUser.maTK); // Gọi hàm đếm giỏ hàng khi load
+            fetchCartCount(parsedUser.maTK); 
+        } else {
+            // ĐÃ SỬA: Đếm số lượng giỏ hàng cho Khách vãng lai (Chưa đăng nhập)
+            fetchCartCount(null);
         }
 
-        // Lắng nghe cập nhật thông báo
         const handleNotificationUpdate = () => {
             const currentUser = JSON.parse(localStorage.getItem("user"));
             if (currentUser) {
@@ -26,16 +28,18 @@ function Header() {
             }
         };
 
-        // Lắng nghe cập nhật giỏ hàng (khi thêm món mới)
         const handleCartUpdate = () => {
             const currentUser = JSON.parse(localStorage.getItem("user"));
             if (currentUser) {
                 fetchCartCount(currentUser.maTK);
+            } else {
+                // ĐÃ SỬA: Cập nhật lại số lượng cho Khách vãng lai khi có thay đổi
+                fetchCartCount(null);
             }
         };
 
         window.addEventListener('updateNotificationCount', handleNotificationUpdate);
-        window.addEventListener('cartUpdated', handleCartUpdate); // Lắng nghe sự kiện giỏ hàng
+        window.addEventListener('cartUpdated', handleCartUpdate); 
 
         return () => {
             window.removeEventListener('updateNotificationCount', handleNotificationUpdate);
@@ -45,7 +49,6 @@ function Header() {
 
     useEffect(() => {
         if (!user) return;
-        // Tự động làm mới dữ liệu mỗi 30s
         const timer = setInterval(() => {
             fetchUnreadCount(user.maTK);
             fetchCartCount(user.maTK);
@@ -65,19 +68,25 @@ function Header() {
             .catch(err => console.error("Lỗi đếm thông báo Header:", err));
     };
 
-    // HÀM LẤY SỐ LƯỢNG GIỎ HÀNG TỪ API
+    // ĐÃ SỬA HÀM NÀY: Chia làm 2 luồng rõ ràng (Có User và Khách vãng lai)
     const fetchCartCount = (maTK) => {
-        // Thay đổi endpoint nếu API giỏ hàng của bạn có URL khác nhé
-        fetch(`${import.meta.env.VITE_API_URL}/api/cart/${maTK}`)
-            .then(res => res.json())
-            .then(data => {
-                if (Array.isArray(data)) {
-                    setCartCount(data.length); // Đếm số mặt hàng trong giỏ
-                } else if (data && Array.isArray(data.items)) {
-                    setCartCount(data.items.length);
-                }
-            })
-            .catch(err => console.error("Lỗi đếm giỏ hàng Header:", err));
+        if (maTK) {
+            // Lấy từ API Database nếu đã đăng nhập
+            fetch(`${import.meta.env.VITE_API_URL}/api/cart/${maTK}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (Array.isArray(data)) {
+                        setCartCount(data.length); 
+                    } else if (data && Array.isArray(data.items)) {
+                        setCartCount(data.items.length);
+                    }
+                })
+                .catch(err => console.error("Lỗi đếm giỏ hàng Header:", err));
+        } else {
+            // Lấy từ LocalStorage nếu chưa đăng nhập
+            const localCart = JSON.parse(localStorage.getItem('cart') || '[]');
+            setCartCount(localCart.length);
+        }
     };
 
     const handleSearch = (e) => {
@@ -92,7 +101,7 @@ function Header() {
         localStorage.removeItem("user");
         setUser(null);
         setUnreadCount(0); 
-        setCartCount(0); // Reset giỏ hàng
+        fetchCartCount(null); // ĐÃ SỬA: Chuyển về đếm giỏ hàng của LocalStorage khi đăng xuất
         navigate("/");
     };
 
@@ -133,7 +142,7 @@ function Header() {
                     Sản phẩm
                 </Link>
 
-                {/* --- NÚT GIỎ HÀNG ĐÃ ĐƯỢC THÊM BADGE --- */}
+                {/* --- NÚT GIỎ HÀNG --- */}
                 <Link
                     to="/cart"
                     className="text-decoration-none fw-medium px-3 py-2"
@@ -144,7 +153,7 @@ function Header() {
                         fontSize: "14px",
                         boxShadow: "0 2px 6px rgba(245, 124, 0, 0.3)",
                         transition: "transform 0.2s",
-                        position: "relative", // Bắt buộc phải có để định vị cục chấm đỏ
+                        position: "relative",
                         display: "inline-block"
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-2px)"}
@@ -176,7 +185,6 @@ function Header() {
 
                 {user ? (
                     <>
-                        {/* CHUÔNG THÔNG BÁO */}
                         <Link 
                             to="/profile/thong-bao" 
                             title="Thông báo"
