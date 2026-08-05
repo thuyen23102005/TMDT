@@ -2,18 +2,16 @@ import { useOutletContext } from "react-router-dom";
 import { useState } from "react";
 
 function DonHang() {
-
     const { orders, fetchOrders } = useOutletContext();
-
     const [filter, setFilter] = useState("all");
-
     const [currentPage, setCurrentPage] = useState(1);
-
     const [showReviewModal, setShowReviewModal] = useState(false);
-
     const [reviewItems, setReviewItems] = useState([]);
-
     const [reviewData, setReviewData] = useState({});
+    const [currentReviewOrderId, setCurrentReviewOrderId] = useState(null);
+    const [showDetailModal, setShowDetailModal] = useState(false);
+    const [detailItems, setDetailItems] = useState([]);
+    const [selectedOrder, setSelectedOrder] = useState(null);
     
     // Lấy thông tin user hiện tại để gửi kèm đánh giá
     const user = JSON.parse(localStorage.getItem("user"));
@@ -62,17 +60,45 @@ function DonHang() {
 
     };
 
+    const handleOpenDetail = async (order) => {
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/${order.MaDH}`);
+            const data = await res.json();
+            setDetailItems(data);
+            setSelectedOrder(order);
+            setShowDetailModal(true);
+        } catch (error) {
+            console.error("Lỗi lấy chi tiết đơn hàng", error);
+        }
+    };
+
     const handleOpenReview = async (maDH) => {
         try {
-            // Lấy danh sách sản phẩm trong đơn hàng
-            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/${maDH}`);
-            const data = await res.json();
+            setCurrentReviewOrderId(maDH); // Lưu lại mã đơn đang đánh giá
             
-            setReviewItems(data);
+            const resOrder = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/${maDH}`);
+            const orderItems = await resOrder.json();
             
-            // Khởi tạo state mặc định (5 sao, nội dung rỗng) cho từng sản phẩm
+            const resReview = await fetch(`${import.meta.env.VITE_API_URL}/api/reviews/user/${user.maTK}`);
+            const reviewedData = await resReview.json();
+            
+            // CHỈ lọc những đánh giá thuộc về CÙNG MỘT ĐƠN HÀNG (MaDH) này
+            const reviewedProductIdsInThisOrder = reviewedData
+                .filter(r => r.MaDH === maDH)
+                .map(r => r.MaSP);
+            
+            // Giữ lại các món chưa đánh giá trong đơn này
+            const unreviewedItems = orderItems.filter(item => !reviewedProductIdsInThisOrder.includes(item.MaSP));
+            
+            if (unreviewedItems.length === 0) {
+                alert("Cảm ơn bạn! Bạn đã hoàn tất đánh giá cho tất cả sản phẩm trong đơn hàng này.");
+                return; 
+            }
+
+            setReviewItems(unreviewedItems);
+            
             const initialReviewData = {};
-            data.forEach(item => {
+            unreviewedItems.forEach(item => {
                 initialReviewData[item.MaSP] = { soSao: 5, noiDung: '' };
             });
             setReviewData(initialReviewData);
@@ -93,6 +119,7 @@ function DonHang() {
                 body: JSON.stringify({
                     maTK: user.maTK,
                     maSP: maSP,
+                    maDH: currentReviewOrderId, // Gửi kèm mã đơn hàng
                     soSao: soSao,
                     noiDung: noiDung
                 })
@@ -100,14 +127,22 @@ function DonHang() {
             
             if (res.ok) {
                 alert("Đánh giá thành công!");
-                // (Tùy chọn) Ẩn sản phẩm đã đánh giá khỏi mảng
-                setReviewItems(prev => prev.filter(item => item.MaSP !== maSP));
-                if (reviewItems.length === 1) setShowReviewModal(false); // Đóng modal nếu hết sản phẩm
+                fetchOrders();
+                
+                window.dispatchEvent(new Event('updateNotificationCount'));
+                setReviewItems(prev => {
+                    const remainingItems = prev.filter(item => item.MaSP !== maSP);
+                    if (remainingItems.length === 0) {
+                        setShowReviewModal(false); 
+                    }
+                    return remainingItems;
+                });
             } else {
                 const errorData = await res.json();
                 alert(errorData.message || "Có lỗi xảy ra");
             }
         } catch(error) {
+            console.error("LỖI ĐÁNH GIÁ:", error);
             alert("Lỗi kết nối máy chủ");
         }
     };
@@ -295,37 +330,38 @@ function DonHang() {
                                             </td>
 
                                             <td>
-                                                {o.TrangThaiDonHang === "Đã giao" ? (
+                                                <div className="d-flex flex-wrap gap-2">
                                                     <button
-                                                        className="btn btn-outline-primary btn-sm"
-                                                        onClick={() => handleOpenReview(o.MaDH)}
+                                                        className="btn btn-outline-info btn-sm"
+                                                        onClick={() => handleOpenDetail(o)}
                                                     >
-                                                        Đánh giá
+                                                        Xem chi tiết
                                                     </button>
-
-                                                ) :canCancel ? (
-
-                                                    <button
-                                                        className="btn btn-outline-danger btn-sm"
-                                                        onClick={() =>
-                                                            handleCancelOrder(
-                                                                o.MaDH
-                                                            )
-                                                        }
-                                                    >
-                                                        Hủy đơn
-                                                    </button>
-
-                                                ) : (
-
-                                                    <span className="text-muted small">
-
-                                                        Không thể hủy
-
-                                                    </span>
-
-                                                )}
-
+                                                    
+                                                    {o.TrangThaiDonHang === "Đã giao" && (
+                                                        o.TongSoMon > 0 && o.TongSoMon === o.SoMonDaDanhGia ? (
+                                                            <button className="btn btn-secondary btn-sm" disabled style={{ cursor: 'not-allowed' }}>
+                                                                Đã đánh giá
+                                                            </button>
+                                                        ) : (
+                                                            <button
+                                                                className="btn btn-outline-primary btn-sm"
+                                                                onClick={() => handleOpenReview(o.MaDH)}
+                                                            >
+                                                                {o.SoMonDaDanhGia > 0 ? "Đánh giá tiếp" : "Đánh giá"}
+                                                            </button>
+                                                        )
+                                                    )}
+                                                    
+                                                    {canCancel && (
+                                                        <button
+                                                            className="btn btn-outline-danger btn-sm"
+                                                            onClick={() => handleCancelOrder(o.MaDH)}
+                                                        >
+                                                            Hủy đơn
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </td>
 
                                         </tr>
@@ -487,6 +523,81 @@ function DonHang() {
                                         </div>
                                     ))
                                 )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL CHI TIẾT ĐƠN HÀNG */}
+            {showDetailModal && selectedOrder && (
+                <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }}>
+                    <div className="modal-dialog modal-lg modal-dialog-centered">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="modal-title fw-bold text-success">
+                                    Chi tiết đơn hàng #{selectedOrder.MaDH}
+                                </h5>
+                                <button type="button" className="btn-close" onClick={() => setShowDetailModal(false)}></button>
+                            </div>
+                            <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+                                <div className="mb-4">
+                                    <strong>Ngày đặt: </strong> {new Date(selectedOrder.NgayDat).toLocaleDateString("vi-VN")}<br/>
+                                    <strong>Trạng thái: </strong> <span className="text-warning">{selectedOrder.TrangThaiDonHang}</span>
+                                </div>
+
+                                <div className="table-responsive">
+                                    <table className="table table-bordered align-middle">
+                                        <thead className="table-light">
+                                            <tr>
+                                                <th>Sản phẩm</th>
+                                                <th>Đơn giá</th>
+                                                <th>Số lượng</th>
+                                                <th>Thành tiền</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {detailItems.map((item, index) => (
+                                                <tr key={item.MaSP || index}>
+                                                    <td>
+                                                        <div className="d-flex align-items-center">
+                                                            <img
+                                                                src={`${import.meta.env.VITE_API_URL}/uploads/${item.HinhAnh}`}
+                                                                alt={item.TenSP}
+                                                                style={{ width: '50px', height: '50px', objectFit: 'contain' }}
+                                                                className="me-2 border rounded bg-white"
+                                                                onError={(e) => { e.target.src = 'https://via.placeholder.com/50' }}
+                                                            />
+                                                            <span className="fw-medium">{item.TenSP}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td>{Number(item.DonGia).toLocaleString()} đ</td>
+                                                    <td className="text-center">{item.SoLuong}</td>
+                                                    <td className="text-danger fw-bold">{Number(item.ThanhTien).toLocaleString()} đ</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div className="d-flex justify-content-end mt-3">
+                                    <div style={{ width: '300px' }}>
+                                        <div className="d-flex justify-content-between mb-2">
+                                            <span>Tổng tiền hàng:</span>
+                                            <span>{Number(detailItems.reduce((acc, item) => acc + item.ThanhTien, 0)).toLocaleString()} đ</span>
+                                        </div>
+                                        <div className="d-flex justify-content-between mb-2">
+                                            <span>Phí giao hàng:</span>
+                                            <span>
+                                                {Number(selectedOrder.TongTien - detailItems.reduce((acc, item) => acc + item.ThanhTien, 0)).toLocaleString()} đ
+                                            </span>
+                                        </div>
+                                        <div className="d-flex justify-content-between fw-bold fs-5 text-success border-top pt-2">
+                                            <span>Tổng cộng:</span>
+                                            <span>{Number(selectedOrder.TongTien).toLocaleString()} đ</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

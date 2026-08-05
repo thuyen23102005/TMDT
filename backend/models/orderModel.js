@@ -85,7 +85,10 @@ const getOrdersByUser = async (maTK) => {
     const result = await pool.request()
         .input("MaTK", sql.Int, maTK)
         .query(`
-            SELECT dh.MaDH, dh.NgayDat, dh.TongTien, dh.TrangThaiDonHang, dh.TrangThaiThanhToan
+            SELECT 
+                dh.MaDH, dh.NgayDat, dh.TongTien, dh.TrangThaiDonHang, dh.TrangThaiThanhToan,
+                (SELECT COUNT(*) FROM ChiTietDonHang ct WHERE ct.MaDH = dh.MaDH) AS TongSoMon,
+                (SELECT COUNT(*) FROM DanhGia dg WHERE dg.MaDH = dh.MaDH) AS SoMonDaDanhGia
             FROM DonHang dh
             INNER JOIN KhachHang kh ON dh.MaKH = kh.MaKH
             WHERE kh.MaTK = @MaTK
