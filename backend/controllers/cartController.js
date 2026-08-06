@@ -3,6 +3,7 @@ const notificationModel = require("../models/notificationModel");
 const redisClient = require("../config/redis");
 const calculatePrice = require("../utils/priceCalculator");
 const { sendEmail } = require("../utils/emailService");
+const { verifyOTPLogic } = require("./authController");
 
 const getCartByCustomerId = async (req, res) => {
   try {
@@ -76,10 +77,20 @@ const checkoutCart = async (req, res) => {
 
     // ===== NHÁNH 1: KHÁCH VÃNG LAI =====
     if (isGuest) {
-        if (!guestInfo || !guestInfo.hoTen || !guestInfo.soDienThoai || !guestInfo.diaChi) {
-            return res.status(400).json({ message: "Vui lòng điền đủ thông tin giao hàng" });
+        if (!guestInfo || !guestInfo.hoTen || !guestInfo.soDienThoai || !guestInfo.diaChi || !guestInfo.email) {
+            return res.status(400).json({ message: "Vui lòng điền đủ thông tin giao hàng bao gồm cả Email" });
         }
         if (!cartItems || cartItems.length === 0) return res.status(400).json({ message: "Giỏ hàng trống" });
+
+        // KIỂM TRA BẮT BUỘC MÃ OTP CHO KHÁCH VÃNG LAI
+        if (!guestInfo.otp) {
+            return res.status(400).json({ message: "Vui lòng nhập mã OTP xác thực Email!" });
+        }
+
+        const isOtpValid = await verifyOTPLogic(guestInfo.email, guestInfo.otp);
+        if (!isOtpValid) {
+            return res.status(400).json({ message: "Mã OTP xác thực Email không chính xác hoặc đã hết hạn!" });
+        }
 
         for (const item of cartItems) {
             const stock = await pool.request()
@@ -125,7 +136,6 @@ const checkoutCart = async (req, res) => {
 
         const createdMaDH = resultGuest.recordset[0].maDH;
 
-        // EMAIL KHÁCH VÃNG LAI CÓ ĐÍNH KÈM NÚT XEM CHI TIẾT
         if (guestInfo.email) {
             const orderTrackingLink = `http://localhost:5173/order-detail/${createdMaDH}`;
             const htmlContent = `
@@ -244,7 +254,6 @@ const checkoutCart = async (req, res) => {
 
     await redisClient.del(redisKey);
 
-    // EMAIL USER CÓ ĐÍNH KÈM NÚT XEM CHI TIẾT
     try {
         const userRes = await pool.request()
             .input("MaTK", sql.Int, maTK)
