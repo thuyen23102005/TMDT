@@ -4,11 +4,11 @@ const router = express.Router();
 const authController = require("../controllers/authController");
 const { verifyToken, isAdmin } = require("../middlewares/authMiddleware");
 
+// Route gửi mã OTP xác thực Email (cho Đăng ký và Thanh toán khách)
+router.post("/send-otp", authController.sendOTP);
 
 router.post("/register", authController.register);
-
 router.post("/login", authController.login);
-
 
 // Admin tạo tài khoản Admin
 router.post(
@@ -18,14 +18,12 @@ router.post(
     authController.registerAdmin
 );
 
-
 // Đổi mật khẩu
 router.put(
     "/change-password",
     verifyToken,
     authController.changePassword
 );
-
 
 // Xác thực mật khẩu
 router.post(
@@ -34,13 +32,11 @@ router.post(
     authController.verifyPassword
 );
 
-
 // Cập nhật hồ sơ cá nhân
 router.put(
     "/update-profile",
     verifyToken,
     authController.updateProfile
 );
-
 
 module.exports = router;
