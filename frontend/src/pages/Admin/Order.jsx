@@ -38,15 +38,19 @@ function Order() {
         }
     }
 
-    const handleDetail = async (id) => {
-        try {
-            const res = await getOrderDetail(id);
-            setDetails(res.data);
-            setShowModal(true);
-        } catch (error) {
-            console.log(error);
-        }
-    };
+const handleDetail = async (id) => {
+    try {
+        const res = await getOrderDetail(id);
+
+        console.log("RES =", res);
+        console.log("RES.DATA =", res.data);
+
+        setDetails(res.data.items);
+        setShowModal(true);
+    } catch (error) {
+        console.log(error);
+    }
+};
 
     const handleUpdateStatus = async (id, data) => {
         try {

@@ -64,8 +64,8 @@ function DonHang() {
         try {
             const res = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/${order.MaDH}`);
             const data = await res.json();
-            setDetailItems(data);
-            setSelectedOrder(order);
+            setDetailItems(data.items);   // <-- sửa dòng này
+            setSelectedOrder(data.order); // <-- nên sửa luôn
             setShowDetailModal(true);
         } catch (error) {
             console.error("Lỗi lấy chi tiết đơn hàng", error);
@@ -77,7 +77,8 @@ function DonHang() {
             setCurrentReviewOrderId(maDH); // Lưu lại mã đơn đang đánh giá
             
             const resOrder = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/${maDH}`);
-            const orderItems = await resOrder.json();
+            const orderData = await resOrder.json();
+            const orderItems = orderData.items;
             
             const resReview = await fetch(`${import.meta.env.VITE_API_URL}/api/reviews/user/${user.maTK}`);
             const reviewedData = await resReview.json();
