@@ -32,8 +32,12 @@ const Checkout = () => {
   const [selectedAddress, setSelectedAddress] = useState(null);
 
   const storedUser = JSON.parse(localStorage.getItem('user'));
-  // BỔ SUNG TRƯỜNG EMAIL VÀO GUEST INFO
-  const [guestInfo, setGuestInfo] = useState({ hoTen: '', soDienThoai: '', email: '', diaChi: '' });
+  const [guestInfo, setGuestInfo] = useState({ hoTen: '', soDienThoai: '', email: '', diaChi: '', otp: '' });
+
+  // States hỗ trợ gửi mã OTP cho Khách
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isOtpSent, setIsOtpSent] = useState(false);
+  const [countdown, setCountdown] = useState(0);
 
   // State cho luồng VietQR
   const [showVietQR, setShowVietQR] = useState(false);
@@ -67,6 +71,48 @@ const Checkout = () => {
   const shippingFee = shippingType === 'standard' ? 22000 : 0;
   const totalAmount = Math.max(0, subTotal + shippingFee - discount);
 
+  // HÀM GỬI MÃ OTP CHO KHÁCH VÃNG LAI
+  const handleSendOTP = async () => {
+    if (!guestInfo.email) {
+        return alert("Vui lòng nhập địa chỉ Email trước khi lấy mã OTP!");
+    }
+
+    setIsSendingOtp(true);
+    try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/send-otp`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: guestInfo.email })
+        });
+
+        const data = await res.json();
+        setIsSendingOtp(false);
+
+        if (!res.ok) {
+            return alert(data.message || "Gửi OTP thất bại!");
+        }
+
+        alert(data.message);
+        setIsOtpSent(true);
+
+        setCountdown(60);
+        const timer = setInterval(() => {
+            setCountdown((prev) => {
+                if (prev <= 1) {
+                    clearInterval(timer);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+
+    } catch (err) {
+        console.error(err);
+        alert("Lỗi máy chủ khi gửi mã OTP!");
+        setIsSendingOtp(false);
+    }
+  };
+
   const startPollingPaymentStatus = (maDH) => {
     const currentUser = JSON.parse(localStorage.getItem('user'));
     
@@ -99,7 +145,6 @@ const Checkout = () => {
   const handleConfirmClick = async () => {
     const storedUser = JSON.parse(localStorage.getItem('user'));
     
-    // Validate cho giao hàng tiêu chuẩn
     if (shippingType === 'standard') {
         if (storedUser && !selectedAddress) {
             alert("Vui lòng thêm và chọn địa chỉ giao hàng trước khi thanh toán!");
@@ -110,17 +155,14 @@ const Checkout = () => {
                 alert("Vui lòng điền đầy đủ thông tin giao hàng bao gồm cả Email!");
                 return;
             }
-            // Validate định dạng Email cơ bản
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(guestInfo.email)) {
-                alert("Địa chỉ Email không hợp lệ!");
+            if (!guestInfo.otp) {
+                alert("Vui lòng bấm 'Gửi mã OTP' và nhập mã OTP 6 số từ Gmail để xác nhận!");
                 return;
             }
         }
     } else {
-        // Trường hợp nhận tại cửa hàng nhưng là khách vãng lai
-        if (!storedUser && (!guestInfo.hoTen || !guestInfo.soDienThoai || !guestInfo.email)) {
-            alert("Vui lòng điền họ tên, số điện thoại và email để nhận hàng tại cửa hàng!");
+        if (!storedUser && (!guestInfo.hoTen || !guestInfo.soDienThoai || !guestInfo.email || !guestInfo.otp)) {
+            alert("Vui lòng điền đủ thông tin và xác nhận OTP Email!");
             return;
         }
     }
@@ -280,10 +322,22 @@ const Checkout = () => {
                             style={{ padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
                             value={guestInfo.soDienThoai} onChange={(e) => setGuestInfo({...guestInfo, soDienThoai: e.target.value})} 
                         />
-                        <input type="email" placeholder="Email nhận thông tin đơn hàng (*)" className="form-control"
-                            style={{ padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
-                            value={guestInfo.email} onChange={(e) => setGuestInfo({...guestInfo, email: e.target.value})} 
-                        />
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <input type="email" placeholder="Email nhận thông tin đơn hàng (*)" className="form-control"
+                                style={{ padding: '8px', border: '1px solid #ccc', borderRadius: '4px', flex: 1 }}
+                                value={guestInfo.email} onChange={(e) => setGuestInfo({...guestInfo, email: e.target.value})} 
+                            />
+                            <button type="button" onClick={handleSendOTP} disabled={isSendingOtp || countdown > 0}
+                                style={{ padding: '8px 15px', backgroundColor: '#2e7d32', color: '#fff', border: 'none', borderRadius: '4px', whiteSpace: 'nowrap', cursor: 'pointer' }}>
+                                {isSendingOtp ? "..." : countdown > 0 ? `Thử lại (${countdown}s)` : "Gửi OTP"}
+                            </button>
+                        </div>
+                        {isOtpSent && (
+                            <input type="text" maxLength={6} placeholder="Nhập mã OTP 6 số từ Gmail (*)" className="form-control"
+                                style={{ padding: '8px', border: '2px solid #2e7d32', borderRadius: '4px', backgroundColor: '#f4f9f5' }}
+                                value={guestInfo.otp} onChange={(e) => setGuestInfo({...guestInfo, otp: e.target.value})} 
+                            />
+                        )}
                     </div>
                 )
             ) : storedUser ? (
@@ -298,7 +352,6 @@ const Checkout = () => {
                     <div className="text-danger fw-bold">Bạn chưa có địa chỉ giao hàng. Vui lòng thêm địa chỉ!</div>
                 )
             ) : (
-                /* FORM ĐIỀN THÔNG TIN KHÁCH VÃNG LAI BỔ SUNG EMAIL */
                 <div className="guest-info-form w-100" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     <input type="text" placeholder="Họ và tên người nhận (*)" className="form-control"
                         style={{ padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
@@ -308,10 +361,26 @@ const Checkout = () => {
                         style={{ padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
                         value={guestInfo.soDienThoai} onChange={(e) => setGuestInfo({...guestInfo, soDienThoai: e.target.value})} 
                     />
-                    <input type="email" placeholder="Email nhận thông tin đơn hàng (*)" className="form-control"
-                        style={{ padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
-                        value={guestInfo.email} onChange={(e) => setGuestInfo({...guestInfo, email: e.target.value})} 
-                    />
+                    
+                    {/* BỔ SUNG NÚT GỬI MÃ OTP THẬT VÀ Ô NHẬP MÃ */}
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                        <input type="email" placeholder="Email nhận thông tin (*)" className="form-control"
+                            style={{ padding: '8px', border: '1px solid #ccc', borderRadius: '4px', flex: 1 }}
+                            value={guestInfo.email} onChange={(e) => setGuestInfo({...guestInfo, email: e.target.value})} 
+                        />
+                        <button type="button" onClick={handleSendOTP} disabled={isSendingOtp || countdown > 0}
+                            style={{ padding: '8px 15px', backgroundColor: '#2e7d32', color: '#fff', border: 'none', borderRadius: '4px', whiteSpace: 'nowrap', cursor: 'pointer' }}>
+                            {isSendingOtp ? "..." : countdown > 0 ? `Thử lại (${countdown}s)` : "Gửi OTP"}
+                        </button>
+                    </div>
+
+                    {isOtpSent && (
+                        <input type="text" maxLength={6} placeholder="Nhập mã OTP 6 số từ Gmail (*)" className="form-control"
+                            style={{ padding: '8px', border: '2px solid #2e7d32', borderRadius: '4px', backgroundColor: '#f4f9f5' }}
+                            value={guestInfo.otp} onChange={(e) => setGuestInfo({...guestInfo, otp: e.target.value})} 
+                        />
+                    )}
+
                     <input type="text" placeholder="Địa chỉ giao hàng chi tiết (*)" className="form-control"
                         style={{ padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
                         value={guestInfo.diaChi} onChange={(e) => setGuestInfo({...guestInfo, diaChi: e.target.value})} 
@@ -320,7 +389,7 @@ const Checkout = () => {
             )}
             
             {shippingType !== 'store' && storedUser && (
-                <button onClick={() => setShowAddressModal(true)} className="btn btn-link text-primary text-decoration-none">Thay Đổi</button>
+                <button onClick={() => setShowAddressModal(false)} className="btn btn-link text-primary text-decoration-none">Thay Đổi</button>
             )}
           </div>
         </SectionBlock>
