@@ -107,7 +107,19 @@ function DonHang() {
         } catch (error) {
             console.error("Lỗi lấy chi tiết đơn hàng", error);
         }
-    };
+
+        setReviewItems(unreviewedItems);
+        
+        const initialReviewData = {};
+        unreviewedItems.forEach(item => {
+            initialReviewData[item.MaSP] = { soSao: 5, noiDung: '' };
+        });
+        setReviewData(initialReviewData);
+        setShowReviewModal(true);
+    } catch (error) {
+        console.error("Lỗi lấy chi tiết đơn hàng", error);
+    }
+};
 
     const submitReview = async (maSP) => {
         const { soSao, noiDung } = reviewData[maSP];
@@ -583,14 +595,14 @@ function DonHang() {
 
                                 <div className="d-flex justify-content-end mt-3">
                                     <div style={{ width: '300px' }}>
-                                        <div className="d-flex justify-content-between mb-2">
+                                       <div className="d-flex justify-content-between mb-2">
                                             <span>Tổng tiền hàng:</span>
-                                            <span>{Number(detailItems.reduce((acc, item) => acc + item.ThanhTien, 0)).toLocaleString()} đ</span>
+                                            <span>{Number((detailItems || []).reduce((acc, item) => acc + (item.ThanhTien || 0), 0)).toLocaleString()} đ</span>
                                         </div>
                                         <div className="d-flex justify-content-between mb-2">
                                             <span>Phí giao hàng:</span>
                                             <span>
-                                                {Number(selectedOrder.TongTien - detailItems.reduce((acc, item) => acc + item.ThanhTien, 0)).toLocaleString()} đ
+                                                {Number(selectedOrder.TongTien - (detailItems || []).reduce((acc, item) => acc + (item.ThanhTien || 0), 0)).toLocaleString()} đ
                                             </span>
                                         </div>
                                         <div className="d-flex justify-content-between fw-bold fs-5 text-success border-top pt-2">
