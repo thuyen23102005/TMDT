@@ -4,9 +4,11 @@ function SoDiaChi() {
     const [addresses, setAddresses] = useState([]);
     const [showAddForm, setShowAddForm] = useState(false);
     const [formData, setFormData] = useState({ hoTen: '', soDienThoai: '', diaChiChiTiet: '', macDinh: false });
+    const [currentPage, setCurrentPage] = useState(1);
+    const addressesPerPage = 4;
+
     const user = JSON.parse(localStorage.getItem('user'));
 
-    // Gọi API lấy danh sách
     const fetchAddresses = () => {
         if (user) {
             fetch(`${import.meta.env.VITE_API_URL}/api/addresses/${user.maTK}`)
@@ -20,7 +22,6 @@ function SoDiaChi() {
         fetchAddresses();
     }, []);
 
-    // Gửi data thêm địa chỉ mới
     const handleAddSubmit = async (e) => {
         e.preventDefault();
         try {
@@ -32,13 +33,12 @@ function SoDiaChi() {
             alert("Thêm địa chỉ thành công!");
             setShowAddForm(false);
             setFormData({ hoTen: '', soDienThoai: '', diaChiChiTiet: '', macDinh: false });
-            fetchAddresses(); // Render lại danh sách
+            fetchAddresses();
         } catch (error) {
             alert("Lỗi khi thêm địa chỉ");
         }
     };
 
-    // Gọi API set mặc định
     const handleSetDefault = async (maDC) => {
         try {
             await fetch(`${import.meta.env.VITE_API_URL}/api/addresses/set-default`, {
@@ -52,6 +52,12 @@ function SoDiaChi() {
         }
     };
 
+    // Logic Phân trang
+    const indexOfLastAddress = currentPage * addressesPerPage;
+    const indexOfFirstAddress = indexOfLastAddress - addressesPerPage;
+    const currentAddresses = addresses.slice(indexOfFirstAddress, indexOfLastAddress);
+    const totalPages = Math.ceil(addresses.length / addressesPerPage);
+
     return (
         <div className="shadow-sm rounded p-4 bg-white border">
             <div className="d-flex justify-content-between align-items-center mb-4">
@@ -61,7 +67,6 @@ function SoDiaChi() {
                 </button>
             </div>
 
-            {/* FORM THÊM ĐỊA CHỈ */}
             {showAddForm && (
                 <form onSubmit={handleAddSubmit} className="mb-4 p-3 bg-light border rounded">
                     <div className="row mb-3">
@@ -86,36 +91,56 @@ function SoDiaChi() {
                 </form>
             )}
 
-            {/* DANH SÁCH ĐỊA CHỈ */}
             {addresses.length === 0 ? (
                 <p className="text-muted">Bạn chưa có địa chỉ nào. Hãy thêm mới!</p>
             ) : (
-                <div className="address-list">
-                    {addresses.map((addr) => (
-                        <div key={addr.MaDC} className="address-item py-3 border-bottom position-relative">
-                            <div className="row">
-                                <div className="col-md-9">
-                                    <div className="d-flex align-items-center mb-1">
-                                        <span className="fw-bold text-dark me-3">{addr.HoTen}</span>
-                                        <span className="text-secondary border-start ps-3">{addr.SoDienThoai}</span>
-                                        {addr.MacDinh ? (
-                                            <span className="badge ms-3" style={{ backgroundColor: '#e0f7fa', color: '#006064', fontWeight: '500', borderRadius: '4px' }}>
-                                                Địa chỉ mặc định
-                                            </span>
-                                        ) : (
-                                            <button onClick={() => handleSetDefault(addr.MaDC)} className="btn btn-sm btn-outline-secondary ms-3" style={{ fontSize: '12px' }}>
-                                                Thiết lập mặc định
-                                            </button>
-                                        )}
-                                    </div>
-                                    <div className="text-muted small mt-2">
-                                        {addr.DiaChiChiTiet}
+                <>
+                    <div className="address-list">
+                        {currentAddresses.map((addr) => (
+                            <div key={addr.MaDC} className="address-item py-3 border-bottom position-relative">
+                                <div className="row">
+                                    <div className="col-md-9">
+                                        <div className="d-flex align-items-center mb-1">
+                                            <span className="fw-bold text-dark me-3">{addr.HoTen}</span>
+                                            <span className="text-secondary border-start ps-3">{addr.SoDienThoai}</span>
+                                            {addr.MacDinh ? (
+                                                <span className="badge ms-3" style={{ backgroundColor: '#e0f7fa', color: '#006064', fontWeight: '500', borderRadius: '4px' }}>
+                                                    Địa chỉ mặc định
+                                                </span>
+                                            ) : (
+                                                <button onClick={() => handleSetDefault(addr.MaDC)} className="btn btn-sm btn-outline-secondary ms-3" style={{ fontSize: '12px' }}>
+                                                    Thiết lập mặc định
+                                                </button>
+                                            )}
+                                        </div>
+                                        <div className="text-muted small mt-2">
+                                            {addr.DiaChiChiTiet}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+                        ))}
+                    </div>
+
+                    {/* NÚT PHÂN TRANG */}
+                    {totalPages > 1 && (
+                        <div className="d-flex justify-content-center mt-4">
+                            <ul className="pagination mb-0">
+                                <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                                    <button className="page-link" onClick={() => setCurrentPage(currentPage - 1)}>«</button>
+                                </li>
+                                {Array.from({ length: totalPages }, (_, i) => (
+                                    <li key={i + 1} className={`page-item ${currentPage === i + 1 ? 'active' : ''}`}>
+                                        <button className="page-link" onClick={() => setCurrentPage(i + 1)}>{i + 1}</button>
+                                    </li>
+                                ))}
+                                <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                                    <button className="page-link" onClick={() => setCurrentPage(currentPage + 1)}>»</button>
+                                </li>
+                            </ul>
                         </div>
-                    ))}
-                </div>
+                    )}
+                </>
             )}
         </div>
     );

@@ -66,6 +66,7 @@ function HoSoCaNhan() {
                 body: JSON.stringify({
                     hoTen: formData.hoTen,
                     soDienThoai: formData.soDienThoai,
+                    email: formData.email, // ĐÃ THÊM: Gửi email mới xuống Backend
                     gioiTinh: formData.gioiTinh,
                     ngaySinh: formData.ngaySinh,
                 }),
@@ -78,12 +79,13 @@ function HoSoCaNhan() {
                 return;
             }
 
-            // Cập nhật lại localStorage để header "Xin chào ..." và tên hiển thị đổi theo
+            // Cập nhật lại localStorage để header và tên hiển thị đổi theo
             const storedUser = JSON.parse(localStorage.getItem('user')) || {};
             const updatedUser = {
                 ...storedUser,
                 HoTen: formData.hoTen,
                 SoDienThoai: formData.soDienThoai,
+                email: formData.email, // ĐÃ THÊM: Lưu email mới vào LocalStorage
                 GioiTinh: formData.gioiTinh,
                 NgaySinh: formData.ngaySinh,
             };

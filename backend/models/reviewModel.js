@@ -19,7 +19,7 @@ const getReviewsByUser = async (maTK) => {
     const result = await pool.request()
         .input("MaTK", sql.Int, maTK)
         .query(`
-            SELECT dg.MaDG, dg.SoSao, dg.NoiDung, dg.NgayDG, sp.TenSP, sp.HinhAnh, sp.MaSP
+            SELECT dg.MaDG, dg.SoSao, dg.NoiDung, dg.NgayDG, dg.MaDH, sp.TenSP, sp.HinhAnh, sp.MaSP
             FROM DanhGia dg
             JOIN KhachHang kh ON dg.MaKH = kh.MaKH
             JOIN SanPham sp ON dg.MaSP = sp.MaSP
@@ -44,10 +44,9 @@ const checkCanReview = async (maTK, maSP) => {
     return result.recordset.length > 0;
 };
 
-const createReview = async (maTK, maSP, soSao, noiDung) => {
+const createReview = async (maTK, maSP, maDH, soSao, noiDung) => {
     const pool = await connectDB();
     
-    // Lấy MaKH từ MaTK
     const khResult = await pool.request()
         .input("MaTK", sql.Int, maTK)
         .query("SELECT MaKH FROM KhachHang WHERE MaTK = @MaTK");
@@ -57,11 +56,12 @@ const createReview = async (maTK, maSP, soSao, noiDung) => {
     await pool.request()
         .input("MaKH", sql.Int, maKH)
         .input("MaSP", sql.Int, maSP)
+        .input("MaDH", sql.Int, maDH) 
         .input("SoSao", sql.Int, soSao)
         .input("NoiDung", sql.NVarChar(500), noiDung)
         .query(`
-            INSERT INTO DanhGia (MaKH, MaSP, SoSao, NoiDung, NgayDG)
-            VALUES (@MaKH, @MaSP, @SoSao, @NoiDung, GETDATE())
+            INSERT INTO DanhGia (MaKH, MaSP, MaDH, SoSao, NoiDung, NgayDG)
+            VALUES (@MaKH, @MaSP, @MaDH, @SoSao, @NoiDung, GETDATE())
         `);
 };
 

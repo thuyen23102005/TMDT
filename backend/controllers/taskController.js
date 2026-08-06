@@ -20,13 +20,12 @@ const getTaskStatus = async (req, res) => {
         const tasksWithStatus = await Promise.all(
             tasks.map(async (task) => {
                 const isClaimed = claimedIds.includes(task.MaNV);
-                let status = "locked";
-
+               let status = "incomplete";
                 if (isClaimed) {
                     status = "claimed";
                 } else {
                     const isEligible = await taskModel.checkCondition(maKH, task.LoaiDieuKien);
-                    status = isEligible ? "available" : "locked";
+                    status = isEligible ? "available" : "incomplete";
                 }
 
                 return { ...task, status };

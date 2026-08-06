@@ -4,15 +4,15 @@ import { useNavigate } from 'react-router-dom';
 function FavoritePro() {
     const [favorites, setFavorites] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const favoritesPerPage = 6;
+
     const navigate = useNavigate();
     
-    // Lấy thông tin user hiện tại
     const storedUser = JSON.parse(localStorage.getItem("user"));
-    // Tạo key riêng biệt cho user này. Nếu không có user, dùng mảng rỗng tạm.
     const favKey = storedUser ? `favorites_${storedUser.maTK}` : 'favorites';
 
     useEffect(() => {
-        // Chỉ lấy ID yêu thích của tài khoản này
         const favIds = JSON.parse(localStorage.getItem(favKey) || '[]');
         
         if (favIds.length === 0) {
@@ -36,19 +36,29 @@ function FavoritePro() {
     const removeFavorite = (e, maSP) => {
         e.stopPropagation(); 
         
-        // Chỉ xóa trong key của user này
         const updatedFavIds = JSON.parse(localStorage.getItem(favKey) || '[]').filter(id => id !== maSP);
         localStorage.setItem(favKey, JSON.stringify(updatedFavIds));
         
-        setFavorites(favorites.filter(p => p.MaSP !== maSP));
+        const newFavs = favorites.filter(p => p.MaSP !== maSP);
+        setFavorites(newFavs);
+
+        // Reset về trang trước nếu xóa sản phẩm duy nhất ở trang hiện tại
+        if ((currentPage - 1) * favoritesPerPage >= newFavs.length && currentPage > 1) {
+            setCurrentPage(currentPage - 1);
+        }
     };
 
     const goToDetail = (maSP) => {
         navigate(`/product/${maSP}`);
     };
 
-    if (isLoading) return <p className="text-center mt-4">Đang tải...</p>;
+    // Logic Phân trang
+    const indexOfLastFav = currentPage * favoritesPerPage;
+    const indexOfFirstFav = indexOfLastFav - favoritesPerPage;
+    const currentFavorites = favorites.slice(indexOfFirstFav, indexOfLastFav);
+    const totalPages = Math.ceil(favorites.length / favoritesPerPage);
 
+    if (isLoading) return <p className="text-center mt-4">Đang tải...</p>;
     if (!storedUser) return <p className="text-center mt-4 text-danger">Vui lòng đăng nhập để xem sản phẩm yêu thích.</p>;
 
     return (
@@ -61,47 +71,68 @@ function FavoritePro() {
                     <p>Bạn chưa có sản phẩm yêu thích nào.</p>
                 </div>
             ) : (
-                <div className="row g-3">
-                    {favorites.map(item => (
-                        <div key={item.MaSP} className="col-md-4">
-                            <div 
-                                className="card h-100 position-relative shadow-sm" 
-                                style={{ cursor: 'pointer', transition: 'transform 0.2s', border: '1px solid #eee' }}
-                                onClick={() => goToDetail(item.MaSP)}
-                                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
-                                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                            >
-                                <span 
-                                    className="position-absolute"
-                                    onClick={(e) => removeFavorite(e, item.MaSP)}
-                                    style={{
-                                        top: '10px', right: '15px',
-                                        fontSize: '28px', color: '#e91e63',
-                                        cursor: 'pointer', zIndex: 10,
-                                        userSelect: 'none'
-                                    }}
-                                    title="Bỏ yêu thích"
+                <>
+                    <div className="row g-3">
+                        {currentFavorites.map(item => (
+                            <div key={item.MaSP} className="col-md-4">
+                                <div 
+                                    className="card h-100 position-relative shadow-sm" 
+                                    style={{ cursor: 'pointer', transition: 'transform 0.2s', border: '1px solid #eee' }}
+                                    onClick={() => goToDetail(item.MaSP)}
+                                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                                 >
-                                    ♥
-                                </span>
-                                
-                                <img 
-                                    src={`${import.meta.env.VITE_API_URL}/uploads/${item.HinhAnh || item.image || item.hinh_anh}`} 
-                                    className="card-img-top p-3" 
-                                    alt={item.TenSP} 
-                                    style={{ height: '200px', objectFit: 'contain' }}
-                                    onError={(e) => { e.target.src = 'https://via.placeholder.com/200?text=No+Image' }}
-                                />
-                                <div className="card-body text-center border-top">
-                                    <h6 className="card-title text-success text-truncate">{item.TenSP}</h6>
-                                    <p className="card-text text-danger fw-bold mb-0">
-                                        {Number(item.DonGia).toLocaleString()} đ
-                                    </p>
+                                    <span 
+                                        className="position-absolute"
+                                        onClick={(e) => removeFavorite(e, item.MaSP)}
+                                        style={{
+                                            top: '10px', right: '15px',
+                                            fontSize: '28px', color: '#e91e63',
+                                            cursor: 'pointer', zIndex: 10,
+                                            userSelect: 'none'
+                                        }}
+                                        title="Bỏ yêu thích"
+                                    >
+                                        ♥
+                                    </span>
+                                    
+                                    <img 
+                                        src={`${import.meta.env.VITE_API_URL}/uploads/${item.HinhAnh || item.image || item.hinh_anh}`} 
+                                        className="card-img-top p-3" 
+                                        alt={item.TenSP} 
+                                        style={{ height: '200px', objectFit: 'contain' }}
+                                        onError={(e) => { e.target.src = 'https://via.placeholder.com/200?text=No+Image' }}
+                                    />
+                                    <div className="card-body text-center border-top">
+                                        <h6 className="card-title text-success text-truncate">{item.TenSP}</h6>
+                                        <p className="card-text text-danger fw-bold mb-0">
+                                            {Number(item.DonGia).toLocaleString()} đ
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
+                        ))}
+                    </div>
+
+                    {/* NÚT PHÂN TRANG */}
+                    {totalPages > 1 && (
+                        <div className="d-flex justify-content-center mt-4">
+                            <ul className="pagination mb-0">
+                                <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                                    <button className="page-link" onClick={() => setCurrentPage(currentPage - 1)}>«</button>
+                                </li>
+                                {Array.from({ length: totalPages }, (_, i) => (
+                                    <li key={i + 1} className={`page-item ${currentPage === i + 1 ? 'active' : ''}`}>
+                                        <button className="page-link" onClick={() => setCurrentPage(i + 1)}>{i + 1}</button>
+                                    </li>
+                                ))}
+                                <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                                    <button className="page-link" onClick={() => setCurrentPage(currentPage + 1)}>»</button>
+                                </li>
+                            </ul>
                         </div>
-                    ))}
-                </div>
+                    )}
+                </>
             )}
         </div>
     );
