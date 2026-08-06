@@ -165,6 +165,62 @@ const redeem = async (req, res) => {
     }
 };
 
+// GET /api/vouchers/monthly-status
+const checkMonthlyStatus = async (req, res) => {
+    try {
+        const maKH = await voucherModel.getMaKHByMaTK(req.user.maTK);
+        if (!maKH) return res.status(404).json({ message: "Không tìm thấy khách hàng" });
+
+        const d = new Date();
+        const month = d.getMonth() + 1;
+        const year = d.getFullYear();
+
+        const isClaimed = await voucherModel.checkMonthlyClaim(maKH, month, year);
+        
+        res.status(200).json({ isClaimed });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Lỗi server" });
+    }
+};
+// POST /api/vouchers/claim-monthly
+const claimMonthly = async (req, res) => {
+    try {
+        const maKH = await voucherModel.getMaKHByMaTK(req.user.maTK);
+        if (!maKH) return res.status(404).json({ message: "Không tìm thấy khách hàng" });
+
+        const d = new Date();
+        const month = d.getMonth() + 1;
+        const year = d.getFullYear();
+
+        const isClaimed = await voucherModel.checkMonthlyClaim(maKH, month, year);
+        if (isClaimed) {
+            return res.status(400).json({ message: `Bạn đã nhận ưu đãi của tháng ${month} rồi!` });
+        }
+
+        const totalSpent = await voucherModel.getTotalSpentForRank(maKH);
+        const diemXepHang = Math.floor(totalSpent / 500);
+
+        let rankCodes = [];
+        if (diemXepHang >= 10000) {
+            rankCodes = ['FS_KIMCUONG', 'GIAM15_KIMCUONG', 'SN_KIMCUONG']; 
+        } else if (diemXepHang >= 5000) {
+            rankCodes = ['FS_VANG', 'GIAM10_VANG', 'SN_VANG'];
+        } else if (diemXepHang >= 1000) {
+            rankCodes = ['FS_BAC', 'GIAM5_BAC', 'SN_BAC'];
+        } else {
+            rankCodes = ['FS_DONG', 'SN_DONG'];
+        }
+
+        await voucherModel.claimMonthlyVouchers(maKH, rankCodes, month, year);
+
+        res.status(200).json({ message: `Nhận thành công đặc quyền tháng ${month}. Vui lòng kiểm tra Ví Voucher!` });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: error.message || "Lỗi hệ thống khi nhận ưu đãi" });
+    }
+};
+
 module.exports = {
     getAll,
     getActive,
@@ -173,5 +229,7 @@ module.exports = {
     remove,
     getRedeemable,
     getMyVouchers,
-    redeem
+    redeem,
+    claimMonthly,
+    checkMonthlyStatus // <-- Thêm dòng này
 };
