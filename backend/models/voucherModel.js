@@ -236,6 +236,64 @@ const redeemVoucher = async (maKH, voucher) => {
         `);
 };
 
+// Tính tổng tiền đã chi tiêu để xét hạng
+const getTotalSpentForRank = async (maKH) => {
+    const pool = await connectDB();
+    const result = await pool.request()
+        .input("MaKH", sql.Int, maKH)
+        .query(`
+            SELECT ISNULL(SUM(TongTien), 0) AS TotalSpent
+            FROM DonHang
+            WHERE MaKH = @MaKH AND TrangThaiThanhToan = N'Đã thanh toán'
+        `);
+    return result.recordset[0].TotalSpent;
+};
+
+// Kiểm tra xem tháng này khách đã nhận ưu đãi rank chưa
+const checkMonthlyClaim = async (maKH, month, year) => {
+    const pool = await connectDB();
+    const note = `Nhận ưu đãi hạng tháng ${month}/${year}`;
+    const result = await pool.request()
+        .input("MaKH", sql.Int, maKH)
+        .input("GhiChu", sql.NVarChar(255), note)
+        .query(`SELECT COUNT(*) as Count FROM LichSuDiem WHERE MaKH = @MaKH AND GhiChu = @GhiChu`);
+    return result.recordset[0].Count > 0;
+};
+
+// Phát voucher vào ví và ghi nhận lịch sử
+const claimMonthlyVouchers = async (maKH, voucherCodes, month, year) => {
+    const pool = await connectDB();
+    const note = `Nhận ưu đãi hạng tháng ${month}/${year}`;
+    
+    const codesString = voucherCodes.map(c => `'${c}'`).join(',');
+    const getVouchers = await pool.request().query(`
+    SELECT MaGG FROM MaGiamGia WHERE Code IN (${codesString}) AND NgayKT >= CAST(GETDATE() AS DATE)
+    `);
+    const maGGs = getVouchers.recordset.map(v => v.MaGG);
+
+    if (maGGs.length === 0) throw new Error("Không tìm thấy mã voucher trong hệ thống");
+
+    let insertQueries = maGGs.map(maGG => 
+        `INSERT INTO KhachHang_Voucher (MaKH, MaGG, DaSuDung) VALUES (@MaKH, ${maGG}, 0);`
+    ).join('\n');
+    
+    await pool.request()
+        .input("MaKH", sql.Int, maKH)
+        .input("GhiChu", sql.NVarChar(255), note)
+        .query(`
+            BEGIN TRAN;
+            BEGIN TRY
+                ${insertQueries}
+                INSERT INTO LichSuDiem (MaKH, LoaiDiem, LoaiGD, SoDiem, NgayThucHien, GhiChu)
+                VALUES (@MaKH, N'Cộng', N'Ưu đãi tháng', 0, GETDATE(), @GhiChu);
+                COMMIT TRAN;
+            END TRY
+            BEGIN CATCH
+                ROLLBACK TRAN;
+                THROW;
+            END CATCH
+        `);
+};
 module.exports = {
     getAllVoucher,
     createVoucher,
@@ -248,5 +306,8 @@ module.exports = {
     getRedeemableVouchers,
     getMyVouchers,
     checkAlreadyRedeemed,
-    redeemVoucher
+    redeemVoucher,
+    getTotalSpentForRank,
+    checkMonthlyClaim,
+    claimMonthlyVouchers
 };

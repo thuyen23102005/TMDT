@@ -60,42 +60,52 @@ function DonHang() {
 
     };
 
-   const handleOpenDetail = async (order) => {
-    try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/${order.MaDH}`);
-        const data = await res.json();
-        // Kiểm tra nếu Backend trả về dạng { order, items } thì lấy data.items
-        const itemsArray = Array.isArray(data) ? data : (data.items || []);
-        setDetailItems(itemsArray);
-        setSelectedOrder(order);
-        setShowDetailModal(true);
-    } catch (error) {
-        console.error("Lỗi lấy chi tiết đơn hàng", error);
-    }
-};
+    const handleOpenDetail = async (order) => {
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/${order.MaDH}`);
+            const data = await res.json();
+            setDetailItems(data.items);   // <-- sửa dòng này
+            setSelectedOrder(data.order); // <-- nên sửa luôn
+            setShowDetailModal(true);
+        } catch (error) {
+            console.error("Lỗi lấy chi tiết đơn hàng", error);
+        }
+    };
 
     const handleOpenReview = async (maDH) => {
-    try {
-        setCurrentReviewOrderId(maDH);
-        
-        const resOrder = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/${maDH}`);
-        const orderData = await resOrder.json();
-        // Đảm bảo orderItems luôn là mảng
-        const orderItems = Array.isArray(orderData) ? orderData : (orderData.items || []);
-        
-        const resReview = await fetch(`${import.meta.env.VITE_API_URL}/api/reviews/user/${user.maTK}`);
-        const reviewedData = await resReview.json();
-        const reviewedArray = Array.isArray(reviewedData) ? reviewedData : [];
-        
-        const reviewedProductIdsInThisOrder = reviewedArray
-            .filter(r => r.MaDH === maDH)
-            .map(r => r.MaSP);
-        
-        const unreviewedItems = orderItems.filter(item => !reviewedProductIdsInThisOrder.includes(item.MaSP));
-        
-        if (unreviewedItems.length === 0) {
-            alert("Cảm ơn bạn! Bạn đã hoàn tất đánh giá cho tất cả sản phẩm trong đơn hàng này.");
-            return; 
+        try {
+            setCurrentReviewOrderId(maDH); // Lưu lại mã đơn đang đánh giá
+            
+            const resOrder = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/${maDH}`);
+            const orderData = await resOrder.json();
+            const orderItems = orderData.items;
+            
+            const resReview = await fetch(`${import.meta.env.VITE_API_URL}/api/reviews/user/${user.maTK}`);
+            const reviewedData = await resReview.json();
+            
+            // CHỈ lọc những đánh giá thuộc về CÙNG MỘT ĐƠN HÀNG (MaDH) này
+            const reviewedProductIdsInThisOrder = reviewedData
+                .filter(r => r.MaDH === maDH)
+                .map(r => r.MaSP);
+            
+            // Giữ lại các món chưa đánh giá trong đơn này
+            const unreviewedItems = orderItems.filter(item => !reviewedProductIdsInThisOrder.includes(item.MaSP));
+            
+            if (unreviewedItems.length === 0) {
+                alert("Cảm ơn bạn! Bạn đã hoàn tất đánh giá cho tất cả sản phẩm trong đơn hàng này.");
+                return; 
+            }
+
+            setReviewItems(unreviewedItems);
+            
+            const initialReviewData = {};
+            unreviewedItems.forEach(item => {
+                initialReviewData[item.MaSP] = { soSao: 5, noiDung: '' };
+            });
+            setReviewData(initialReviewData);
+            setShowReviewModal(true);
+        } catch (error) {
+            console.error("Lỗi lấy chi tiết đơn hàng", error);
         }
 
         setReviewItems(unreviewedItems);

@@ -45,7 +45,7 @@ function OrderDetailModal({ details, onClose }) {
                             <tbody>
 
                                 {
-                                    details.map((item, index) => (
+                                    (Array.isArray(details) ? details : []).map((item, index) => (
 
                                         <tr key={index}>
 

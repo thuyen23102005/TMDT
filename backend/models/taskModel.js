@@ -40,18 +40,21 @@ const checkCondition = async (maKH, loaiDieuKien) => {
 
     switch (loaiDieuKien) {
         case "DangNhap":
-            // Đăng nhập thì luôn coi là đủ điều kiện
             return true;
 
         case "ThemGioHang":
-            // ĐÃ SỬA LỖI 500: Lấy giỏ hàng từ Redis thay vì bảng SQL cũ
             try {
-                const redisKey = `cart:${maKH}`;
-                const cartData = await redisClient.get(redisKey);
-                const cart = cartData ? JSON.parse(cartData) : [];
-                return cart.length > 0;
+                const d = new Date();
+                d.setHours(d.getHours() + 7);
+                const todayStr = d.toISOString().split('T')[0];
+                
+                const taskKey = `task_added_cart:${maKH}:${todayStr}`;
+                const hasAdded = await redisClient.get(taskKey);
+                
+                // Nếu cờ bằng "done" tức là đã bấm thêm sản phẩm, dù xóa khỏi giỏ vẫn tính là hoàn thành
+                return hasAdded === "done";
             } catch (err) {
-                console.error("Lỗi đọc Redis trong checkCondition:", err);
+                console.error("Lỗi đọc Redis trong checkCondition ThemGioHang:", err);
                 return false;
             }
 
