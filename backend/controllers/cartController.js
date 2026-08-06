@@ -317,6 +317,16 @@ const addToCart = async (req, res) => {
 
     await redisClient.setEx(redisKey, 259200, JSON.stringify(cart));
 
+    // Lấy ngày hiện tại (Theo giờ Việt Nam GMT+7)
+    const d = new Date();
+    d.setHours(d.getHours() + 7);
+    const todayStr = d.toISOString().split('T')[0];
+    
+    // Tạo cờ đánh dấu đã thêm giỏ hàng hôm nay (Tự động xóa sau 24h = 86400 giây)
+    const taskKey = `task_added_cart:${realMaKH}:${todayStr}`;
+    await redisClient.setEx(taskKey, 86400, "done");
+    // =================================================
+
     res.status(200).json({ message: "Đã thêm vào giỏ hàng (Redis)" });
   } catch (error) {
     console.error("Lỗi khi thêm vào giỏ hàng Redis:", error);

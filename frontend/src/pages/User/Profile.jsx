@@ -17,6 +17,27 @@ function Profile() {
     const [showBenefits, setShowBenefits] = useState(false);
     const [activeTab, setActiveTab] = useState("Vàng");
 
+    const [isMonthlyClaimed, setIsMonthlyClaimed] = useState(false);
+
+    useEffect(() => {
+    const checkClaimStatus = async () => {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/vouchers/monthly-status`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setIsMonthlyClaimed(data.isClaimed);
+            }
+        } catch (error) {
+            console.error("Lỗi kiểm tra trạng thái ưu đãi", error);
+        }
+    };
+    checkClaimStatus();
+    }, [location.pathname]);
+
     const fileInputRef = useRef(null);
 
     const fetchOrders = () => {
@@ -115,32 +136,54 @@ function Profile() {
         setActiveTab(currentRank);
     }, [currentRank]);
 
-    const rankBenefits = {
+   const rankBenefits = {
         "Đồng": [
             { icon: "🚚", title: "Miễn phí vận chuyển", desc: "Tặng 1 mã Freeship mỗi tháng" },
-            { icon: "🎂", title: "Ưu đãi Sinh nhật", desc: "Voucher giảm 5% (tối đa 20.000đ)" }
+            { icon: "🎟️", title: "Ưu đãi giảm giá", desc: "Voucher giảm 5% (tối đa 20.000đ)" }
         ],
         "Bạc": [
             { icon: "🚚", title: "Miễn phí vận chuyển", desc: "Tặng 2 mã Freeship mỗi tháng" },
             { icon: "🏷️", title: "Voucher độc quyền", desc: "Giảm 5% cho đơn từ 200.000đ" },
-            { icon: "🎂", title: "Ưu đãi Sinh nhật", desc: "Voucher giảm 10% (tối đa 50.000đ)" }
+            { icon: "🎟️", title: "Ưu đãi giảm giá", desc: "Voucher giảm 10% (tối đa 50.000đ)" }
         ],
         "Vàng": [
             { icon: "🚚", title: "Miễn phí vận chuyển", desc: "Tặng 4 mã Freeship mỗi tháng" },
             { icon: "👑", title: "Ngày hội Thành viên", desc: "Nhận x2 điểm thưởng ngày 15 hàng tháng" },
             { icon: "🎁", title: "Quà tặng Thăng hạng", desc: "Tặng ngay 1 voucher 50.000đ khi lên hạng" },
-            { icon: "🎂", title: "Ưu đãi Sinh nhật", desc: "Voucher giảm 15% (tối đa 100.000đ)" }
+            { icon: "🎟️", title: "Ưu đãi giảm giá", desc: "Voucher giảm 15% (tối đa 100.000đ)" }
         ],
         "Kim Cương": [
             { icon: "🚚", title: "Miễn phí vận chuyển", desc: "Freeship không giới hạn (tối đa 30k/đơn)" },
             { icon: "👑", title: "Ngày hội Thành viên", desc: "Nhận x3 điểm thưởng ngày 15 hàng tháng" },
             { icon: "🎁", title: "Quà tặng Thăng hạng", desc: "Tặng ngay 1 voucher 100.000đ khi lên hạng" },
             { icon: "🎧", title: "Chăm sóc Đặc quyền", desc: "Hotline hỗ trợ riêng biệt ưu tiên 24/7" },
-            { icon: "🎂", title: "Ưu đãi Sinh nhật", desc: "Voucher giảm 20% (tối đa 200.000đ)" }
+            { icon: "🎟️", title: "Ưu đãi giảm giá", desc: "Voucher giảm 20% (tối đa 200.000đ)" }
         ]
     };
 
     const showRewardSection = location.pathname === "/profile" || location.pathname === "/profile/" || location.pathname.includes("/profile/uu-dai");
+
+    const handleClaimMonthly = async () => {
+        const token = localStorage.getItem("token");
+        if (!token) return alert("Vui lòng đăng nhập");
+
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/vouchers/claim-monthly`, {
+                method: "POST",
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const data = await res.json();
+            
+            if (res.ok) {
+                alert(`🎉 ${data.message}`);
+                setIsMonthlyClaimed(true);
+            } else {
+                alert(`⚠️ ${data.message}`);
+            }
+        } catch (error) {
+            alert("Lỗi kết nối máy chủ");
+        }
+    };
 
     return (
         <div className="row g-4 pt-0 pb-5 profile-container">
@@ -217,9 +260,9 @@ function Profile() {
                         <div className="row g-3 mb-3">
                             <div className="col-md-6">
                                 <div className="bg-white rounded-4 p-4 border h-100">
-                                    <h6>🎁 Ưu đãi</h6>
+                                    <h6>🎁 Điểm xét hạng</h6>
                                     <h3>
-                                        {(totalSpent * 0.1).toLocaleString()}
+                                        {diemXepHang.toLocaleString()}  
                                     </h3>
                                 </div>
                             </div>
@@ -238,7 +281,7 @@ function Profile() {
                         </div>
 
                         <div className="bg-white rounded-4 p-4 border-0 shadow-sm mb-3">
-                            <div className="d-flex justify-content-between align-items-center mb-3">
+                           <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-3">
                                 <div className="d-flex align-items-center gap-3">
                                     <div 
                                         className="d-flex align-items-center justify-content-center rounded-circle rank-icon-box"
@@ -252,17 +295,27 @@ function Profile() {
                                     </div>
                                 </div>
 
-                                {currentRank !== "Kim Cương" ? (
-                                    <div className="text-end bg-light px-3 py-2 rounded-3">
-                                        <small className="text-muted d-block">Lên hạng <strong>{nextRank}</strong></small>
-                                        <small className="rank-needed-badge">Cần thêm {pointsNeeded.toLocaleString()} điểm</small>
-                                    </div>
-                                ) : (
-                                    <div className="text-end bg-light px-3 py-2 rounded-3">
-                                        <small className="text-muted d-block">Chúc mừng!</small>
-                                        <small className="fw-bold" style={{ color: rankColor }}>Đã đạt thứ hạng cao nhất</small>
-                                    </div>
-                                )}
+                                <div className="d-flex gap-2 align-items-center">
+                                    <button 
+                                        onClick={handleClaimMonthly}
+                                        className="btn fw-bold border-0 shadow-sm px-3 py-2"
+                                        style={{ backgroundColor: rankColor, color: currentRank === "Vàng" ? "#000" : "#fff" }}
+                                    >
+                                        🎁 Nhận ưu đãi tháng
+                                    </button>
+
+                                    {currentRank !== "Kim Cương" ? (
+                                        <div className="text-end bg-light px-3 py-2 rounded-3">
+                                            <small className="text-muted d-block">Lên hạng <strong>{nextRank}</strong></small>
+                                            <small className="rank-needed-badge">Cần thêm {pointsNeeded.toLocaleString()} điểm</small>
+                                        </div>
+                                    ) : (
+                                        <div className="text-end bg-light px-3 py-2 rounded-3">
+                                            <small className="text-muted d-block">Chúc mừng!</small>
+                                            <small className="fw-bold" style={{ color: rankColor }}>Đã đạt thứ hạng cao nhất</small>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
                             <div className="progress mt-4 rank-progress-bar">

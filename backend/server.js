@@ -41,6 +41,7 @@ const chatbotRoutes = require("./routes/chatbotRoutes");
 const reportRoutes = require("./routes/reportRoutes");
 
 
+
 // ===== MIDDLEWARE (luôn đặt cors() và express.json() TRƯỚC mọi route) =====
 app.use(cors());
 app.use(express.json());
