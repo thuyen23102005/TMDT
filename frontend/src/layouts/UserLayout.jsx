@@ -1,18 +1,24 @@
 import { Outlet } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import useScrollDirection from "../hooks/useScrollDirection";
+import "./UserLayout.css";
 
 function UserLayout() {
+    const isVisible = useScrollDirection();
+
     return (
         <div className="d-flex flex-column min-vh-100">
-            <Header />
-
-            <main
+            <div
+                className="user-sticky-header"
                 style={{
-                    paddingTop: "80px",
-                    flex: 1
+                    transform: isVisible ? "translateY(0)" : "translateY(-100%)",
                 }}
             >
+                <Header />
+            </div>
+
+            <main className="user-main-content" style={{ flex: 1 }}>
                 <Outlet />
             </main>
 

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 function Header() {
     const [keyword, setKeyword] = useState("");
     const [user, setUser] = useState(null);
-    const [unreadCount, setUnreadCount] = useState(0); 
+    const [unreadCount, setUnreadCount] = useState(0);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -30,7 +30,7 @@ function Header() {
         if (!user) return;
         const timer = setInterval(() => {
             fetchUnreadCount(user.maTK);
-        }, 30000); 
+        }, 30000);
         return () => clearInterval(timer);
     }, [user]);
 
@@ -57,14 +57,20 @@ function Header() {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         setUser(null);
-        setUnreadCount(0); 
+        setUnreadCount(0);
         navigate("/");
     };
 
     return (
         <div
-            className="d-flex justify-content-between align-items-center px-4 py-3"
-            style={{ backgroundColor: "#fff", borderBottom: "1px solid #eee", gap: "20px" }}
+            className="d-flex justify-content-between align-items-center px-4"
+            style={{
+                backgroundColor: "#fff",
+                borderBottom: "1px solid #eee",
+                gap: "20px",
+                height: "var(--header-height)",
+                boxSizing: "border-box",
+            }}
         >
             <Link to="/" className="d-flex align-items-center text-decoration-none flex-shrink-0" style={{ gap: "8px" }}>
                 <span style={{ fontSize: "26px" }}>🌱</span>
@@ -114,19 +120,18 @@ function Header() {
 
                 {user ? (
                     <>
-                        {/* CHUÔNG ĐƯỢC ÉP CSS TRONG SUỐT HOÀN TOÀN */}
-                        <Link 
-                            to="/profile/thong-bao" 
+                        <Link
+                            to="/profile/thong-bao"
                             title="Thông báo"
-                            style={{ 
+                            style={{
                                 position: "relative",
                                 display: "inline-flex",
                                 alignItems: "center",
                                 justifyContent: "center",
-                                width: "40px", 
-                                height: "40px", 
+                                width: "40px",
+                                height: "40px",
                                 textDecoration: "none",
-                                backgroundColor: "transparent", /* ÉP BUỘC TRONG SUỐT */
+                                backgroundColor: "transparent",
                                 background: "none",
                                 border: "none",
                                 outline: "none",
@@ -134,17 +139,16 @@ function Header() {
                             }}
                         >
                             <span style={{ fontSize: "22px", background: "transparent", lineHeight: "1" }}>🔔</span>
-                            
-                            {/* CHẤM ĐỎ */}
+
                             {unreadCount > 0 && (
-                                <span 
-                                    style={{ 
+                                <span
+                                    style={{
                                         position: "absolute",
-                                        top: "0px", 
-                                        right: "0px", 
+                                        top: "0px",
+                                        right: "0px",
                                         backgroundColor: "#d32f2f",
                                         color: "white",
-                                        fontSize: "10px", 
+                                        fontSize: "10px",
                                         fontWeight: "bold",
                                         padding: "3px 5px",
                                         borderRadius: "50%",
@@ -174,7 +178,7 @@ function Header() {
                         >
                             👤
                         </Link>
-                        
+
                         <button
                             onClick={handleLogout}
                             className="px-3 py-2"
