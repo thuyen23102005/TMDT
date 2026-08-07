@@ -276,6 +276,7 @@ const searchProducts = async (keyword, limit = 5) => {
             sp.GiamToiDa,       -- Thêm dòng này
             sp.TuDongGiamGia,   -- Thêm dòng này
             sp.MoTa,
+            sp.HinhAnh,
             sp.SoLuongTon,
             sp.DonViTinh,
             dm.TenDM

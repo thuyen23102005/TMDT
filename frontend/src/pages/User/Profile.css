@@ -69,23 +69,67 @@
 /* ==========================================
    SIDEBAR MENU DẠNG LINK
    ========================================== */
+.profile-sidebar-card {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+  border: 1px solid #f0f1ef;
+}
+
+.profile-menu-heading {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #9aa39a;
+  padding: 4px 12px 10px;
+}
+
+.profile-menu-heading-second {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #eef0ee;
+}
+
 .profile-menu-link {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   padding: 10px 12px;
+  margin-bottom: 2px;
   border-radius: 10px;
   text-decoration: none;
-  color: #212529;
-  font-weight: 400;
+  color: #414a41;
+  font-weight: 500;
+  font-size: 14px;
   background-color: transparent;
-  transition: all 0.2s ease-in-out;
+  border-left: 3px solid transparent;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.profile-menu-icon {
+  flex-shrink: 0;
+  color: #8a938a;
+  transition: color 0.15s ease;
+}
+
+.profile-menu-link:hover {
+  background-color: #f4f7f4;
+  color: #1b4332;
+}
+
+.profile-menu-link:hover .profile-menu-icon {
+  color: #2e7d32;
 }
 
 .profile-menu-link.active {
-  color: #2e7d32;
+  color: #1b4332;
   font-weight: 700;
   background-color: rgba(46, 125, 50, 0.08);
+  border-left-color: #2e7d32;
+}
+
+.profile-menu-link.active .profile-menu-icon {
+  color: #2e7d32;
 }
 
 /* ==========================================

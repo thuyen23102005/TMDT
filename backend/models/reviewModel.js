@@ -65,4 +65,70 @@ const createReview = async (maTK, maSP, maDH, soSao, noiDung) => {
         `);
 };
 
-module.exports = { getReviewsByProduct, getReviewsByUser, checkCanReview, createReview };
+// Tổng hợp đánh giá (điểm trung bình, số lượt, vài nhận xét tiêu biểu)
+// cho một danh sách MaSP - dùng cho Chatbot tư vấn dựa trên review thật
+const getReviewSummaryForProducts = async (maSPList = []) => {
+
+    if (!Array.isArray(maSPList) || maSPList.length === 0) return [];
+
+    const pool = await connectDB();
+    const statsRequest = pool.request();
+
+    const placeholders = maSPList.map((maSP, i) => {
+        const paramName = `maSP${i}`;
+        statsRequest.input(paramName, sql.Int, maSP);
+        return `@${paramName}`;
+    }).join(", ");
+
+    // 1. Điểm trung bình + số lượt đánh giá theo từng sản phẩm
+    const statsResult = await statsRequest.query(`
+        SELECT
+            MaSP,
+            COUNT(*) AS SoLuotDanhGia,
+            AVG(CAST(SoSao AS FLOAT)) AS DiemTrungBinh
+        FROM DanhGia
+        WHERE MaSP IN (${placeholders})
+        GROUP BY MaSP
+    `);
+
+    const statsMap = {};
+    statsResult.recordset.forEach(row => {
+        statsMap[row.MaSP] = {
+            soLuot: row.SoLuotDanhGia,
+            diemTB: Math.round(row.DiemTrungBinh * 10) / 10
+        };
+    });
+
+    // 2. Lấy vài nhận xét tiêu biểu (ưu tiên sao cao, mới nhất) cho mỗi sản phẩm
+    const reviewSummaries = [];
+
+    for (const maSP of Object.keys(statsMap)) {
+        const commentsResult = await pool.request()
+            .input("MaSP", sql.Int, maSP)
+            .query(`
+                SELECT TOP 3 SoSao, NoiDung
+                FROM DanhGia
+                WHERE MaSP = @MaSP
+                  AND NoiDung IS NOT NULL
+                  AND LTRIM(RTRIM(NoiDung)) <> ''
+                ORDER BY SoSao DESC, NgayDG DESC
+            `);
+
+        reviewSummaries.push({
+            MaSP: Number(maSP),
+            soLuotDanhGia: statsMap[maSP].soLuot,
+            diemTrungBinh: statsMap[maSP].diemTB,
+            nhanXetTieuBieu: commentsResult.recordset.map(r => r.NoiDung)
+        });
+    }
+
+    return reviewSummaries;
+};
+
+module.exports = {
+    getReviewsByProduct,
+    getReviewsByUser,
+    checkCanReview,
+    createReview,
+    getReviewSummaryForProducts
+};
