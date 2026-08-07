@@ -107,19 +107,7 @@ function DonHang() {
         } catch (error) {
             console.error("Lỗi lấy chi tiết đơn hàng", error);
         }
-
-        setReviewItems(unreviewedItems);
-        
-        const initialReviewData = {};
-        unreviewedItems.forEach(item => {
-            initialReviewData[item.MaSP] = { soSao: 5, noiDung: '' };
-        });
-        setReviewData(initialReviewData);
-        setShowReviewModal(true);
-    } catch (error) {
-        console.error("Lỗi lấy chi tiết đơn hàng", error);
-    }
-};
+    };
 
     const submitReview = async (maSP) => {
         const { soSao, noiDung } = reviewData[maSP];
@@ -619,7 +607,6 @@ function DonHang() {
         </div>
 
     );
-
 }
 
 export default DonHang;
