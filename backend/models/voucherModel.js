@@ -67,7 +67,7 @@ const createVoucher = async (voucher) => {
 
 };
 
-// Sửa
+/// Sửa
 const updateVoucher = async (id, voucher) => {
 
     const pool = await connectDB();
@@ -93,7 +93,7 @@ const updateVoucher = async (id, voucher) => {
                 NgayKT=@NgayKT,
                 DieuKienApDung=@DieuKienApDung,
                 SoLuong=@SoLuong,
-                SoDiemDoi=@SoDiemDoi
+                SoDiemDoi=@SoDiemDoi, -- Đã thêm dấu phẩy tại đây
                 LoaiVoucher=@LoaiVoucher
             WHERE MaGG=@MaGG
         `);
@@ -200,7 +200,8 @@ const getMyVouchers = async (maKH) => {
             SELECT * FROM (
                 -- 1. VOUCHER CÁ NHÂN (Khách đã nhận từ Hạng hoặc đã Đổi điểm)
                 SELECT kv.MaKHV, kv.NgayDoi, kv.DaSuDung,
-                       mg.MaGG, mg.Code, mg.LoaiGiam, mg.GiaTriGiam, mg.NgayKT, mg.DieuKienApDung
+                       mg.MaGG, mg.Code, mg.LoaiGiam, mg.GiaTriGiam, mg.NgayKT, mg.DieuKienApDung,
+                       mg.LoaiVoucher -- Bổ sung cột LoaiVoucher
                 FROM KhachHang_Voucher kv
                 JOIN MaGiamGia mg ON kv.MaGG = mg.MaGG
                 WHERE kv.MaKH = @MaKH
@@ -209,7 +210,8 @@ const getMyVouchers = async (maKH) => {
                 
                 -- 2. VOUCHER BÌNH THƯỜNG (Tự động hiện trong ví tất cả mọi người)
                 SELECT NULL AS MaKHV, NULL AS NgayDoi, 0 AS DaSuDung,
-                       MaGG, Code, LoaiGiam, GiaTriGiam, NgayKT, DieuKienApDung
+                       MaGG, Code, LoaiGiam, GiaTriGiam, NgayKT, DieuKienApDung,
+                       LoaiVoucher -- Bổ sung cột LoaiVoucher
                 FROM MaGiamGia
                 WHERE SoLuong > 0 
                   AND NgayKT >= CAST(GETDATE() AS DATE)
