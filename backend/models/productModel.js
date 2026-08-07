@@ -1,9 +1,8 @@
 const { connectDB, sql } = require("../config/db");
 const calculatePrice = require("../utils/priceCalculator");
+
 const checkProductName = async (TenSP) => {
-
     const pool = await connectDB();
-
     const result = await pool.request()
         .input("TenSP", sql.NVarChar, TenSP)
         .query(`
@@ -11,15 +10,11 @@ const checkProductName = async (TenSP) => {
             FROM SanPham
             WHERE TenSP = @TenSP
         `);
-
     return result.recordset.length > 0;
 };
 
-
 const checkCategoryExists = async (MaDM) => {
-
     const pool = await connectDB();
-
     const result = await pool.request()
         .input("MaDM", sql.Int, MaDM)
         .query(`
@@ -27,12 +22,10 @@ const checkCategoryExists = async (MaDM) => {
             FROM DanhMuc
             WHERE MaDM = @MaDM
         `);
-
     return result.recordset.length > 0;
 };
 
 const getAllProducts = async (page, limit) => {
-
     const pool = await connectDB();
     const offset = (page - 1) * limit;
 
@@ -53,9 +46,12 @@ const getAllProducts = async (page, limit) => {
             sp.TenSP,
             sp.MaDM,
             sp.DonGia,
-            sp.GiaGoc,          -- Thêm dòng này
-            sp.GiamToiDa,       -- Thêm dòng này
-            sp.TuDongGiamGia,   -- Thêm dòng này
+            sp.GiaGoc,
+            sp.GiamToiDa,
+            sp.TuDongGiamGia,
+            sp.LoaiHang,        -- Thêm dòng này
+            sp.NgayNhap,        -- Thêm dòng này
+            sp.HanSuDung,       -- Thêm dòng này
             sp.MoTa,
             sp.HinhAnh,
             sp.SoLuongTon,
@@ -71,30 +67,27 @@ const getAllProducts = async (page, limit) => {
         FETCH NEXT @limit ROWS ONLY 
         `);
     return {
-
         products: result.recordset,
-
         total,
-
         page,
-
         totalPages: Math.ceil(total/limit)
-
     };
 };
+
 const getAllProductsClient = async () => {
-
     const pool = await connectDB();
-
     const result = await pool.request().query(`
         SELECT
             sp.MaSP,
             sp.MaDM,
             sp.TenSP,
             sp.DonGia,
-            sp.GiaGoc,          -- Thêm dòng này
-            sp.GiamToiDa,       -- Thêm dòng này
-            sp.TuDongGiamGia,   -- Thêm dòng này
+            sp.GiaGoc,
+            sp.GiamToiDa,
+            sp.TuDongGiamGia,
+            sp.LoaiHang,        -- Thêm dòng này
+            sp.NgayNhap,        -- Thêm dòng này
+            sp.HanSuDung,       -- Thêm dòng này
             sp.MoTa,
             sp.HinhAnh,
             sp.SoLuongTon,
@@ -106,9 +99,7 @@ const getAllProductsClient = async () => {
         WHERE sp.TrangThai = 1
         ORDER BY sp.MaSP DESC
     `);
-
     return result.recordset;
-
 };
 
 const filterProductsByPrice = async (minPrice, maxPrice) => {
@@ -120,9 +111,12 @@ const filterProductsByPrice = async (minPrice, maxPrice) => {
             sp.MaDM,
             sp.TenSP,
             sp.DonGia,
-            sp.GiaGoc,          -- Thêm dòng này
-            sp.GiamToiDa,       -- Thêm dòng này
-            sp.TuDongGiamGia,   -- Thêm dòng này
+            sp.GiaGoc,
+            sp.GiamToiDa,
+            sp.TuDongGiamGia,
+            sp.LoaiHang,        -- Thêm dòng này
+            sp.NgayNhap,        -- Thêm dòng này
+            sp.HanSuDung,       -- Thêm dòng này
             sp.MoTa,
             sp.HinhAnh,
             sp.SoLuongTon,
@@ -133,13 +127,11 @@ const filterProductsByPrice = async (minPrice, maxPrice) => {
         WHERE sp.TrangThai = 1
     `;
 
-    // Thêm điều kiện lọc giá tối thiểu
     if (minPrice !== null && !isNaN(minPrice)) {
         query += ` AND sp.DonGia >= @minPrice`;
         request.input("minPrice", sql.Decimal(18, 2), minPrice);
     }
 
-    // Thêm điều kiện lọc giá tối đa
     if (maxPrice !== null && !isNaN(maxPrice)) {
         query += ` AND sp.DonGia <= @maxPrice`;
         request.input("maxPrice", sql.Decimal(18, 2), maxPrice);
@@ -159,20 +151,25 @@ const getById = async (id) => {
     return result.recordset[0];
 };
 
-// Thêm sản phẩm
 const createProduct = async (product) => {
     const pool = await connectDB();
     
-    // Xử lý logic boolean cho TuDongGiamGia (vì FormData đôi khi gửi dạng chuỗi 'true'/'false')
     const isAutoDiscount = product.TuDongGiamGia === 'false' || product.TuDongGiamGia === false ? 0 : 1;
+
+    // Xử lý giá trị null cho HanSuDung nếu không nhập
+    const hanSuDung = product.HanSuDung && product.HanSuDung !== "" ? product.HanSuDung : null;
+    const ngayNhap = product.NgayNhap && product.NgayNhap !== "" ? product.NgayNhap : new Date();
 
     await pool.request()
         .input("TenSP", sql.NVarChar, product.TenSP)
         .input("MaDM", sql.Int, product.MaDM)
-        .input("DonGia", sql.Decimal(18,2), product.GiaGoc) // Lưu tạm GiaGoc vào DonGia để thỏa mãn NOT NULL
+        .input("DonGia", sql.Decimal(18,2), product.GiaGoc) 
         .input("GiaGoc", sql.Decimal(18,2), product.GiaGoc)
         .input("GiamToiDa", sql.Int, product.GiamToiDa || 30)
         .input("TuDongGiamGia", sql.Bit, isAutoDiscount)
+        .input("LoaiHang", sql.NVarChar, product.LoaiHang || 'Dài hạn') // Thêm
+        .input("NgayNhap", sql.Date, ngayNhap)                          // Thêm
+        .input("HanSuDung", sql.Date, hanSuDung)                        // Thêm
         .input("MoTa", sql.NVarChar, product.MoTa)
         .input("HinhAnh", sql.NVarChar, product.HinhAnh)
         .input("SoLuongTon", sql.Int, product.SoLuongTon)
@@ -182,11 +179,13 @@ const createProduct = async (product) => {
             INSERT INTO SanPham
             (
                 TenSP, MaDM, DonGia, GiaGoc, GiamToiDa, TuDongGiamGia, 
+                LoaiHang, NgayNhap, HanSuDung, 
                 MoTa, HinhAnh, SoLuongTon, DonViTinh, TrangThai
             )
             VALUES
             (
                 @TenSP, @MaDM, @DonGia, @GiaGoc, @GiamToiDa, @TuDongGiamGia, 
+                @LoaiHang, @NgayNhap, @HanSuDung,
                 @MoTa, @HinhAnh, @SoLuongTon, @DonViTinh, @TrangThai
             )
         `);
@@ -197,6 +196,10 @@ const updateProduct = async (id, product) => {
     
     const isAutoDiscount = product.TuDongGiamGia === 'false' || product.TuDongGiamGia === false ? 0 : 1;
 
+    // Xử lý giá trị null cho HanSuDung
+    const hanSuDung = product.HanSuDung && product.HanSuDung !== "" ? product.HanSuDung : null;
+    const ngayNhap = product.NgayNhap && product.NgayNhap !== "" ? product.NgayNhap : new Date();
+
     let query = `
         UPDATE SanPham
         SET
@@ -206,6 +209,9 @@ const updateProduct = async (id, product) => {
             GiaGoc = @GiaGoc,
             GiamToiDa = @GiamToiDa,
             TuDongGiamGia = @TuDongGiamGia,
+            LoaiHang = @LoaiHang,       -- Thêm
+            NgayNhap = @NgayNhap,       -- Thêm
+            HanSuDung = @HanSuDung,     -- Thêm
             MoTa = @MoTa,
             SoLuongTon = @SoLuongTon,
             DonViTinh = @DonViTinh,
@@ -219,13 +225,15 @@ const updateProduct = async (id, product) => {
         .input("GiaGoc", sql.Decimal(18,2), product.GiaGoc)
         .input("GiamToiDa", sql.Int, product.GiamToiDa || 30)
         .input("TuDongGiamGia", sql.Bit, isAutoDiscount)
+        .input("LoaiHang", sql.NVarChar, product.LoaiHang || 'Dài hạn')
+        .input("NgayNhap", sql.Date, ngayNhap)
+        .input("HanSuDung", sql.Date, hanSuDung)
         .input("MoTa", sql.NVarChar, product.MoTa)
         .input("SoLuongTon", sql.Int, product.SoLuongTon)
         .input("DonViTinh", sql.NVarChar, product.DonViTinh)
         .input("TrangThai", sql.Bit, product.TrangThai)
         .input("MaSP", sql.Int, id);
 
-    // Chỉ cập nhật ảnh nếu người dùng chọn ảnh mới
     if(product.HinhAnh){
         query += `, HinhAnh=@HinhAnh`;
         request.input("HinhAnh", sql.NVarChar, product.HinhAnh);
@@ -237,9 +245,7 @@ const updateProduct = async (id, product) => {
 };
 
 const deleteProduct = async (id) => {
-
     const pool = await connectDB();
-
     await pool.request()
         .input("MaSP", sql.Int, id)
         .query(`
@@ -247,14 +253,10 @@ const deleteProduct = async (id) => {
             SET TrangThai = 0
             WHERE MaSP = @MaSP
         `);
-
 };
 
-// Tìm sản phẩm liên quan theo từ khóa - dùng cho Chatbot tư vấn
 const searchProducts = async (keyword, limit = 5) => {
-
     const pool = await connectDB();
-
     const words = keyword.split(/\s+/).filter(w => w.length > 1);
 
     if (words.length === 0) return [];
@@ -272,9 +274,12 @@ const searchProducts = async (keyword, limit = 5) => {
             sp.MaSP,
             sp.TenSP,
             sp.DonGia,
-            sp.GiaGoc,          -- Thêm dòng này
-            sp.GiamToiDa,       -- Thêm dòng này
-            sp.TuDongGiamGia,   -- Thêm dòng này
+            sp.GiaGoc,
+            sp.GiamToiDa,
+            sp.TuDongGiamGia,
+            sp.LoaiHang,        -- Thêm dòng này
+            sp.NgayNhap,        -- Thêm dòng này
+            sp.HanSuDung,       -- Thêm dòng này
             sp.MoTa,
             sp.HinhAnh,
             sp.SoLuongTon,
@@ -287,13 +292,11 @@ const searchProducts = async (keyword, limit = 5) => {
           AND (${conditions})
         ORDER BY sp.MaSP DESC
     `);
-
     return result.recordset;
 };
+
 const getAllPrices = async () => {
-
     const pool = await connectDB();
-
     const result = await pool.request().query(`
         SELECT
             MaSP,
@@ -301,19 +304,18 @@ const getAllPrices = async () => {
             GiaGoc,
             DonGia,
             GiamToiDa,
-            TuDongGiamGia
+            TuDongGiamGia,
+            LoaiHang,       -- Thêm dòng này để priceCalculator hoạt động đúng
+            HanSuDung       -- Thêm dòng này để priceCalculator hoạt động đúng
         FROM SanPham
         WHERE TrangThai = 1
         ORDER BY MaSP DESC
     `);
-
     return result.recordset;
 };
 
 const updatePrice = async (id, data) => {
-
     const pool = await connectDB();
-
     await pool.request()
         .input("MaSP", sql.Int, id)
         .input("GiaGoc", sql.Decimal(18,2), data.GiaGoc)
@@ -327,8 +329,8 @@ const updatePrice = async (id, data) => {
                 TuDongGiamGia = @TuDongGiamGia
             WHERE MaSP=@MaSP
         `);
-
 };
+
 module.exports = {
     getAllProducts,
     getAllProductsClient,

@@ -21,8 +21,13 @@ function VoucherWallet() {
         })
             .then(res => res.json())
             .then(data => {
-                // Đảm bảo data trả về là mảng thì mới set vào State
-                setVouchers(Array.isArray(data) ? data : []);
+                // Đảm bảo data trả về là mảng, sau đó LỌC lấy loại "Bình thường"
+                if (Array.isArray(data)) {
+                    const normalVouchers = data.filter(v => v.LoaiVoucher === 'Bình thường');
+                    setVouchers(normalVouchers);
+                } else {
+                    setVouchers([]);
+                }
                 setIsLoading(false);
             })
             .catch(err => {
