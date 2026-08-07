@@ -116,9 +116,6 @@ function DonHang() {
         });
         setReviewData(initialReviewData);
         setShowReviewModal(true);
-    } catch (error) {
-        console.error("Lỗi lấy chi tiết đơn hàng", error);
-    }
 };
 
     const submitReview = async (maSP) => {
