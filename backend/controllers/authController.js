@@ -1,6 +1,6 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const validateEmail = require("deep-email-validator");
+const { validate } = require("deep-email-validator");
 const authModel = require("../models/authModel");
 const notificationModel = require("../models/notificationModel");
 const redisClient = require("../config/redis");
@@ -34,25 +34,32 @@ const sendOTP = async (req, res) => {
 
         // --- LỚP 1: KIỂM TRA ĐỊNH DẠNG VÀ MX RECORD (CÓ CƠ CHẾ CẢNH BÁO AN TOÀN) ---
         try {
-            const resValidate = await validateEmail({
-                email: cleanEmail,
-                validateRegex: true,
-                validateMx: true,
-                validateTypo: true,
-                validateDisposable: true,
-            });
+    const resValidate = await validate({
+        email: cleanEmail,
+        validateRegex: true,
+        validateMx: false,
+        validateTypo: false,
+        validateDisposable: true,
+    });
 
-            if (!resValidate.valid) {
-                let reason = "Email không hợp lệ hoặc không tồn tại.";
-                if (resValidate.reason === 'disposable') reason = "Không hỗ trợ các loại Email rác dùng 1 lần!";
-                if (resValidate.reason === 'mx') reason = "Tên miền Email không tồn tại hoặc không thể nhận thư!";
-                return res.status(400).json({ message: reason });
-            }
-        } catch (valErr) {
-            console.warn("Bỏ qua kiểm tra MX record do lỗi DNS/Network:", valErr.message);
-            // Vẫn cho phép tiếp tục gửi OTP nếu việc kiểm tra DNS MX bị lỗi kết nối
+    if (!resValidate.valid) {
+        let reason = "Email không hợp lệ.";
+
+        if (resValidate.reason === "disposable") {
+            reason = "Không hỗ trợ Email rác dùng 1 lần!";
         }
 
+        return res.status(400).json({
+            message: reason
+        });
+    }
+
+} catch (valErr) {
+    console.warn(
+        "Không thể kiểm tra Email, tiếp tục gửi OTP:",
+        valErr.message
+    );
+}
         // --- LỚP 2: TẠO VÀ LƯU OTP VÀO REDIS (3 PHÚT) ---
         const otp = generateOTP();
         const redisKey = `otp:${cleanEmail}`;
@@ -72,8 +79,24 @@ const sendOTP = async (req, res) => {
             </div>
         `;
 
-        await sendEmail(cleanEmail, "[Nông Sản Shop] Mã xác thực OTP Email", htmlContent);
-        res.json({ message: "Đã gửi mã OTP thành công! Vui lòng kiểm tra hộp thư Gmail." });
+        const emailSent = await sendEmail(
+    cleanEmail,
+    "[Nông Sản Shop] Mã xác thực OTP Email",
+    htmlContent
+);
+
+if (!emailSent) {
+    // Nếu gửi email thất bại thì xóa OTP khỏi Redis
+    await redisClient.del(redisKey);
+
+    return res.status(500).json({
+        message: "Không thể gửi OTP đến Email. Vui lòng kiểm tra cấu hình Email."
+    });
+}
+
+res.json({
+    message: "Đã gửi mã OTP thành công! Vui lòng kiểm tra hộp thư Gmail."
+});
 
     } catch (error) {
         console.error("Lỗi gửi OTP chi tiết:", error);

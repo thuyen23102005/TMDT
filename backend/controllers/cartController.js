@@ -224,13 +224,30 @@ const checkoutCart = async (req, res) => {
     }
 
     const actualShippingFee = tongTien - calculatedSubTotal;
+
+    // ===== TỰ ĐỘNG GIẢM 20.000Đ CHO ĐƠN HÀNG ĐẦU TIÊN =====
+    const FIRST_ORDER_DISCOUNT = 20000;
+    const firstOrderCheck = await pool.request()
+        .input('MaKH', sql.Int, realMaKH)
+        .query(`
+            SELECT COUNT(*) AS SoDon FROM DonHang 
+            WHERE MaKH = @MaKH AND TrangThaiDonHang <> N'Đã hủy'
+        `);
+    const isFirstOrder = firstOrderCheck.recordset[0].SoDon === 0;
+
+    const firstOrderDiscount = isFirstOrder
+        ? Math.min(FIRST_ORDER_DISCOUNT, tongTien)
+        : 0;
+    const finalTongTien = tongTien - firstOrderDiscount;
+    // =======================================================
+
     const valuesCTDH = calculatedItems.join(', ');
 
     const resultUser = await pool.request()
       .input('MaKH', sql.Int, realMaKH)
       .input("MaDC", sql.Int, finalMaDC)
       .input('PhiVanChuyen', sql.Decimal(18,2), actualShippingFee) 
-      .input('TongTien', sql.Decimal(18,2), tongTien)
+      .input('TongTien', sql.Decimal(18,2), finalTongTien)
       .input('TrangThaiDH', sql.NVarChar(50), ttDH)
       .input('TrangThaiTT', sql.NVarChar(50), ttTT)
       .query(`
@@ -272,7 +289,8 @@ const checkoutCart = async (req, res) => {
                     <h2 style="color: #2e7d32; text-align: center;">Cảm ơn bạn đã đặt hàng tại Nông Sản Shop! 🌱</h2>
                     <p>Xin chào <strong>${HoTen || 'Quý khách'}</strong>,</p>
                     <p>Đơn hàng <strong>#${createdMaDH}</strong> của bạn đã được khởi tạo thành công và đang chờ cửa hàng xác nhận.</p>
-                    <p style="font-size: 16px; font-weight: bold; color: #d32f2f;">Tổng tiền thanh toán: ${Number(tongTien).toLocaleString()} đ</p>
+                    ${firstOrderDiscount > 0 ? `<p style="font-size: 14px; color: #2e7d32;">🎉 Bạn đã được áp dụng ưu đãi khách hàng mới: <strong>-${Number(firstOrderDiscount).toLocaleString()} đ</strong></p>` : ''}
+                    <p style="font-size: 16px; font-weight: bold; color: #d32f2f;">Tổng tiền thanh toán: ${Number(finalTongTien).toLocaleString()} đ</p>
 
                     <div style="text-align: center; margin: 30px 0;">
                         <a href="${orderTrackingLink}" target="_blank" style="background-color: #2e7d32; color: #ffffff; padding: 12px 25px; text-decoration: none; border-radius: 25px; font-weight: bold; font-size: 15px; display: inline-block;">
@@ -290,7 +308,11 @@ const checkoutCart = async (req, res) => {
         console.error("Lỗi khi gửi email chốt đơn cho user:", emailErr);
     }
 
-    return res.json({ message: "Chốt đơn thành công!", maDH: createdMaDH });
+    return res.json({
+        message: "Chốt đơn thành công!",
+        maDH: createdMaDH,
+        firstOrderDiscount
+    });
   } catch (error) {
     console.error("Lỗi khi chốt đơn:", error);
     res.status(500).json({ message: "Lỗi hệ thống khi thanh toán", error: error.message });
@@ -423,10 +445,41 @@ const removeFromCart = async (req, res) => {
   }
 };
 
+// ===== KIỂM TRA XEM KHÁCH CÓ ĐƯỢC ƯU ĐÃI ĐƠN HÀNG ĐẦU TIÊN KHÔNG =====
+const checkFirstOrderDiscount = async (req, res) => {
+  try {
+    const maTK = req.params.maTK;
+    const pool = await connectDB();
+
+    const khResult = await pool.request()
+      .input('MaTK', sql.Int, maTK)
+      .query('SELECT MaKH FROM KhachHang WHERE MaTK = @MaTK');
+
+    if (khResult.recordset.length === 0) {
+        return res.json({ isFirstOrder: false, discount: 0 });
+    }
+    const realMaKH = khResult.recordset[0].MaKH;
+
+    const result = await pool.request()
+      .input('MaKH', sql.Int, realMaKH)
+      .query(`
+        SELECT COUNT(*) AS SoDon FROM DonHang 
+        WHERE MaKH = @MaKH AND TrangThaiDonHang <> N'Đã hủy'
+      `);
+
+    const isFirstOrder = result.recordset[0].SoDon === 0;
+    res.json({ isFirstOrder, discount: isFirstOrder ? 20000 : 0 });
+  } catch (error) {
+    console.error("Lỗi kiểm tra ưu đãi lần đầu:", error);
+    res.status(500).json({ isFirstOrder: false, discount: 0 });
+  }
+};
+
 module.exports = {
   getCartByCustomerId,
   checkoutCart,
   addToCart,
   mergeCart,
-  removeFromCart
+  removeFromCart,
+  checkFirstOrderDiscount
 };
