@@ -11,17 +11,17 @@ const getAllCustomers = async () => {
             kh.GioiTinh,
             kh.NgaySinh,
             kh.DiaChi,
-            kh.DiemXepHang,
-            kh.DiemThuong,
-
             tk.Email,
             tk.SoDienThoai,
-            tk.TrangThai
-
+            tk.TrangThai,
+            ISNULL(SUM(dh.TongTien), 0) AS TongTienDaChi
         FROM KhachHang kh
         INNER JOIN TaiKhoan tk
             ON kh.MaTK = tk.MaTK
-
+        LEFT JOIN DonHang dh 
+            ON kh.MaKH = dh.MaKH AND dh.TrangThaiThanhToan = N'Đã thanh toán'
+        GROUP BY 
+            kh.MaKH, kh.HoTen, kh.GioiTinh, kh.NgaySinh, kh.DiaChi, tk.Email, tk.SoDienThoai, tk.TrangThai
         ORDER BY kh.MaKH
     `);
 
