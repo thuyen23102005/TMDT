@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
 
 function ChatWidget() {
     const [isOpen, setIsOpen] = useState(false);
@@ -10,6 +11,7 @@ function ChatWidget() {
     ]);
     const [input, setInput] = useState("");
     const [loading, setLoading] = useState(false);
+    const [lightboxImg, setLightboxImg] = useState(null); // ảnh đang xem full-size
 
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
@@ -66,7 +68,12 @@ function ChatWidget() {
 
             setMessages((prev) => [
                 ...prev,
-                { role: "bot", content: data.reply }
+                {
+                    role: "bot",
+                    content: data.reply,
+                    productImages: data.productImages || [],
+                    generatedImage: data.generatedImage || null,
+                }
             ]);
 
         } catch (err) {
@@ -128,7 +135,59 @@ function ChatWidget() {
                                     <div className="cw-msg-avatar">🌱</div>
                                 )}
                                 <div className={`cw-bubble ${msg.role === "user" ? "cw-bubble-user" : "cw-bubble-bot"}`}>
-                                    {msg.content}
+                                    {msg.role === "bot" ? (
+                                        <div className="cw-markdown">
+                                            <ReactMarkdown>{msg.content}</ReactMarkdown>
+                                        </div>
+                                    ) : (
+                                        msg.content
+                                    )}
+
+                                    {/* Ảnh sản phẩm thật từ kho */}
+                                    {msg.productImages && msg.productImages.length > 0 && (
+                                        <div className="cw-product-images">
+                                            {msg.productImages.map((p) => (
+                                                <button
+                                                    key={p.maSP}
+                                                    className="cw-product-thumb"
+                                                    onClick={() =>
+                                                        setLightboxImg({
+                                                            url: `${import.meta.env.VITE_API_URL}/uploads/${p.hinhAnh}`,
+                                                            caption: p.tenSP,
+                                                        })
+                                                    }
+                                                    title={p.tenSP}
+                                                >
+                                                    <img
+                                                        src={`${import.meta.env.VITE_API_URL}/uploads/${p.hinhAnh}`}
+                                                        alt={p.tenSP}
+                                                    />
+                                                    <span className="cw-product-thumb-label">{p.tenSP}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* Ảnh AI tạo minh họa */}
+                                    {msg.generatedImage && msg.generatedImage.base64 && (
+                                        <div className="cw-generated-image">
+                                            <button
+                                                className="cw-generated-image-btn"
+                                                onClick={() =>
+                                                    setLightboxImg({
+                                                        url: `data:${msg.generatedImage.mimeType};base64,${msg.generatedImage.base64}`,
+                                                        caption: "Ảnh minh họa do AI tạo",
+                                                    })
+                                                }
+                                            >
+                                                <img
+                                                    src={`data:${msg.generatedImage.mimeType};base64,${msg.generatedImage.base64}`}
+                                                    alt="Ảnh minh họa do AI tạo"
+                                                />
+                                            </button>
+                                            <span className="cw-generated-image-tag">✨ Ảnh minh họa do AI tạo</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ))}
@@ -183,6 +242,25 @@ function ChatWidget() {
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                                 <path d="M22 2L11 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                                 <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Lightbox xem ảnh full-size */}
+            {lightboxImg && (
+                <div className="cw-lightbox-overlay" onClick={() => setLightboxImg(null)}>
+                    <div className="cw-lightbox-content" onClick={(e) => e.stopPropagation()}>
+                        <img src={lightboxImg.url} alt={lightboxImg.caption} />
+                        <div className="cw-lightbox-caption">{lightboxImg.caption}</div>
+                        <button
+                            className="cw-lightbox-close"
+                            onClick={() => setLightboxImg(null)}
+                            aria-label="Đóng"
+                        >
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                                <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" />
                             </svg>
                         </button>
                     </div>
@@ -433,6 +511,65 @@ function ChatWidget() {
                     border-radius: 4px 16px 16px 16px;
                 }
 
+                /* Định dạng nội dung markdown trong tin nhắn bot */
+                .cw-markdown p {
+                    margin: 0 0 8px 0;
+                }
+
+                .cw-markdown p:last-child {
+                    margin-bottom: 0;
+                }
+
+                .cw-markdown strong {
+                    color: #1b5e20;
+                    font-weight: 700;
+                }
+
+                .cw-markdown em {
+                    color: #5a6b5a;
+                    font-style: italic;
+                }
+
+                .cw-markdown ul,
+                .cw-markdown ol {
+                    margin: 4px 0 8px 0;
+                    padding-left: 18px;
+                }
+
+                .cw-markdown ul:last-child,
+                .cw-markdown ol:last-child {
+                    margin-bottom: 0;
+                }
+
+                .cw-markdown li {
+                    margin-bottom: 4px;
+                    line-height: 1.5;
+                }
+
+                .cw-markdown li:last-child {
+                    margin-bottom: 0;
+                }
+
+                .cw-markdown a {
+                    color: #2e7d32;
+                    text-decoration: underline;
+                }
+
+                .cw-markdown h1,
+                .cw-markdown h2,
+                .cw-markdown h3 {
+                    font-size: 14px;
+                    margin: 0 0 6px 0;
+                    color: #1b5e20;
+                }
+
+                .cw-markdown code {
+                    background: #f0f4f0;
+                    padding: 1px 5px;
+                    border-radius: 4px;
+                    font-size: 12px;
+                }
+
                 .cw-bubble-user {
                     background: linear-gradient(135deg, #43a047, #2e7d32);
                     color: #fff;
@@ -456,6 +593,140 @@ function ChatWidget() {
 
                 .cw-typing-dot:nth-child(2) { animation-delay: 0.15s; }
                 .cw-typing-dot:nth-child(3) { animation-delay: 0.3s; }
+
+                /* Ảnh sản phẩm thật */
+                .cw-product-images {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 8px;
+                    margin-top: 10px;
+                }
+
+                .cw-product-thumb {
+                    width: 84px;
+                    border: 1px solid #e2e6e2;
+                    border-radius: 10px;
+                    background: #fafcfa;
+                    padding: 4px;
+                    cursor: pointer;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 4px;
+                    transition: border-color 0.15s ease, transform 0.1s ease;
+                }
+
+                .cw-product-thumb:hover {
+                    border-color: #4caf50;
+                    transform: translateY(-1px);
+                }
+
+                .cw-product-thumb img {
+                    width: 100%;
+                    height: 64px;
+                    object-fit: cover;
+                    border-radius: 6px;
+                    display: block;
+                }
+
+                .cw-product-thumb-label {
+                    font-size: 10.5px;
+                    color: #2e7d32;
+                    text-align: center;
+                    line-height: 1.25;
+                    max-width: 100%;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    display: -webkit-box;
+                    -webkit-line-clamp: 2;
+                    -webkit-box-orient: vertical;
+                }
+
+                /* Ảnh AI tạo */
+                .cw-generated-image {
+                    margin-top: 10px;
+                }
+
+                .cw-generated-image-btn {
+                    border: none;
+                    padding: 0;
+                    background: none;
+                    cursor: pointer;
+                    display: block;
+                    width: 100%;
+                    max-width: 200px;
+                }
+
+                .cw-generated-image-btn img {
+                    width: 100%;
+                    border-radius: 10px;
+                    display: block;
+                }
+
+                .cw-generated-image-tag {
+                    display: inline-block;
+                    margin-top: 5px;
+                    font-size: 10.5px;
+                    color: #9c7a1f;
+                    background: #fff6e0;
+                    border: 1px solid #f0dfa8;
+                    border-radius: 999px;
+                    padding: 2px 8px;
+                }
+
+                /* Lightbox */
+                .cw-lightbox-overlay {
+                    position: fixed;
+                    inset: 0;
+                    background: rgba(0, 0, 0, 0.65);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 2000;
+                    padding: 24px;
+                }
+
+                .cw-lightbox-content {
+                    position: relative;
+                    max-width: min(90vw, 480px);
+                    max-height: 85vh;
+                    background: #fff;
+                    border-radius: 14px;
+                    overflow: hidden;
+                    display: flex;
+                    flex-direction: column;
+                }
+
+                .cw-lightbox-content img {
+                    width: 100%;
+                    max-height: 70vh;
+                    object-fit: contain;
+                    display: block;
+                    background: #f4f7f5;
+                }
+
+                .cw-lightbox-caption {
+                    padding: 10px 14px;
+                    font-size: 13px;
+                    color: #2b2b2b;
+                    text-align: center;
+                }
+
+                .cw-lightbox-close {
+                    position: absolute;
+                    top: 8px;
+                    right: 8px;
+                    width: 30px;
+                    height: 30px;
+                    border-radius: 50%;
+                    border: none;
+                    background: rgba(0, 0, 0, 0.5);
+                    color: #fff;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                }
 
                 .cw-suggestions {
                     display: flex;

@@ -191,3 +191,29 @@
   color: white;
   transform: scale(1.05);
 }
+
+/* ====== Thêm đoạn này vào MainLayout.css ====== */
+
+.global-topbar {
+  height: var(--topbar-height);
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* giữ nguyên các style màu nền/chữ hiện có của bạn ở đây,
+     chỉ thêm 3 dòng phía trên nếu chưa có */
+}
+
+.sticky-top-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  transition: transform 0.3s ease-in-out, box-shadow 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.main-content {
+  padding-top: calc(var(--topbar-height) + var(--header-height));
+}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import './ProductDetail.css';
 import TreasureChestWidget from '../../components/TreasureChestWidget/TreasureChestWidget';
@@ -18,6 +18,22 @@ const ProductDetail = () => {
   const [canReview, setCanReview] = useState(false);
   const [rating, setRating] = useState(5);
   const [reviewText, setReviewText] = useState('');
+
+  // ===== TOAST NOTIFICATION =====
+  const [toasts, setToasts] = useState([]);
+  const toastIdRef = useRef(0);
+
+  const showToast = (message, type = 'success') => {
+    const id = toastIdRef.current++;
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 3500);
+  };
+
+  const dismissToast = (id) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  };
   
   const storedUser = JSON.parse(localStorage.getItem("user"));
   const favKey = storedUser ? `favorites_${storedUser.maTK}` : 'favorites';
@@ -67,15 +83,15 @@ const ProductDetail = () => {
         });
 
         if (response.ok) {
-          alert(`🛒 Đã thêm ${quantity} ${product.TenSP} vào giỏ hàng thành công!`);
+          showToast(`Đã thêm ${quantity} ${product.TenSP} vào giỏ hàng thành công!`, 'success');
           // --- THÊM DÒNG NÀY ĐỂ BÁO CHO HEADER NHẢY SỐ ---
           window.dispatchEvent(new Event('cartUpdated')); 
         } else {
-          alert("Có lỗi xảy ra khi thêm vào giỏ.");
+          showToast('Có lỗi xảy ra khi thêm vào giỏ.', 'error');
         }
       } catch (error) {
         console.error(error);
-        alert("Lỗi kết nối đến server.");
+        showToast('Lỗi kết nối đến server.', 'error');
       }
     } else {
       let localCart = JSON.parse(localStorage.getItem('cart') || '[]');
@@ -95,7 +111,7 @@ const ProductDetail = () => {
       }
       
       localStorage.setItem('cart', JSON.stringify(localCart));
-      alert(`🛒 Đã lưu ${quantity} ${product.TenSP} vào giỏ tạm! Vui lòng đăng nhập để đồng bộ.`);
+      showToast(`Đã lưu ${quantity} ${product.TenSP} vào giỏ tạm! Vui lòng đăng nhập để đồng bộ.`, 'info');
       
       // --- THÊM DÒNG NÀY CHO TRƯỜNG HỢP CHƯA ĐĂNG NHẬP ---
       window.dispatchEvent(new Event('cartUpdated')); 
@@ -119,7 +135,7 @@ const ProductDetail = () => {
   };
 
   const submitReview = async () => {
-    if (!reviewText.trim()) return alert("Vui lòng nhập nội dung đánh giá!");
+    if (!reviewText.trim()) return showToast('Vui lòng nhập nội dung đánh giá!', 'error');
     try {
         const res = await fetch(`${import.meta.env.VITE_API_URL}/api/reviews`, {
             method: 'POST',
@@ -127,17 +143,17 @@ const ProductDetail = () => {
             body: JSON.stringify({ maTK: storedUser.maTK, maSP: id, soSao: rating, noiDung: reviewText })
         });
         if (res.ok) {
-            alert("Cảm ơn bạn đã đánh giá sản phẩm!");
+            showToast('Cảm ơn bạn đã đánh giá sản phẩm!', 'success');
             setReviewText('');
             setRating(5);
             const newReviews = await fetch(`${import.meta.env.VITE_API_URL}/api/reviews/product/${id}`).then(r => r.json());
             setReviews(newReviews);
         } else {
             const err = await res.json();
-            alert(err.message);
+            showToast(err.message, 'error');
         }
     } catch (error) {
-        alert("Lỗi kết nối Server.");
+        showToast('Lỗi kết nối Server.', 'error');
     }
   };
 
@@ -150,6 +166,20 @@ const ProductDetail = () => {
 
   return (
     <div className="pd-wrapper">
+      {/* ===== TOAST CONTAINER ===== */}
+      <div className="pd-toast-container">
+        {toasts.map(toast => (
+          <div key={toast.id} className={`pd-toast pd-toast--${toast.type}`} onClick={() => dismissToast(toast.id)}>
+            <span className="pd-toast__icon">
+              {toast.type === 'success' && '✓'}
+              {toast.type === 'error' && '✕'}
+              {toast.type === 'info' && 'ℹ'}
+            </span>
+            <span className="pd-toast__message">{toast.message}</span>
+          </div>
+        ))}
+      </div>
+
       <nav className="pd-breadcrumb">
         <Link to="/" style={{ textDecoration: 'none', color: '#2e7d32', fontSize: '20px', fontWeight: 'bold' }}>🌱 Nông Sản Shop</Link>
         <span style={{ margin: '0 10px', color: '#888' }}>/</span>
@@ -328,6 +358,95 @@ const ProductDetail = () => {
         </div>
       </div>
       <TreasureChestWidget />
+
+      <style>{`
+        .pd-toast-container {
+          position: fixed;
+          top: 90px;
+          right: 24px;
+          z-index: 9999;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          max-width: 360px;
+        }
+
+        .pd-toast {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          background: #fff;
+          border-radius: 12px;
+          padding: 14px 16px;
+          box-shadow: 0 12px 28px rgba(27, 67, 50, 0.18);
+          border-left: 4px solid #2D6A4F;
+          cursor: pointer;
+          animation: pd-toast-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .pd-toast--success {
+          border-left-color: #2D6A4F;
+        }
+
+        .pd-toast--error {
+          border-left-color: #B9603D;
+        }
+
+        .pd-toast--info {
+          border-left-color: #E9A23B;
+        }
+
+        .pd-toast__icon {
+          flex-shrink: 0;
+          width: 26px;
+          height: 26px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 13px;
+          font-weight: 800;
+          color: #fff;
+        }
+
+        .pd-toast--success .pd-toast__icon {
+          background: #2D6A4F;
+        }
+
+        .pd-toast--error .pd-toast__icon {
+          background: #B9603D;
+        }
+
+        .pd-toast--info .pd-toast__icon {
+          background: #E9A23B;
+        }
+
+        .pd-toast__message {
+          font-size: 14px;
+          color: #1B4332;
+          font-weight: 500;
+          line-height: 1.4;
+        }
+
+        @keyframes pd-toast-in {
+          from {
+            opacity: 0;
+            transform: translateX(40px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+
+        @media (max-width: 500px) {
+          .pd-toast-container {
+            left: 16px;
+            right: 16px;
+            max-width: none;
+          }
+        }
+      `}</style>
     </div>
   );
 };

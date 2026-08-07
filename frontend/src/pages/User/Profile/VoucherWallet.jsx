@@ -5,10 +5,29 @@ function VoucherWallet() {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        fetch(`${import.meta.env.VITE_API_URL}/api/vouchers/active`)
+        // 1. Lấy token của người dùng hiện tại
+        const token = localStorage.getItem('token');
+        
+        if (!token) {
+            setIsLoading(false);
+            return; // Nếu chưa đăng nhập thì ngưng tải
+        }
+
+        // 2. Gọi đúng API ví cá nhân và truyền token vào headers
+        fetch(`${import.meta.env.VITE_API_URL}/api/vouchers/my-vouchers`, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        })
             .then(res => res.json())
             .then(data => {
-                setVouchers(data);
+                // Đảm bảo data trả về là mảng, sau đó LỌC lấy loại "Bình thường"
+                if (Array.isArray(data)) {
+                    const normalVouchers = data.filter(v => v.LoaiVoucher === 'Bình thường');
+                    setVouchers(normalVouchers);
+                } else {
+                    setVouchers([]);
+                }
                 setIsLoading(false);
             })
             .catch(err => {

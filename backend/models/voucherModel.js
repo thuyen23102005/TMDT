@@ -14,7 +14,8 @@ const getAllVoucher = async () => {
             NgayKT,
             DieuKienApDung,
             SoLuong,
-            SoDiemDoi
+            SoDiemDoi,
+            LoaiVoucher
         FROM MaGiamGia
         ORDER BY MaGG DESC
     `);
@@ -36,6 +37,7 @@ const createVoucher = async (voucher) => {
         .input("DieuKienApDung", sql.Decimal(18,2), voucher.DieuKienApDung)
         .input("SoLuong", sql.Int, voucher.SoLuong)
         .input("SoDiemDoi", sql.Int, voucher.SoDiemDoi || null)
+        .input("LoaiVoucher", sql.NVarChar, voucher.LoaiVoucher || "Bình thường")
         .query(`
             INSERT INTO MaGiamGia
             (
@@ -46,7 +48,8 @@ const createVoucher = async (voucher) => {
                 NgayKT,
                 DieuKienApDung,
                 SoLuong,
-                SoDiemDoi
+                SoDiemDoi,
+                LoaiVoucher
             )
             VALUES
             (
@@ -57,13 +60,14 @@ const createVoucher = async (voucher) => {
                 @NgayKT,
                 @DieuKienApDung,
                 @SoLuong,
-                @SoDiemDoi
+                @SoDiemDoi,
+                @LoaiVoucher
             )
         `);
 
 };
 
-// Sửa
+/// Sửa
 const updateVoucher = async (id, voucher) => {
 
     const pool = await connectDB();
@@ -78,6 +82,7 @@ const updateVoucher = async (id, voucher) => {
         .input("DieuKienApDung", sql.Decimal(18,2), voucher.DieuKienApDung)
         .input("SoLuong", sql.Int, voucher.SoLuong)
         .input("SoDiemDoi", sql.Int, voucher.SoDiemDoi || null)
+        .input("LoaiVoucher", sql.NVarChar, voucher.LoaiVoucher || 'Bình thường')
         .query(`
             UPDATE MaGiamGia
             SET
@@ -88,7 +93,8 @@ const updateVoucher = async (id, voucher) => {
                 NgayKT=@NgayKT,
                 DieuKienApDung=@DieuKienApDung,
                 SoLuong=@SoLuong,
-                SoDiemDoi=@SoDiemDoi
+                SoDiemDoi=@SoDiemDoi, -- Đã thêm dấu phẩy tại đây
+                LoaiVoucher=@LoaiVoucher
             WHERE MaGG=@MaGG
         `);
 
@@ -171,30 +177,50 @@ const getTotalPoints = async (maKH) => {
     return result.recordset[0].tongDiem;
 };
  
-// Danh sách voucher có thể đổi bằng điểm (còn hạn, còn số lượng, có gán điểm đổi)
+// Danh sách voucher có thể đổi bằng điểm
 const getRedeemableVouchers = async () => {
     const pool = await connectDB();
     const result = await pool.request().query(`
         SELECT MaGG, Code, LoaiGiam, GiaTriGiam, NgayBD, NgayKT, DieuKienApDung, SoLuong, SoDiemDoi
         FROM MaGiamGia
-        WHERE SoDiemDoi IS NOT NULL AND SoLuong > 0 AND NgayKT >= CAST(GETDATE() AS DATE)
+        WHERE LoaiVoucher = N'Đổi điểm' 
+          AND SoLuong > 0 
+          AND NgayKT >= CAST(GETDATE() AS DATE)
         ORDER BY SoDiemDoi ASC
     `);
     return result.recordset;
 };
  
-// Danh sách voucher khách hàng đã đổi (ví voucher cá nhân)
+// Danh sách voucher cá nhân + Voucher đại trà bình thường
 const getMyVouchers = async (maKH) => {
     const pool = await connectDB();
     const result = await pool.request()
         .input("MaKH", maKH)
         .query(`
-            SELECT kv.MaKHV, kv.NgayDoi, kv.DaSuDung,
-                   mg.MaGG, mg.Code, mg.LoaiGiam, mg.GiaTriGiam, mg.NgayKT, mg.DieuKienApDung
-            FROM KhachHang_Voucher kv
-            JOIN MaGiamGia mg ON kv.MaGG = mg.MaGG
-            WHERE kv.MaKH = @MaKH
-            ORDER BY kv.NgayDoi DESC
+            SELECT * FROM (
+                -- 1. VOUCHER CÁ NHÂN (Khách đã nhận từ Hạng hoặc đã Đổi điểm)
+                SELECT kv.MaKHV, kv.NgayDoi, kv.DaSuDung,
+                       mg.MaGG, mg.Code, mg.LoaiGiam, mg.GiaTriGiam, mg.NgayKT, mg.DieuKienApDung,
+                       mg.LoaiVoucher -- Bổ sung cột LoaiVoucher
+                FROM KhachHang_Voucher kv
+                JOIN MaGiamGia mg ON kv.MaGG = mg.MaGG
+                WHERE kv.MaKH = @MaKH
+                
+                UNION ALL
+                
+                -- 2. VOUCHER BÌNH THƯỜNG (Tự động hiện trong ví tất cả mọi người)
+                SELECT NULL AS MaKHV, NULL AS NgayDoi, 0 AS DaSuDung,
+                       MaGG, Code, LoaiGiam, GiaTriGiam, NgayKT, DieuKienApDung,
+                       LoaiVoucher -- Bổ sung cột LoaiVoucher
+                FROM MaGiamGia
+                WHERE SoLuong > 0 
+                  AND NgayKT >= CAST(GETDATE() AS DATE)
+                  AND LoaiVoucher = N'Bình thường' -- Chỉ bốc mã loại Bình thường
+                  AND MaGG NOT IN (
+                      SELECT MaGG FROM KhachHang_Voucher WHERE MaKH = @MaKH
+                  )
+            ) AS CombinedVouchers
+            ORDER BY DaSuDung ASC, NgayKT ASC
         `);
     return result.recordset;
 };

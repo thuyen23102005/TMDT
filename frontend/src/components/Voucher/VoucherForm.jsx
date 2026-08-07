@@ -15,7 +15,8 @@ function VoucherForm({
         NgayKT: "",
         DieuKienApDung: "",
         SoLuong: "",
-        SoDiemDoi: ""
+        SoDiemDoi: "",
+        LoaiVoucher: "Bình thường"
     });
 
     const [errors, setErrors] = useState({});
@@ -26,9 +27,9 @@ function VoucherForm({
 
             setFormData({
                 ...editingVoucher,
-                SoDiemDoi: editingVoucher.SoDiemDoi ?? ""
+                SoDiemDoi: editingVoucher.SoDiemDoi ?? "", 
+                LoaiVoucher: editingVoucher.LoaiVoucher || "Bình thường"
             });
-
         } else {
 
             setFormData({
@@ -39,7 +40,8 @@ function VoucherForm({
                 NgayKT: "",
                 DieuKienApDung: "",
                 SoLuong: "",
-                SoDiemDoi: ""
+                SoDiemDoi: "",
+                LoaiVoucher: "Bình thường"
             });
 
         }
@@ -388,6 +390,20 @@ function VoucherForm({
                             {errors.SoDiemDoi}
                         </div>
 
+                    </div>
+
+                    <div className="mb-3">
+                        <label className="form-label">Loại Voucher</label>
+                        <select
+                            className="form-control"
+                            name="LoaiVoucher"
+                            value={formData.LoaiVoucher}
+                            onChange={handleChange}
+                        >
+                            <option value="Bình thường">Bình thường (Hiển thị tự động trong ví)</option>
+                            <option value="Đổi điểm">Đổi điểm (Dùng điểm để đổi)</option>
+                            <option value="Hạng">Hạng (Quà tặng độc quyền theo Rank)</option>
+                        </select>
                     </div>
 
                     <button className="btn btn-success me-2">

@@ -90,6 +90,8 @@ app.use("/api/vietqr", require("./routes/vietqrRoutes"));
 
 app.use("/api/sepay", require("./routes/sepayRoutes"));
 
+app.use("/api/recommendations", require("./routes/recommendationRoutes"));
+
 // Test API
 app.get("/", (req, res) => {
     res.json({

@@ -2,6 +2,7 @@ import './Profile.css';
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import TreasureChestWidget from '../../components/TreasureChestWidget/TreasureChestWidget';
+import { User, MapPin, Lock, Gift, FileText, Ticket, Bell, Heart, Star } from 'lucide-react';
 
 function Profile() {
 
@@ -234,18 +235,46 @@ function Profile() {
                     <strong>{displayName}</strong>
                 </div>
 
-                <div className="rounded-4 p-3 bg-white">
-                    <h6>Thông tin tài khoản</h6>
-                    <Link to="/profile" className={`profile-menu-link ${isPathActive("/profile") ? "active" : ""}`}>👤 Hồ sơ cá nhân</Link>
-                    <Link to="/profile/dia-chi" className={`profile-menu-link ${isPathActive("/profile/dia-chi") ? "active" : ""}`}>📍 Sổ địa chỉ</Link>
-                    <Link to="/profile/doi-mat-khau" className={`profile-menu-link ${isPathActive("/profile/doi-mat-khau") ? "active" : ""}`}>🔒 Đổi mật khẩu</Link>
-                    <Link to="/profile/uu-dai" className={`profile-menu-link ${isPathActive("/profile/uu-dai") ? "active" : ""}`}>🎁 Ưu đãi thành viên</Link>
-                    <hr />
-                    <Link to="/profile/don-hang" className={`profile-menu-link ${isPathActive("/profile/don-hang") ? "active" : ""}`}>📄 Đơn hàng của tôi</Link>
-                    <Link to="/profile/vi-voucher" className={`profile-menu-link ${isPathActive("/profile/vi-voucher") ? "active" : ""}`}>🎟️ Ví voucher</Link>
-                    <Link to="/profile/thong-bao" className={`profile-menu-link ${isPathActive("/profile/thong-bao") ? "active" : ""}`}>✉️ Thông báo</Link>
-                    <Link to="/profile/yeu-thich" className={`profile-menu-link ${isPathActive("/profile/yeu-thich") ? "active" : ""}`}>♡ Sản phẩm yêu thích</Link>
-                    <Link to="/profile/danh-gia" className={`profile-menu-link ${isPathActive("/profile/danh-gia") ? "active" : ""}`}>★ Đánh giá của tôi</Link>
+                <div className="rounded-4 p-3 bg-white profile-sidebar-card">
+                    <span className="profile-menu-heading">Thông tin tài khoản</span>
+                    <Link to="/profile" className={`profile-menu-link ${isPathActive("/profile") ? "active" : ""}`}>
+                        <User size={17} strokeWidth={2} className="profile-menu-icon" />
+                        Hồ sơ cá nhân
+                    </Link>
+                    <Link to="/profile/dia-chi" className={`profile-menu-link ${isPathActive("/profile/dia-chi") ? "active" : ""}`}>
+                        <MapPin size={17} strokeWidth={2} className="profile-menu-icon" />
+                        Sổ địa chỉ
+                    </Link>
+                    <Link to="/profile/doi-mat-khau" className={`profile-menu-link ${isPathActive("/profile/doi-mat-khau") ? "active" : ""}`}>
+                        <Lock size={17} strokeWidth={2} className="profile-menu-icon" />
+                        Đổi mật khẩu
+                    </Link>
+                    <Link to="/profile/uu-dai" className={`profile-menu-link ${isPathActive("/profile/uu-dai") ? "active" : ""}`}>
+                        <Gift size={17} strokeWidth={2} className="profile-menu-icon" />
+                        Ưu đãi thành viên
+                    </Link>
+
+                    <span className="profile-menu-heading profile-menu-heading-second">Hoạt động</span>
+                    <Link to="/profile/don-hang" className={`profile-menu-link ${isPathActive("/profile/don-hang") ? "active" : ""}`}>
+                        <FileText size={17} strokeWidth={2} className="profile-menu-icon" />
+                        Đơn hàng của tôi
+                    </Link>
+                    <Link to="/profile/vi-voucher" className={`profile-menu-link ${isPathActive("/profile/vi-voucher") ? "active" : ""}`}>
+                        <Ticket size={17} strokeWidth={2} className="profile-menu-icon" />
+                        Ví voucher
+                    </Link>
+                    <Link to="/profile/thong-bao" className={`profile-menu-link ${isPathActive("/profile/thong-bao") ? "active" : ""}`}>
+                        <Bell size={17} strokeWidth={2} className="profile-menu-icon" />
+                        Thông báo
+                    </Link>
+                    <Link to="/profile/yeu-thich" className={`profile-menu-link ${isPathActive("/profile/yeu-thich") ? "active" : ""}`}>
+                        <Heart size={17} strokeWidth={2} className="profile-menu-icon" />
+                        Sản phẩm yêu thích
+                    </Link>
+                    <Link to="/profile/danh-gia" className={`profile-menu-link ${isPathActive("/profile/danh-gia") ? "active" : ""}`}>
+                        <Star size={17} strokeWidth={2} className="profile-menu-icon" />
+                        Đánh giá của tôi
+                    </Link>
                 </div>
             </div>
 
