@@ -5,6 +5,7 @@ function Header() {
     const [keyword, setKeyword] = useState("");
     const [user, setUser] = useState(null);
     const [unreadCount, setUnreadCount] = useState(0);
+    const [cartCount, setCartCount] = useState(0);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -13,6 +14,9 @@ function Header() {
             const parsedUser = JSON.parse(storedUser);
             setUser(parsedUser);
             fetchUnreadCount(parsedUser.maTK);
+            fetchCartCount(parsedUser.maTK); 
+        } else {
+            fetchCartCount(null);
         }
 
         const handleNotificationUpdate = () => {
@@ -22,14 +26,29 @@ function Header() {
             }
         };
 
+        const handleCartUpdate = () => {
+            const currentUser = JSON.parse(localStorage.getItem("user"));
+            if (currentUser) {
+                fetchCartCount(currentUser.maTK);
+            } else {
+                fetchCartCount(null);
+            }
+        };
+
         window.addEventListener('updateNotificationCount', handleNotificationUpdate);
-        return () => window.removeEventListener('updateNotificationCount', handleNotificationUpdate);
+        window.addEventListener('cartUpdated', handleCartUpdate); 
+
+        return () => {
+            window.removeEventListener('updateNotificationCount', handleNotificationUpdate);
+            window.removeEventListener('cartUpdated', handleCartUpdate);
+        };
     }, []);
 
-    useEffect(() => {
+     useEffect(() => {
         if (!user) return;
         const timer = setInterval(() => {
             fetchUnreadCount(user.maTK);
+            fetchCartCount(user.maTK);
         }, 30000);
         return () => clearInterval(timer);
     }, [user]);
@@ -46,6 +65,24 @@ function Header() {
             .catch(err => console.error("Lỗi đếm thông báo Header:", err));
     };
 
+    const fetchCartCount = (maTK) => {
+        if (maTK) {
+            fetch(`${import.meta.env.VITE_API_URL}/api/cart/${maTK}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (Array.isArray(data)) {
+                        setCartCount(data.length); 
+                    } else if (data && Array.isArray(data.items)) {
+                        setCartCount(data.items.length);
+                    }
+                })
+                .catch(err => console.error("Lỗi đếm giỏ hàng Header:", err));
+        } else {
+            const localCart = JSON.parse(localStorage.getItem('cart') || '[]');
+            setCartCount(localCart.length);
+        }
+    };
+
     const handleSearch = (e) => {
         e.preventDefault();
         if (keyword.trim()) {
@@ -58,6 +95,7 @@ function Header() {
         localStorage.removeItem("user");
         setUser(null);
         setUnreadCount(0);
+        fetchCartCount(null); // Chuyển về đếm giỏ hàng của LocalStorage khi đăng xuất
         navigate("/");
     };
 
@@ -113,9 +151,33 @@ function Header() {
                         borderRadius: "20px",
                         fontSize: "14px",
                         boxShadow: "0 2px 6px rgba(245, 124, 0, 0.3)",
+                        transition: "transform 0.2s",
+                        position: "relative",
+                        display: "inline-block"
                     }}
+                    onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-2px)"}
+                    onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}
                 >
                     🛒 Giỏ hàng
+                    {cartCount > 0 && (
+                        <span 
+                            style={{ 
+                                position: "absolute",
+                                top: "-5px", 
+                                right: "-5px", 
+                                backgroundColor: "#d32f2f",
+                                color: "white",
+                                fontSize: "11px", 
+                                fontWeight: "bold",
+                                padding: "3px 6px",
+                                borderRadius: "50%",
+                                border: "2px solid #fff",
+                                lineHeight: "1"
+                            }}
+                        >
+                            {cartCount > 99 ? '99+' : cartCount}
+                        </span>
+                    )}
                 </Link>
 
                 {user ? (
@@ -139,7 +201,6 @@ function Header() {
                             }}
                         >
                             <span style={{ fontSize: "22px", background: "transparent", lineHeight: "1" }}>🔔</span>
-
                             {unreadCount > 0 && (
                                 <span
                                     style={{

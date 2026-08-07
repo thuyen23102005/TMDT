@@ -68,6 +68,8 @@ const ProductDetail = () => {
 
         if (response.ok) {
           alert(`🛒 Đã thêm ${quantity} ${product.TenSP} vào giỏ hàng thành công!`);
+          // --- THÊM DÒNG NÀY ĐỂ BÁO CHO HEADER NHẢY SỐ ---
+          window.dispatchEvent(new Event('cartUpdated')); 
         } else {
           alert("Có lỗi xảy ra khi thêm vào giỏ.");
         }
@@ -94,6 +96,9 @@ const ProductDetail = () => {
       
       localStorage.setItem('cart', JSON.stringify(localCart));
       alert(`🛒 Đã lưu ${quantity} ${product.TenSP} vào giỏ tạm! Vui lòng đăng nhập để đồng bộ.`);
+      
+      // --- THÊM DÒNG NÀY CHO TRƯỜNG HỢP CHƯA ĐĂNG NHẬP ---
+      window.dispatchEvent(new Event('cartUpdated')); 
     }
   };
 
@@ -205,7 +210,10 @@ const ProductDetail = () => {
           </div>
 
             <div className="pd-variant"><span>Khu vực:</span><button className="btn-outline">Hồ Chí Minh</button></div>
-            <div className="pd-variant"><span>Trọng lượng:</span><button className="btn-active">1 kg</button></div>
+            <div className="pd-variant">
+              <span>Đơn vị:</span>
+              <button className="btn-active">1 {product.DonViTinh || 'kg'}</button>
+            </div>
 
             <div className="pd-actions">
               <div className="qty-box">
@@ -241,10 +249,12 @@ const ProductDetail = () => {
           </div>
           <div className="col-side">
             <div className="side-box">
-              {/* Đã sửa từ "Thông margin phẩm" thành "Thông tin sản phẩm" */}
               <SectionHeader title="Thông tin sản phẩm" />
               <div style={{ padding: '15px' }}>
-                <div className="side-row"><span style={{ width: '40%', fontWeight: 'bold' }}>Trọng lượng:</span><span>1 kg</span></div>
+                <div className="side-row">
+                  <span style={{ width: '40%', fontWeight: 'bold' }}>Đơn vị:</span>
+                  <span>1 {product.DonViTinh || 'kg'}</span>
+              </div>
                 <div className="side-row"><span style={{ width: '40%', fontWeight: 'bold' }}>Khu vực:</span><span>Hà Nội, Hồ Chí Minh</span></div>
               </div>
             </div>

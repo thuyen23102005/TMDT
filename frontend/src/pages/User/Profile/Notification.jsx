@@ -57,7 +57,7 @@ function Notification() {
         }
     };
 
-    // HÀM TÍNH THỜI GIAN THEO LOGIC MỚI
+    // HÀM TÍNH THỜI GIAN
     const timeAgo = (dateString) => {
         if (!dateString) return "Vừa xong";
 
