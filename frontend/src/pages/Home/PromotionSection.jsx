@@ -98,21 +98,21 @@ export default function PromotionSection() {
         }
 
         .km-heading {
-          font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-          font-size: 26px;
-          font-weight: 700;
-          color: #1B4332;
-          margin: 0;
-          letter-spacing: 0.02em;
-        }
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 28px;
+  font-weight: 600;
+  color: #1B4332;
+  margin: 0;
+  letter-spacing: 0;
+}
 
-        .km-underline {
-          width: 200px;
-          height: 3px;
-          background: #40916C;
-          margin-top: 10px;
-          border-radius: 2px;
-        }
+.km-underline {
+  width: 64px;
+  height: 3px;
+  background: linear-gradient(90deg, #E9A23B, #B9603D);
+  margin-top: 10px;
+  border-radius: 2px;
+}
 
         .km-see-more {
           font-size: 14px;
@@ -149,10 +149,10 @@ export default function PromotionSection() {
         }
 
         .km-card:hover {
-          transform: translateY(-6px);
-          box-shadow: 0 16px 30px rgba(27, 67, 50, 0.12);
-          border-color: #B7DCC3;
-        }
+  transform: translateY(-6px);
+  box-shadow: 0 16px 30px rgba(185, 96, 61, 0.16);
+  border-color: #E9A23B;
+}
 
         .km-card-image {
           position: relative;
@@ -178,33 +178,36 @@ export default function PromotionSection() {
         }
 
         .km-card-chip {
-          position: absolute;
-          top: 12px;
-          left: 12px;
-          background: rgba(255, 255, 255, 0.95);
-          color: #1B4332;
-          font-size: 12px;
-          font-weight: 700;
-          padding: 5px 12px;
-          border-radius: 999px;
-        }
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: #FBF1DE;
+  color: #1B4332;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px dashed #E9A23B;
+}
 
         .km-card-percent {
-          position: absolute;
-          top: 12px;
-          right: 12px;
-          width: 46px;
-          height: 46px;
-          border-radius: 50%;
-          background: #D62828;
-          color: #fff;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 13px;
-          font-weight: 800;
-          border: 2px dashed rgba(255, 255, 255, 0.7);
-        }
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  min-width: 46px;
+  height: 46px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #E9A23B, #B9603D);
+  color: #fff;
+  display: flex;
+  align-items: center;  
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 800;
+  border: none;
+  box-shadow: 0 4px 12px rgba(185, 96, 61, 0.35);
+}
 
         .km-card-body {
           padding: 16px 18px 20px;

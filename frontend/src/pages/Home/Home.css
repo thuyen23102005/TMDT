@@ -1,6 +1,14 @@
 /* src/pages/Home/Home.css */
 
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&display=swap');
+
 .home-container {
+  --forest-deep: #1B4332;
+  --forest-mid: #2D6A4F;
+  --gold: #E9A23B;
+  --clay: #B9603D;
+  --cream: #FBF1DE;
+
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   background-color: #f4f9f5;
   min-height: 100vh;
@@ -25,22 +33,22 @@
   align-self: flex-start;
 }
 
-.hc-sidebar-item {
-  padding: 14px 20px;
-  font-size: 14px;
-  color: #333;
-  border-bottom: 1px solid #f2f2f2;
+.hc-sidebar-item-icon {
+  font-size: 15px;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
   display: flex;
-  justify-content: space-between;
-  text-decoration: none;
-  transition: background 0.2s ease, color 0.2s ease;
+  align-items: center;
+  justify-content: center;
+  background: var(--cream, #FBF1DE);
+  border-radius: 8px;
+  transition: background 0.15s ease, transform 0.15s ease;
 }
 
-.hc-sidebar-item:last-child { border-bottom: none; }
-
-.hc-sidebar-item:hover {
-  background: #F0F7F1;
-  color: #1B4332;
+.hc-sidebar-item-pro:hover .hc-sidebar-item-icon {
+  background: var(--gold, #E9A23B);
+  transform: scale(1.05);
 }
 
 /* ===== HERO CAROUSEL ===== */
@@ -49,9 +57,12 @@
   flex: 1;
   height: 400px;
   overflow: hidden;
-  border-radius: 16px;
-  background: #081C15;
-  box-shadow: 0 16px 40px rgba(8, 28, 21, 0.18);
+  border-radius: 18px;
+  border: 3px solid transparent;
+  background:
+    linear-gradient(#081C15, #081C15) padding-box,
+    linear-gradient(135deg, var(--gold), var(--clay)) border-box;
+  box-shadow: 0 16px 40px rgba(8, 28, 21, 0.2);
 }
 
 .hc-track {
@@ -116,6 +127,7 @@
   color: #fff;
 }
 
+/* "Thẻ giá" mộc mạc thay cho pill trơn */
 .hc-eyebrow {
   display: inline-flex;
   align-items: center;
@@ -124,22 +136,24 @@
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  background: linear-gradient(135deg, #F2B75C, #E9A23B);
-  color: #1B4332;
-  padding: 6px 16px;
-  border-radius: 30px;
-  margin-bottom: 18px;
-  box-shadow: 0 4px 12px rgba(233, 162, 59, 0.35);
+  background: var(--cream);
+  color: var(--forest-deep);
+  padding: 7px 16px;
+  border-radius: 4px;
+  border: 1.5px dashed var(--gold);
+  margin-bottom: 20px;
+  transform: rotate(-1.5deg);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18);
 }
 
 .hc-title {
-  font-family: "Segoe UI", Tahoma, Arial, sans-serif;
-  font-size: 38px;
-  font-weight: 800;
-  line-height: 1.18;
+  font-family: 'Fraunces', Georgia, 'Times New Roman', serif;
+  font-size: 42px;
+  font-weight: 600;
+  line-height: 1.15;
   letter-spacing: -0.01em;
   margin: 0 0 14px 0;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.3);
 }
 
 .hc-subtitle {
@@ -154,21 +168,21 @@
   align-items: center;
   gap: 8px;
   background: #fff;
-  color: #1B4332;
+  color: var(--forest-deep);
   font-weight: 700;
   font-size: 14.5px;
   padding: 13px 28px;
   border-radius: 999px;
   text-decoration: none;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease;
 }
 
 .hc-cta:hover {
   transform: translateY(-3px);
-  color: #1B4332;
-  background: #E9A23B;
-  box-shadow: 0 10px 22px rgba(233, 162, 59, 0.35);
+  color: #fff;
+  background: var(--clay);
+  box-shadow: 0 10px 22px rgba(185, 96, 61, 0.4);
 }
 
 /* ===== MŨI TÊN ĐIỀU HƯỚNG: kiểu kính mờ (glassmorphism) ===== */
@@ -235,32 +249,26 @@
 .hc-dot-active {
   width: 24px;
   border-radius: 4px;
-  background: #E9A23B;
-  border-color: #E9A23B;
+  background: var(--gold);
+  border-color: var(--gold);
 }
 
-/* ===== BADGE "TƯƠI MỖI NGÀY": kiểu tem dán, có viền và bóng nổi ===== */
+/* ===== TEM "TƯƠI MỖI NGÀY": dấu mộc kiểu tem chứng nhận nông sản ===== */
 .hc-badge {
   position: absolute;
-  top: 22px;
-  right: 22px;
+  top: 20px;
+  right: 20px;
   z-index: 3;
-  width: 84px;
-  height: 84px;
+  width: 92px;
+  height: 92px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #ef5350, #c62828);
-  color: #fff;
+  background: var(--cream);
+  border: 2px dashed var(--clay);
   display: flex;
   align-items: center;
   justify-content: center;
-  text-align: center;
-  font-size: 11.5px;
-  font-weight: 800;
-  line-height: 1.3;
-  letter-spacing: 0.02em;
-  border: 3px solid #fff;
-  box-shadow: 0 8px 20px rgba(198, 40, 40, 0.4);
-  transform: rotate(6deg);
+  transform: rotate(8deg);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
   transition: transform 0.25s ease;
 }
 
@@ -268,18 +276,71 @@
   transform: rotate(0deg) scale(1.05);
 }
 
+.hc-badge-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  border: 1px solid rgba(27, 67, 50, 0.25);
+  text-align: center;
+}
+
+.hc-badge-icon {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--forest-deep);
+  margin-bottom: 2px;
+}
+
+.hc-badge-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--forest-deep);
+  line-height: 1.25;
+}
+
 /* ===== THANH SLOGAN (thu gọn theo khung layout, không full-bleed) ===== */
 .hc-slogan-strip {
   max-width: 1400px;
   margin: 16px auto 0;
-  background: #2D6A4F;
+  position: relative;
+  background: linear-gradient(120deg, #1B4332 0%, #2D6A4F 55%, #1B4332 100%);
   color: #fff;
   text-align: center;
-  font-weight: 800;
-  font-size: 18px;
-  padding: 16px;
-  letter-spacing: 0.02em;
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 0.04em;
+  padding: 16px 20px;
   border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 10px 24px rgba(27, 67, 50, 0.18);
+}
+
+.hc-slogan-strip::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    115deg,
+    rgba(233, 162, 59, 0.08) 0px,
+    rgba(233, 162, 59, 0.08) 2px,
+    transparent 2px,
+    transparent 26px
+  );
+  pointer-events: none;
+}
+
+.hc-slogan-strip::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--gold), var(--clay), var(--gold));
 }
 
 /* ===== DANH SÁCH SẢN PHẨM ===== */
@@ -291,18 +352,30 @@
 
 .section-title {
   text-align: center;
-  color: #fff;
-  background: linear-gradient(90deg, #1B4332, #2D6A4F, #1B4332);
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  padding: 18px;
-  border-radius: 10px;
-  margin-bottom: 40px;
-  text-transform: uppercase;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
-  box-shadow: 0 6px 18px rgba(27, 67, 50, 0.25);
+  color: #1B4332;
+  background: none;
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: 0;
+  padding: 0;
+  margin: 0 auto 40px;
+  text-transform: none;
+  text-shadow: none;
+  box-shadow: none;
   position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
+.section-title::after {
+  content: "";
+  display: block;
+  width: 64px;
+  height: 3px;
+  margin: 12px auto 0;
+  background: linear-gradient(90deg, var(--gold), var(--clay));
+  border-radius: 2px;
 }
 .loading-text {
   text-align: center;

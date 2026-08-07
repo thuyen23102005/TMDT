@@ -4,6 +4,7 @@ import './Home.css';
 import TreasureChestWidget from "../../components/TreasureChestWidget/TreasureChestWidget";
 import { getAllProducts } from "../../services/Client/productApi";
 import PromotionSection from "./PromotionSection";
+import RecommendedSection from "./RecommendedSection";
 
 
 const categories = [
@@ -173,7 +174,10 @@ const Home = () => {
           )}
 
           <div className="hc-badge">
-            <span>Tươi mỗi ngày</span>
+            <div className="hc-badge-inner">
+              <span className="hc-badge-icon">✓</span>
+              <span className="hc-badge-label">Tươi<br />mỗi ngày</span>
+            </div>
           </div>
         </header>
 
@@ -186,6 +190,9 @@ const Home = () => {
 
       {/* CHƯƠNG TRÌNH KHUYẾN MÃI */}
       <PromotionSection />
+
+      {/* GỢI Ý CÁ NHÂN HÓA + NHẮC MUA LẠI (chỉ hiện khi đã đăng nhập và có dữ liệu) */}
+      <RecommendedSection />
 
       {/* DANH SÁCH SẢN PHẨM */}
       <section className="products-section">
