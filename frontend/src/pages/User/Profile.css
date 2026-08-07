@@ -133,14 +133,72 @@
 }
 
 /* ==========================================
-   BANNER XIN CHÀO & TÍCH ĐIỂM
+   BANNER XIN CHÀO
    ========================================== */
 .profile-greeting-banner {
-  background: #2e7d32;
+  background: linear-gradient(135deg, #1b4332 0%, #2e7d32 55%, #3a9d4f 100%);
   color: #fff;
   width: 100%;
+  padding: 26px 32px;
 }
 
+/* Quầng sáng gold nhẹ ở góc phải — điểm nhấn duy nhất của banner */
+.profile-greeting-glow {
+  position: absolute;
+  top: -55%;
+  right: -4%;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(233, 162, 59, 0.28) 0%, rgba(233, 162, 59, 0) 70%);
+  pointer-events: none;
+}
+
+.profile-greeting-eyebrow {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #cfe4cf;
+  margin-bottom: 4px;
+}
+
+.profile-greeting-name {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.profile-greeting-wave {
+  display: inline-block;
+  transform-origin: 70% 70%;
+  animation: profile-wave 1.8s ease-in-out infinite;
+}
+
+@keyframes profile-wave {
+  0%, 55%, 100% { transform: rotate(0deg); }
+  10% { transform: rotate(14deg); }
+  20% { transform: rotate(-8deg); }
+  30% { transform: rotate(14deg); }
+  40% { transform: rotate(-4deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-greeting-wave {
+    animation: none;
+  }
+}
+
+.profile-greeting-sub {
+  margin-top: 6px;
+  font-size: 13.5px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* ==========================================
+   TÍCH ĐIỂM & HẠNG THÀNH VIÊN
+   ========================================== */
 .rank-icon-box {
   width: 60px;
   height: 60px;

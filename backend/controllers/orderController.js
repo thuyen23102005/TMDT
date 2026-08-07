@@ -25,7 +25,7 @@ const getOrderDetail = async (req, res) => {
             .input("MaDH", sql.Int, orderId)
             .query(`
                 SELECT 
-                    dh.MaDH, dh.NgayDat, dh.PhiVanChuyen, dh.TongTien, 
+                    dh.MaDH, dh.NgayDat, dh.NgayGiao, dh.PhiVanChuyen, dh.TongTien, 
                     dh.TrangThaiDonHang, dh.TrangThaiThanhToan,
                     dc.HoTen AS NguoiNhan, dc.SoDienThoai, dc.DiaChiChiTiet
                 FROM DonHang dh

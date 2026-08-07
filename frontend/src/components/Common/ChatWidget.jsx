@@ -13,6 +13,10 @@ function ChatWidget() {
     const [loading, setLoading] = useState(false);
     const [lightboxImg, setLightboxImg] = useState(null); // ảnh đang xem full-size
 
+    const [selectedImage, setSelectedImage] = useState(null); // File ảnh đang chọn
+    const [imagePreview, setImagePreview] = useState(null);   // URL preview
+    const fileInputRef = useRef(null);
+
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
 
@@ -37,10 +41,88 @@ function ChatWidget() {
         }
     }, [isOpen]);
 
+    const handleSelectImage = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (!file.type.startsWith("image/")) {
+            alert("Vui lòng chọn file ảnh.");
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            alert("Ảnh tối đa 5MB.");
+            return;
+        }
+
+        setSelectedImage(file);
+        setImagePreview(URL.createObjectURL(file));
+        e.target.value = ""; // reset input để chọn lại cùng 1 file vẫn trigger onChange
+    };
+
+    const clearSelectedImage = () => {
+        setSelectedImage(null);
+        setImagePreview(null);
+    };
+
     const handleSend = async (customText) => {
         const trimmed = (customText ?? input).trim();
-        if (!trimmed || loading) return;
+        if ((!trimmed && !selectedImage) || loading) return;
 
+        // Nếu có ảnh đính kèm -> gửi bằng luồng riêng
+        if (selectedImage) {
+            const userMessage = {
+                role: "user",
+                content: trimmed,
+                imagePreview, // hiển thị lại ảnh khách vừa gửi trong bubble
+            };
+            const newMessages = [...messages, userMessage];
+            setMessages(newMessages);
+
+            const formData = new FormData();
+            formData.append("image", selectedImage);
+            formData.append("message", trimmed);
+
+            setInput("");
+            clearSelectedImage();
+            setLoading(true);
+
+            try {
+                const res = await fetch(`${import.meta.env.VITE_API_URL}/api/chatbot/ask-image`, {
+                    method: "POST",
+                    body: formData,
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    setMessages((prev) => [
+                        ...prev,
+                        { role: "bot", content: data.message || "Xin lỗi, mình đang gặp sự cố với ảnh này. Bạn thử lại nhé." }
+                    ]);
+                    return;
+                }
+
+                setMessages((prev) => [
+                    ...prev,
+                    {
+                        role: "bot",
+                        content: data.reply,
+                        productImages: data.productImages || [],
+                    }
+                ]);
+            } catch (err) {
+                console.error(err);
+                setMessages((prev) => [
+                    ...prev,
+                    { role: "bot", content: "Không thể kết nối tới máy chủ. Bạn kiểm tra lại kết nối mạng nhé." }
+                ]);
+            } finally {
+                setLoading(false);
+            }
+            return;
+        }
+
+        // Luồng gửi tin nhắn văn bản như cũ
         const newMessages = [...messages, { role: "user", content: trimmed }];
         setMessages(newMessages);
         setInput("");
@@ -140,7 +222,17 @@ function ChatWidget() {
                                             <ReactMarkdown>{msg.content}</ReactMarkdown>
                                         </div>
                                     ) : (
-                                        msg.content
+                                        <>
+                                            {msg.imagePreview && (
+                                                <img
+                                                    src={msg.imagePreview}
+                                                    alt="Ảnh đã gửi"
+                                                    className="cw-sent-image"
+                                                    onClick={() => setLightboxImg({ url: msg.imagePreview, caption: "Ảnh bạn đã gửi" })}
+                                                />
+                                            )}
+                                            {msg.content}
+                                        </>
                                     )}
 
                                     {/* Ảnh sản phẩm thật từ kho */}
@@ -221,13 +313,49 @@ function ChatWidget() {
                         </div>
                     )}
 
+                    {/* Preview ảnh đã chọn, trước khi gửi */}
+                    {imagePreview && (
+                        <div className="cw-image-preview-bar">
+                            <img src={imagePreview} alt="Xem trước" className="cw-image-preview-thumb" />
+                            <span className="cw-image-preview-name">Ảnh đã chọn</span>
+                            <button
+                                className="cw-image-preview-remove"
+                                onClick={clearSelectedImage}
+                                aria-label="Bỏ chọn ảnh"
+                            >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                    <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" />
+                                </svg>
+                            </button>
+                        </div>
+                    )}
+
                     {/* Input */}
                     <div className="cw-input-bar">
+                        <input
+                            type="file"
+                            accept="image/*"
+                            ref={fileInputRef}
+                            onChange={handleSelectImage}
+                            style={{ display: "none" }}
+                        />
+                        <button
+                            className="cw-attach-btn"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={loading}
+                            aria-label="Gửi ảnh"
+                            title="Gửi ảnh"
+                        >
+                            <svg width="19" height="19" viewBox="0 0 24 24" fill="none">
+                                <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"
+                                    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                        </button>
                         <input
                             ref={inputRef}
                             type="text"
                             className="cw-input"
-                            placeholder="Nhập câu hỏi của bạn..."
+                            placeholder={selectedImage ? "Thêm mô tả cho ảnh (tuỳ chọn)..." : "Nhập câu hỏi của bạn..."}
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyDown={handleKeyDown}
@@ -236,7 +364,7 @@ function ChatWidget() {
                         <button
                             className="cw-send-btn"
                             onClick={() => handleSend()}
-                            disabled={loading || !input.trim()}
+                            disabled={loading || (!input.trim() && !selectedImage)}
                             aria-label="Gửi"
                         >
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -292,7 +420,7 @@ function ChatWidget() {
                 {!isOpen && messages.length === 1 && <span className="cw-fab-badge">1</span>}
             </button>
 
-            <style>{`
+          <style>{`
                 @keyframes cw-float {
                     0%, 100% { transform: translateY(0); }
                     50% { transform: translateY(-6px); }
@@ -805,6 +933,78 @@ function ChatWidget() {
                     cursor: not-allowed;
                 }
 
+                .cw-sent-image {
+    width: 100%;
+    max-width: 180px;
+    border-radius: 12px;
+    display: block;
+    margin-bottom: 6px;
+    cursor: pointer;
+}
+
+.cw-attach-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1.5px solid #e2e6e2;
+    background: #fafcfa;
+    color: #2e7d32;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.cw-attach-btn:hover:not(:disabled) {
+    background: #e9f5e9;
+    border-color: #4caf50;
+}
+
+.cw-attach-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.cw-image-preview-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-top: 1px solid #eef0ee;
+    background: #f4f7f5;
+    flex-shrink: 0;
+}
+
+.cw-image-preview-thumb {
+    width: 34px;
+    height: 34px;
+    object-fit: cover;
+    border-radius: 6px;
+    flex-shrink: 0;
+}
+
+.cw-image-preview-name {
+    font-size: 12px;
+    color: #2e7d32;
+    flex: 1;
+}
+
+.cw-image-preview-remove {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: none;
+    background: #e2e6e2;
+    color: #444;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
                 @media (max-width: 480px) {
                     .cw-panel {
                         width: calc(100vw - 32px);
@@ -812,8 +1012,10 @@ function ChatWidget() {
                     }
                 }
             `}</style>
+
         </div>
     );
 }
 
 export default ChatWidget;
+           

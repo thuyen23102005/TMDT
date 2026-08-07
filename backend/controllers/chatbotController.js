@@ -1,11 +1,16 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { GoogleGenAI } = require("@google/genai");
+const multer = require("multer");
 const productModel = require("../models/productModel");
 const reviewModel = require("../models/reviewModel");
 const calculatePrice = require("../utils/priceCalculator");
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const imageAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+// Multer lưu tạm trong RAM (không cần lưu ổ đĩa, chỉ dùng để gửi cho Gemini)
+const storage = multer.memoryStorage();
+const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } }); // tối đa 5MB
 
 const extractKeywords = (message) => {
     const stopWords = [
@@ -22,8 +27,6 @@ const extractKeywords = (message) => {
         .join(" ");
 };
 
-// Nhận diện khách có đang muốn XEM HÌNH MINH HỌA (món ăn/công thức) không
-// - Khác với việc chỉ hỏi thông tin sản phẩm (giá/tồn kho) - trường hợp đó dùng ảnh thật có sẵn
 const detectImageGenerationIntent = (message) => {
     const triggers = [
         "hình ảnh", "hình minh họa", "cho xem hình", "vẽ", "minh họa",
@@ -34,7 +37,6 @@ const detectImageGenerationIntent = (message) => {
     return triggers.some(t => lower.includes(t));
 };
 
-// Gọi Gemini 2.5 Flash Image để tạo ảnh minh họa (KHÔNG phải ảnh sản phẩm thật)
 const generateIllustrationImage = async (prompt) => {
     try {
         const result = await imageAI.models.generateContent({
@@ -58,6 +60,66 @@ const generateIllustrationImage = async (prompt) => {
     }
 };
 
+// Tách logic build context sản phẩm (dùng chung cho ask() và askImage())
+const buildProductContext = (relatedProducts, reviewMap) => {
+    if (relatedProducts.length === 0) {
+        return "Không tìm thấy sản phẩm nào khớp trực tiếp với câu hỏi này trong kho.";
+    }
+
+    return relatedProducts.map(p => {
+        const finalPrice = calculatePrice(p);
+        const isDiscounted = p.TuDongGiamGia && finalPrice < p.GiaGoc;
+
+        const priceInfo = isDiscounted
+            ? `Giá gốc: ${Number(p.GiaGoc).toLocaleString()}đ, giá hiện tại: ${Number(finalPrice).toLocaleString()}đ (đang giảm ${Math.round((1 - finalPrice / p.GiaGoc) * 100)}%)`
+            : `Giá: ${Number(finalPrice).toLocaleString()}đ`;
+
+        const stockStatus = p.SoLuongTon > 0
+            ? `Còn hàng (${p.SoLuongTon} ${p.DonViTinh})`
+            : "TẠM HẾT HÀNG";
+
+        const review = reviewMap[p.MaSP];
+        const reviewInfo = review
+            ? `Đánh giá: ${review.diemTrungBinh}⭐ (${review.soLuotDanhGia} lượt)${
+                review.nhanXetTieuBieu.length > 0
+                    ? ` - Khách nhận xét: ${review.nhanXetTieuBieu.map(c => `"${c}"`).join(", ")}`
+                    : ""
+              }`
+            : "Đánh giá: Chưa có lượt đánh giá nào";
+
+        return `- ${p.TenSP} (Danh mục: ${p.TenDM}) - ${priceInfo}/${p.DonViTinh} - Tình trạng: ${stockStatus} - ${reviewInfo} - Mô tả: ${p.MoTa || "Không có mô tả"}`;
+    }).join("\n");
+};
+
+// Tìm sản phẩm liên quan + đánh giá, dùng chung cho ask() và askImage()
+const findRelatedProductsAndReviews = async (searchText) => {
+    let relatedProducts = [];
+    try {
+        const keyword = extractKeywords(searchText);
+        if (keyword) {
+            relatedProducts = await productModel.searchProducts(keyword, 5);
+        }
+    } catch (dbError) {
+        console.error("Lỗi tìm sản phẩm cho chatbot:", dbError);
+    }
+
+    let reviewMap = {};
+    try {
+        if (relatedProducts.length > 0) {
+            const maSPList = relatedProducts.map(p => p.MaSP);
+            const reviewSummaries = await reviewModel.getReviewSummaryForProducts(maSPList);
+            reviewMap = reviewSummaries.reduce((acc, r) => {
+                acc[r.MaSP] = r;
+                return acc;
+            }, {});
+        }
+    } catch (reviewError) {
+        console.error("Lỗi lấy đánh giá cho chatbot:", reviewError);
+    }
+
+    return { relatedProducts, reviewMap };
+};
+
 const ask = async (req, res) => {
     try {
         const { message, history } = req.body;
@@ -66,60 +128,9 @@ const ask = async (req, res) => {
             return res.status(400).json({ message: "Vui lòng nhập câu hỏi" });
         }
 
-        // 1. Tìm sản phẩm liên quan trong DB dựa theo câu hỏi
-        let relatedProducts = [];
-        try {
-            const keyword = extractKeywords(message);
-            if (keyword) {
-                relatedProducts = await productModel.searchProducts(keyword, 5);
-            }
-        } catch (dbError) {
-            console.error("Lỗi tìm sản phẩm cho chatbot:", dbError);
-        }
+        const { relatedProducts, reviewMap } = await findRelatedProductsAndReviews(message);
+        const productContext = buildProductContext(relatedProducts, reviewMap);
 
-        // 1b. Lấy tổng hợp đánh giá cho các sản phẩm liên quan
-        let reviewMap = {};
-        try {
-            if (relatedProducts.length > 0) {
-                const maSPList = relatedProducts.map(p => p.MaSP);
-                const reviewSummaries = await reviewModel.getReviewSummaryForProducts(maSPList);
-                reviewMap = reviewSummaries.reduce((acc, r) => {
-                    acc[r.MaSP] = r;
-                    return acc;
-                }, {});
-            }
-        } catch (reviewError) {
-            console.error("Lỗi lấy đánh giá cho chatbot:", reviewError);
-        }
-
-        // 2. Tính giá thực tế + trạng thái giảm giá/tồn kho + đánh giá cho từng sản phẩm
-        const productContext = relatedProducts.length > 0
-            ? relatedProducts.map(p => {
-                const finalPrice = calculatePrice(p);
-                const isDiscounted = p.TuDongGiamGia && finalPrice < p.GiaGoc;
-
-                const priceInfo = isDiscounted
-                    ? `Giá gốc: ${Number(p.GiaGoc).toLocaleString()}đ, giá hiện tại: ${Number(finalPrice).toLocaleString()}đ (đang giảm ${Math.round((1 - finalPrice / p.GiaGoc) * 100)}%)`
-                    : `Giá: ${Number(finalPrice).toLocaleString()}đ`;
-
-                const stockStatus = p.SoLuongTon > 0
-                    ? `Còn hàng (${p.SoLuongTon} ${p.DonViTinh})`
-                    : "TẠM HẾT HÀNG";
-
-                const review = reviewMap[p.MaSP];
-                const reviewInfo = review
-                    ? `Đánh giá: ${review.diemTrungBinh}⭐ (${review.soLuotDanhGia} lượt)${
-                        review.nhanXetTieuBieu.length > 0
-                            ? ` - Khách nhận xét: ${review.nhanXetTieuBieu.map(c => `"${c}"`).join(", ")}`
-                            : ""
-                      }`
-                    : "Đánh giá: Chưa có lượt đánh giá nào";
-
-                return `- ${p.TenSP} (Danh mục: ${p.TenDM}) - ${priceInfo}/${p.DonViTinh} - Tình trạng: ${stockStatus} - ${reviewInfo} - Mô tả: ${p.MoTa || "Không có mô tả"}`;
-            }).join("\n")
-            : "Không tìm thấy sản phẩm nào khớp trực tiếp với câu hỏi này trong kho.";
-
-        // 3. Xây dựng system prompt cho chatbot
         const systemPrompt = `
 Bạn là trợ lý ảo tư vấn bán hàng của "Nông Sản Shop" - một cửa hàng bán thực phẩm nông sản sạch trực tuyến.
 
@@ -139,14 +150,12 @@ Danh sách sản phẩm liên quan tìm thấy trong kho (nếu có):
 ${productContext}
         `.trim();
 
-        // 4. Ghép lịch sử hội thoại gần nhất (nếu có) để giữ ngữ cảnh
         const historyText = Array.isArray(history)
             ? history.slice(0, -1).map(h => `${h.role === "user" ? "Khách" : "Trợ lý"}: ${h.content}`).join("\n")
             : "";
 
         const fullPrompt = `${systemPrompt}\n\n${historyText ? "Lịch sử hội thoại:\n" + historyText + "\n\n" : ""}Câu hỏi hiện tại của khách: ${message}`;
 
-        // 5. Gọi Gemini để trả lời văn bản
         let reply;
         try {
             const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
@@ -159,27 +168,21 @@ ${productContext}
             });
         }
 
-        // 6. Đính kèm ẢNH THẬT của các sản phẩm liên quan tìm thấy (tối đa 3 ảnh)
         const productImages = relatedProducts
             .filter(p => p.HinhAnh)
             .slice(0, 3)
             .map(p => ({
                 maSP: p.MaSP,
                 tenSP: p.TenSP,
-                hinhAnh: p.HinhAnh // frontend tự ghép với VITE_API_URL/uploads/
+                hinhAnh: p.HinhAnh
             }));
 
-        // 7. Nếu khách có ý muốn xem ảnh MINH HỌA (món ăn/công thức) -> tạo ảnh AI
         let generatedImage = null;
         if (detectImageGenerationIntent(message)) {
             generatedImage = await generateIllustrationImage(message);
         }
 
-        res.status(200).json({
-            reply,
-            productImages,       // ảnh thật của sản phẩm, nếu có
-            generatedImage       // { base64, mimeType } ảnh AI minh họa, nếu có yêu cầu và tạo thành công
-        });
+        res.status(200).json({ reply, productImages, generatedImage });
 
     } catch (error) {
         console.error("Lỗi chatbot:", error?.message || error);
@@ -187,4 +190,81 @@ ${productContext}
     }
 };
 
-module.exports = { ask };
+// ==================== KHÁCH GỬI ẢNH -> NHẬN DIỆN -> GỢI Ý SẢN PHẨM ====================
+const askImage = async (req, res) => {
+    try {
+        const { message } = req.body;
+        const file = req.file;
+
+        if (!file) {
+            return res.status(400).json({ message: "Vui lòng gửi kèm ảnh" });
+        }
+
+        const base64Image = file.buffer.toString("base64");
+        const mimeType = file.mimetype;
+
+        // 1. Dùng Gemini nhận diện nội dung ảnh
+        let imageDescription = "";
+        try {
+            const visionModel = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+            const visionResult = await visionModel.generateContent([
+                { inlineData: { data: base64Image, mimeType } },
+                {
+                    text: "Đây là ảnh khách hàng gửi cho shop nông sản. Hãy cho biết ngắn gọn (1 câu) đây là loại nông sản/thực phẩm gì, nêu tên cụ thể nếu nhận ra được. Chỉ trả lời tên/mô tả, không chào hỏi thêm."
+                }
+            ]);
+            imageDescription = visionResult.response.text().trim();
+        } catch (visionError) {
+            console.error("Lỗi nhận diện ảnh:", visionError?.message || visionError);
+            return res.status(500).json({ message: "Không thể nhận diện ảnh, vui lòng thử lại." });
+        }
+
+        // 2. Tìm sản phẩm liên quan dựa trên mô tả ảnh (+ tin nhắn kèm nếu có)
+        const searchText = `${imageDescription} ${message || ""}`.trim();
+        const { relatedProducts, reviewMap } = await findRelatedProductsAndReviews(searchText);
+        const productContext = buildProductContext(relatedProducts, reviewMap);
+
+        // 3. Sinh câu trả lời tư vấn dựa trên nội dung ảnh + sản phẩm tìm được
+        const systemPrompt = `
+Bạn là trợ lý ảo tư vấn bán hàng của "Nông Sản Shop".
+Khách vừa gửi 1 tấm ảnh. Bạn đã nhận diện ảnh đó là: "${imageDescription}".
+${message ? `Khách có nhắn kèm: "${message}"` : ""}
+
+Nhiệm vụ:
+- Cho khách biết bạn nhận ra ảnh đó là gì.
+- Nếu có sản phẩm liên quan trong danh sách bên dưới, giới thiệu và tư vấn (giá, tồn kho, khuyến mãi, đánh giá nếu có).
+- Nếu không có sản phẩm khớp, báo khách shop hiện chưa có sản phẩm này, đừng bịa.
+- Trả lời tiếng Việt, thân thiện, ngắn gọn.
+
+Danh sách sản phẩm liên quan tìm thấy trong kho (nếu có):
+${productContext}
+        `.trim();
+
+        let reply;
+        try {
+            const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+            const result = await model.generateContent(systemPrompt);
+            reply = result.response.text();
+        } catch (aiError) {
+            console.error("Lỗi gọi Gemini API:", aiError?.message || aiError);
+            return res.status(500).json({ message: "Không thể kết nối tới AI." });
+        }
+
+        const productImages = relatedProducts
+            .filter(p => p.HinhAnh)
+            .slice(0, 3)
+            .map(p => ({
+                maSP: p.MaSP,
+                tenSP: p.TenSP,
+                hinhAnh: p.HinhAnh
+            }));
+
+        res.status(200).json({ imageDescription, reply, productImages });
+
+    } catch (error) {
+        console.error("Lỗi askImage:", error?.message || error);
+        res.status(500).json({ message: "Trợ lý ảo đang gặp sự cố, vui lòng thử lại sau." });
+    }
+};
+
+module.exports = { ask, askImage, uploadMiddleware: upload };

@@ -4,6 +4,27 @@ import { useState, useEffect, useRef } from "react";
 import TreasureChestWidget from '../../components/TreasureChestWidget/TreasureChestWidget';
 import { User, MapPin, Lock, Gift, FileText, Ticket, Bell, Heart, Star } from 'lucide-react';
 
+// Lời chào đổi theo khung giờ thực tế trong ngày
+function getGreetingLabel() {
+    const hour = new Date().getHours();
+    if (hour < 11) return "Chào buổi sáng";
+    if (hour < 14) return "Chào buổi trưa";
+    if (hour < 18) return "Chào buổi chiều";
+    return "Chào buổi tối";
+}
+
+// Ngày hiện tại theo định dạng tiếng Việt, ví dụ: "Thứ Sáu, 07/08/2026"
+function getTodayLabel() {
+    const today = new Date();
+    const formatted = today.toLocaleDateString("vi-VN", {
+        weekday: "long",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+    });
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+}
+
 function Profile() {
 
     const location = useLocation();
@@ -279,8 +300,17 @@ function Profile() {
             </div>
 
             <div className="col-md-9 profile-content-col">
-                <div className="rounded-4 mb-3 p-4 profile-greeting-banner">
-                    <h4 className="m-0">Xin chào {displayName}</h4>
+                <div className="rounded-4 mb-3 profile-greeting-banner position-relative overflow-hidden">
+                    <div className="profile-greeting-glow" aria-hidden="true"></div>
+                    <div className="profile-greeting-content position-relative">
+                        <span className="profile-greeting-eyebrow">{getGreetingLabel()}</span>
+                        <h4 className="m-0 profile-greeting-name">
+                            {displayName} <span className="profile-greeting-wave">👋</span>
+                        </h4>
+                        <p className="m-0 profile-greeting-sub">
+                            {getTodayLabel()} · Nông Sản Shop luôn có hàng tươi mới mỗi ngày
+                        </p>
+                    </div>
                 </div>
 
                 {/* BỌC TOÀN BỘ KHỐI ĐIỂM THƯỞNG BẰNG ĐIỀU KIỆN ẨN/HIỆN */}

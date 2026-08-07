@@ -43,6 +43,10 @@ function Sidebar() {
                     Quản lý đơn hàng
                 </NavLink>
 
+                <NavLink to="/admin/returns" className={getNavLinkClass}>
+                 Quản lý đổi/trả
+                </NavLink>
+
                 <NavLink to="/admin/customers" className={getNavLinkClass}>
                     Quản lý khách hàng
                 </NavLink>

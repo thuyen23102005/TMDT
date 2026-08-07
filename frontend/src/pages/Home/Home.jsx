@@ -68,14 +68,24 @@ const Home = () => {
     fetchProducts();
   }, []);
 
-  const productSlides = products.slice(0, 3).map(p => ({
-    key: `product-${p.MaSP}`,
-    image: `${import.meta.env.VITE_API_URL}/uploads/${p.HinhAnh || p.image || p.hinh_anh}`,
-    title: p.TenSP.normalize("NFC"),
-    subtitle: `Chỉ từ ${Number(p.DonGia).toLocaleString()} đ — tươi mới mỗi ngày`,
-    cta: 'Xem chi tiết',
-    to: `/product/${p.MaSP}`
-  }));
+  const productSlides = products.slice(0, 3).map(p => {
+    const hasDiscount = p.TuDongGiamGia && p.GiaGoc > p.DonGia;
+    const percent = hasDiscount
+        ? Math.round(((p.GiaGoc - p.DonGia) / p.GiaGoc) * 100)
+        : 0;
+
+    return {
+        key: `product-${p.MaSP}`,
+        image: `${import.meta.env.VITE_API_URL}/uploads/${p.HinhAnh || p.image || p.hinh_anh}`,
+        title: p.TenSP.normalize("NFC"),
+        subtitle: `Chỉ từ ${Number(p.DonGia).toLocaleString()} đ — tươi mới mỗi ngày`,
+        cta: 'Xem chi tiết',
+        to: `/product/${p.MaSP}`,
+        hasDiscount,
+        percent,
+        originalPrice: p.GiaGoc,
+    };
+});
 
   const slides = productSlides.length >= 2 ? productSlides : fallbackSlides;
 
@@ -145,10 +155,23 @@ const Home = () => {
                 {!slide.image && (
                   <span className="hc-slide-emoji" aria-hidden="true">{slide.emoji}</span>
                 )}
+                {slide.hasDiscount && (
+                  <div className="hc-slide-discount">
+                    <span className="hc-slide-discount-percent">-{slide.percent}%</span>
+                    <span className="hc-slide-discount-label">Giảm giá</span>
+                  </div>
+                )}
                 <div className="hc-slide-content">
                   <span className="hc-eyebrow">🌿 Nông Sản Shop</span>
                   <h2 className="hc-title">{slide.title}</h2>
-                  <p className="hc-subtitle">{slide.subtitle}</p>
+                  <p className="hc-subtitle">
+                    {slide.subtitle}
+                    {slide.hasDiscount && (
+                      <span className="hc-slide-old-price">
+                        {Number(slide.originalPrice).toLocaleString()} đ
+                      </span>
+                    )}
+                  </p>
                   <Link to={slide.to} className="hc-cta">{slide.cta} →</Link>
                 </div>
               </div>
@@ -322,6 +345,43 @@ const Home = () => {
         .hc-sidebar-item-pro:hover .hc-sidebar-item-arrow {
             opacity: 1;
             transform: translateX(0);
+        }
+
+        .hc-slide-discount {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 3;
+            background: #e53935;
+            color: #fff;
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+            transform: rotate(-2deg);
+        }
+
+        .hc-slide-discount-percent {
+            font-size: 20px;
+            font-weight: 800;
+            font-family: 'Fraunces', Georgia, serif;
+        }
+
+        .hc-slide-discount-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .hc-slide-old-price {
+            display: inline-block;
+            margin-left: 10px;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.65);
+            text-decoration: line-through;
         }
       `}</style>
     </div>

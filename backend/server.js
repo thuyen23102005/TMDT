@@ -40,7 +40,7 @@ const chatbotRoutes = require("./routes/chatbotRoutes");
 
 const reportRoutes = require("./routes/reportRoutes");
 
-
+const returnRoutes = require("./routes/returnRoutes");
 
 // ===== MIDDLEWARE (luôn đặt cors() và express.json() TRƯỚC mọi route) =====
 app.use(cors());
@@ -83,6 +83,8 @@ app.use("/api/report", reportRoutes);
 app.use("/api/tasks", taskRoutes);
 
 app.use("/api/chatbot", chatbotRoutes);
+
+app.use("/api/return-requests", returnRoutes);
 
 app.use("/api/momo", require("./routes/momoRoutes"));
 

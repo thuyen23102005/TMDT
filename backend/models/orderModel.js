@@ -2,8 +2,7 @@ const { connectDB, sql } = require("../config/db");
 
 const getAllOrders = async (status, fromDate, toDate) => {
     const pool = await connectDB();
-    
-    // Khởi tạo câu truy vấn cơ bản với điều kiện WHERE 1=1 để dễ nối chuỗi
+
     let query = `
         SELECT
             dh.MaDH,
@@ -12,6 +11,7 @@ const getAllOrders = async (status, fromDate, toDate) => {
             dc.SoDienThoai,
             dc.DiaChiChiTiet,
             dh.NgayDat,
+            dh.NgayGiao,
             dh.PhiVanChuyen,
             dh.TongTien,
             dh.TrangThaiDonHang,
@@ -24,18 +24,16 @@ const getAllOrders = async (status, fromDate, toDate) => {
 
     const request = pool.request();
 
-    // Nối thêm điều kiện nếu có truyền vào
     if (status) {
         query += ` AND dh.TrangThaiDonHang = @Status`;
         request.input("Status", sql.NVarChar, status);
     }
-    
+
     if (fromDate) {
-        // Ép kiểu về DATE để chỉ so sánh ngày, bỏ qua giờ phút
         query += ` AND CAST(dh.NgayDat AS DATE) >= @FromDate`;
         request.input("FromDate", sql.Date, fromDate);
     }
-    
+
     if (toDate) {
         query += ` AND CAST(dh.NgayDat AS DATE) <= @ToDate`;
         request.input("ToDate", sql.Date, toDate);
@@ -66,8 +64,13 @@ const getOrderDetail = async (id) => {
     return result.recordset;
 };
 
+// Cập nhật trạng thái đơn hàng. Khi chuyển sang "Đã giao" sẽ tự ghi nhận NgayGiao
+// để làm mốc tính hạn đổi/trả.
 const updateStatus = async (id, status, paymentStatus) => {
     const pool = await connectDB();
+
+    const setNgayGiao = status === "Đã giao";
+
     await pool.request()
         .input("MaDH", id)
         .input("TrangThaiDonHang", status)
@@ -76,6 +79,7 @@ const updateStatus = async (id, status, paymentStatus) => {
             UPDATE DonHang
             SET TrangThaiDonHang = @TrangThaiDonHang,
                 TrangThaiThanhToan = @TrangThaiThanhToan
+                ${setNgayGiao ? ", NgayGiao = ISNULL(NgayGiao, GETDATE())" : ""}
             WHERE MaDH = @MaDH
         `);
 };
@@ -86,7 +90,7 @@ const getOrdersByUser = async (maTK) => {
         .input("MaTK", sql.Int, maTK)
         .query(`
             SELECT 
-                dh.MaDH, dh.NgayDat, dh.TongTien, dh.TrangThaiDonHang, dh.TrangThaiThanhToan,
+                dh.MaDH, dh.NgayDat, dh.NgayGiao, dh.TongTien, dh.TrangThaiDonHang, dh.TrangThaiThanhToan,
                 (SELECT COUNT(*) FROM ChiTietDonHang ct WHERE ct.MaDH = dh.MaDH) AS TongSoMon,
                 (SELECT COUNT(*) FROM DanhGia dg WHERE dg.MaDH = dh.MaDH) AS SoMonDaDanhGia
             FROM DonHang dh
